@@ -1802,7 +1802,7 @@ async function callClaude(prompt, rbId, raId, btnId, btnLabel) {
   rb.innerHTML = `<div class="loading-row"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div><span>Gemini AI 작성 중...</span></div>`;
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2005,7 +2005,7 @@ async function callGeminiAPI(prompt, maxTokens = 1500) {
     throw new Error('Gemini API 키가 설정되지 않았어요. 좌측 하단에서 키를 등록해주세요.');
   }
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

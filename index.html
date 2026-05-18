@@ -279,6 +279,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     </div>
   </div>
 
+  <div class="sidebar-section">운영</div>
   <button class="nav-item active" onclick="goPage('dashboard',this)">
     <span class="nav-icon">◎</span> 대시보드
   </button>
@@ -292,8 +293,12 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   <button class="nav-item" onclick="goPage('content',this)">
     <span class="nav-icon">✦</span> 콘텐츠 생성
   </button>
+
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section">탐색</div>
+
   <button class="nav-item" onclick="goPage('trend',this)">
-    <span class="nav-icon">↗</span> 트렌드 분석
+    <span class="nav-icon">↗</span> 스레드 레퍼런스
   </button>
 
   <div class="sidebar-divider"></div>
@@ -360,9 +365,9 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <div class="stat-change" id="dash-views-change">불러오는 중...</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">평균 좋아요</div>
-          <div class="stat-val" id="dash-likes">—</div>
-          <div class="stat-change" id="dash-likes-change">불러오는 중...</div>
+          <div class="stat-label">평균 참여율</div>
+          <div class="stat-val" id="dash-engagement">—</div>
+          <div class="stat-change" id="dash-engagement-change">불러오는 중...</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">총 게시물 수</div>
@@ -389,6 +394,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             <div class="card-title" style="margin-bottom:0">TOP 3</div>
             <select id="topMetric" onchange="renderTopPosts()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-family:inherit;font-size:12px;cursor:pointer">
               <option value="views">조회수</option>
+              <option value="engagement">참여율</option>
               <option value="likes">좋아요</option>
               <option value="comments">댓글</option>
               <option value="reposts">리포스트</option>
@@ -420,10 +426,11 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
                   <th class="sort-th" onclick="sortTable('comments')" style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;cursor:pointer;user-select:none">댓글 <span id="sort-comments"></span></th>
                   <th class="sort-th" onclick="sortTable('reposts')" style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;cursor:pointer;user-select:none">리포스트 <span id="sort-reposts"></span></th>
                   <th class="sort-th" onclick="sortTable('shares')"  style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;cursor:pointer;user-select:none">공유 <span id="sort-shares"></span></th>
+                  <th class="sort-th" onclick="sortTable('engagement')" style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600;cursor:pointer;user-select:none" title="(좋아요+댓글+리포스트+공유)/조회수">참여율 <span id="sort-engagement"></span></th>
                 </tr>
               </thead>
               <tbody id="recentTableBody">
-                <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">데이터 불러오는 중...</td></tr>
+                <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">데이터 불러오는 중...</td></tr>
               </tbody>
             </table>
           </div>
@@ -530,7 +537,14 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
         <div style="position:sticky;top:24px">
           <div class="section-label">생성된 프롬프트</div>
           <div class="result-box" id="rb-content" style="min-height:320px;font-family:'Courier New',monospace;font-size:12px;white-space:pre-wrap;line-height:1.6">
-            <span style="color:var(--text3);font-family:inherit">왼쪽에서 옵션을 선택하고 프롬프트 생성을 누르세요.</span>
+            <div style="text-align:center;padding:60px 20px;font-family:inherit">
+              <div style="font-size:36px;margin-bottom:12px">✦</div>
+              <div style="color:var(--text);font-weight:600;font-size:14px;margin-bottom:6px">AI 프롬프트 생성 준비</div>
+              <div style="color:var(--text3);font-size:12px;line-height:1.6">
+                왼쪽에서 콘텐츠 유형, CTA 목표, 발행 월 등을<br>
+                선택한 후 <b>✦ 프롬프트 생성</b> 버튼을 눌러주세요
+              </div>
+            </div>
           </div>
 
           <!-- 액션 버튼 -->
@@ -857,22 +871,31 @@ function fmtNum(n) {
   return Number(n).toLocaleString();
 }
 
+// 참여율 계산: (좋아요+댓글+리포스트+공유) / 조회수 × 100
+function calcEngagement(r) {
+  const views = toNum(r[COL.views]);
+  if (!views) return 0;
+  const engagement = toNum(r[COL.likes]) + toNum(r[COL.comments]) + toNum(r[COL.reposts]) + toNum(r[COL.shares]);
+  return (engagement / views) * 100;
+}
+
 // TOP 3 렌더 (선택된 지표 기준)
 function renderTopPosts() {
   const metric = (document.getElementById('topMetric') || {}).value || 'views';
   const labels = {
-    views: '조회수', likes: '좋아요', comments: '댓글',
+    views: '조회수', engagement: '참여율', likes: '좋아요', comments: '댓글',
     reposts: '리포스트', shares: '공유', follows: '팔로우'
   };
-  const colKey = COL[metric];
 
-  if (!topPostsData.length || colKey === undefined) {
+  if (!topPostsData.length) {
     document.getElementById('topPosts').innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">데이터가 없습니다</div>';
     return;
   }
 
-  const filtered = topPostsData.filter(r => toNum(r[colKey]) > 0);
-  const sorted = [...filtered].sort((a,b) => toNum(b[colKey]) - toNum(a[colKey])).slice(0,3);
+  // 참여율은 별도 계산, 나머지는 컬럼 직접 조회
+  const getValue = (r) => metric === 'engagement' ? calcEngagement(r) : toNum(r[COL[metric]]);
+  const filtered = topPostsData.filter(r => getValue(r) > 0);
+  const sorted = [...filtered].sort((a,b) => getValue(b) - getValue(a)).slice(0,3);
 
   if (!sorted.length) {
     document.getElementById('topPosts').innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0">${labels[metric]} 데이터가 없습니다</div>`;
@@ -882,14 +905,15 @@ function renderTopPosts() {
   document.getElementById('topPosts').innerHTML = sorted.map((r,i) => {
     const link = String(r[COL.link]||'').trim();
     const snippet = cleanText(r[COL.text]).slice(0,38) || '(내용 없음)';
-    const value = toNum(r[colKey]);
+    const value = getValue(r);
+    const displayVal = metric === 'engagement' ? value.toFixed(1) + '%' : value.toLocaleString();
     const inner = `
       <div class="post-rank">${i+1}</div>
       <div class="post-info">
         <div class="post-snippet">${snippet}...</div>
-        <div class="post-meta">${fmtDate(r[COL.date])} · ${labels[metric]} ${value.toLocaleString()}</div>
+        <div class="post-meta">${fmtDate(r[COL.date])} · ${labels[metric]} ${displayVal}</div>
       </div>
-      <div class="post-views">${value.toLocaleString()}</div>`;
+      <div class="post-views">${displayVal}</div>`;
     return link
       ? `<a href="${link}" target="_blank" class="post-row" style="text-decoration:none;color:inherit;cursor:pointer" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">${inner}</a>`
       : `<div class="post-row">${inner}</div>`;
@@ -947,9 +971,14 @@ async function loadSheetData(force = false) {
     dot.style.background = '#e5303e';
     msg.textContent = '연동 실패';
     document.getElementById('recentTableBody').innerHTML = `
-      <tr><td colspan="9" style="text-align:center;padding:24px;font-size:13px;color:var(--red)">
-        ⚠️ 데이터를 불러올 수 없어요.<br>
-        <span style="color:var(--text3);font-size:12px">Apps Script 배포 상태를 확인해주세요</span>
+      <tr><td colspan="10" style="text-align:center;padding:40px 24px;font-size:13px">
+        <div style="font-size:32px;margin-bottom:8px">⚠️</div>
+        <div style="font-weight:600;color:var(--text);margin-bottom:6px">시트 데이터를 불러올 수 없어요</div>
+        <div style="color:var(--text3);font-size:12px;line-height:1.6">
+          • 인터넷 연결을 확인해주세요<br>
+          • Apps Script 배포가 활성 상태인지 확인해주세요<br>
+          • 우측 상단 <b style="color:var(--text2)">↻ 새로고침</b> 버튼을 눌러보세요
+        </div>
       </td></tr>`;
     console.error(e);
   }
@@ -1001,10 +1030,13 @@ function renderDashboard(data) {
   document.getElementById('dash-views').textContent = fmtNum(avgViews);
   document.getElementById('dash-views-change').textContent = `최근 ${recent7.length}개 게시물 평균`;
 
-  const hasLikes = data.filter(r => toNum(r[COL.likes]) > 0);
-  const avgLikes = hasLikes.length ? Math.round(hasLikes.reduce((s,r)=>s+toNum(r[COL.likes]),0)/hasLikes.length) : 0;
-  document.getElementById('dash-likes').textContent = avgLikes ? avgLikes.toLocaleString() : '—';
-  document.getElementById('dash-likes-change').textContent = `게시물 ${hasLikes.length}개 기준`;
+  // 참여율 계산: 조회수가 있는 게시물 기준
+  const hasViewsForEng = data.filter(r => toNum(r[COL.views]) > 0);
+  const avgEngagement = hasViewsForEng.length
+    ? hasViewsForEng.reduce((s,r) => s + calcEngagement(r), 0) / hasViewsForEng.length
+    : 0;
+  document.getElementById('dash-engagement').textContent = avgEngagement ? avgEngagement.toFixed(1) + '%' : '—';
+  document.getElementById('dash-engagement-change').textContent = `게시물 ${hasViewsForEng.length}개 기준`;
 
   const hasPosts = data.filter(r => cleanText(r[COL.text]).trim());
   document.getElementById('dash-posts').textContent = hasPosts.length;
@@ -1132,6 +1164,8 @@ function renderDashboard(data) {
     const txtCell = link
       ? `<a href="${link}" target="_blank" style="color:var(--text);text-decoration:none;display:block" onmouseover="this.style.color='#3b82f6';this.style.textDecoration='underline'" onmouseout="this.style.color='var(--text)';this.style.textDecoration='none'">${txtDisplay}${link?' 🔗':''}</a>`
       : txtDisplay;
+    const engagement = calcEngagement(r);
+    const engColor = engagement >= 10 ? '#16a34a' : engagement >= 5 ? '#3b82f6' : 'var(--text2)';
     return `
     <tr style="border-bottom:1px solid var(--border)">
       <td style="padding:9px 10px;white-space:nowrap;font-size:12px;color:var(--text2)">${fmtDate(r[COL.date])}</td>
@@ -1143,6 +1177,7 @@ function renderDashboard(data) {
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--text2)">${toNum(r[COL.comments])}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--text2)">${toNum(r[COL.reposts])}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--text2)">${toNum(r[COL.shares])}</td>
+      <td style="padding:9px 10px;text-align:right;font-size:13px;font-weight:600;color:${engColor}">${engagement > 0 ? engagement.toFixed(1)+'%' : '—'}</td>
     </tr>`}).join('');
 }
 
@@ -1205,6 +1240,9 @@ function sortTable(col) {
       va = String(a[COL.type]||'');
       vb = String(b[COL.type]||'');
       return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    } else if (col === 'engagement') {
+      va = calcEngagement(a);
+      vb = calcEngagement(b);
     } else {
       const colMap = { follower: COL.follower, views: COL.views, likes: COL.likes, comments: COL.comments, reposts: COL.reposts, shares: COL.shares };
       va = toNum(a[colMap[col]]);
@@ -1226,6 +1264,8 @@ function renderTableOnly(data) {
     const txtCell = link
       ? `<a href="${link}" target="_blank" style="color:var(--text);text-decoration:none;display:block" onmouseover="this.style.color='#3b82f6';this.style.textDecoration='underline'" onmouseout="this.style.color='var(--text)';this.style.textDecoration='none'">${txtDisplay} 🔗</a>`
       : txtDisplay;
+    const engagement = calcEngagement(r);
+    const engColor = engagement >= 10 ? '#16a34a' : engagement >= 5 ? '#3b82f6' : 'var(--text2)';
     return `
     <tr style="border-bottom:1px solid var(--border)">
       <td style="padding:9px 10px;white-space:nowrap;font-size:12px;color:var(--text2)">${fmtDate(r[COL.date])}</td>
@@ -1237,6 +1277,7 @@ function renderTableOnly(data) {
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--text2)">${toNum(r[COL.comments])}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--text2)">${toNum(r[COL.reposts])}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--text2)">${toNum(r[COL.shares])}</td>
+      <td style="padding:9px 10px;text-align:right;font-size:13px;font-weight:600;color:${engColor}">${engagement > 0 ? engagement.toFixed(1)+'%' : '—'}</td>
     </tr>`}).join('');
 }
 
@@ -2022,7 +2063,15 @@ function renderRefRows(rows) {
   });
 
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="11" style="padding:40px;text-align:center;color:var(--text3)">${references.length ? '필터 결과 없음' : '시트에서 데이터를 불러오지 못했어요'}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11" style="padding:60px 24px;text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">${references.length ? '🔍' : '📋'}</div>
+      <div style="font-weight:600;color:var(--text);margin-bottom:6px">${references.length ? '필터 결과가 없어요' : '아직 레퍼런스가 없어요'}</div>
+      <div style="color:var(--text3);font-size:12px;line-height:1.6">
+        ${references.length
+          ? '필터 조건을 조정하거나 <b>초기화</b> 버튼을 눌러주세요'
+          : '<b>[스레드]레퍼런스</b> 시트 탭에 데이터를 입력한 후<br><b>↻ 새로고침</b> 버튼을 눌러주세요'}
+      </div>
+    </td></tr>`;
     return;
   }
 

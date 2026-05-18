@@ -286,12 +286,18 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   <button class="nav-item" onclick="goPage('calendar',this)">
     <span class="nav-icon">▦</span> 콘텐츠 캘린더
   </button>
+  <button class="nav-item" onclick="goPage('feedback',this)">
+    <span class="nav-icon">✎</span> 글 피드백
+  </button>
 
   <div class="sidebar-divider"></div>
   <div class="sidebar-section">AI 도구</div>
 
   <button class="nav-item" onclick="goPage('content',this)">
     <span class="nav-icon">✦</span> 콘텐츠 생성
+  </button>
+  <button class="nav-item" onclick="goPage('persona',this)">
+    <span class="nav-icon">◉</span> 페르소나 분석
   </button>
 
   <div class="sidebar-divider"></div>
@@ -658,12 +664,149 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
               <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('keyword')">키워드 <span id="sort-keyword"></span></th>
               <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:200px">💡 댓글내용</th>
               <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2)">URL</th>
+              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:80px">변환</th>
             </tr>
           </thead>
           <tbody id="refTableBody">
-            <tr><td colspan="11" style="padding:40px;text-align:center;color:var(--text3)">시트에서 데이터 불러오는 중...</td></tr>
+            <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">시트에서 데이터 불러오는 중...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 페르소나 분석 -->
+  <div class="page" id="page-persona">
+    <div class="page-top">
+      <div class="page-title">페르소나 분석</div>
+      <div class="page-actions">
+        <button class="btn btn-ghost btn-sm" onclick="clearPersona()" style="color:var(--red)">초기화</button>
+      </div>
+    </div>
+
+    <div style="padding:20px 28px">
+      <!-- 안내 -->
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:start;gap:12px">
+        <div style="font-size:22px">◉</div>
+        <div style="flex:1;font-size:12px;color:#1e40af;line-height:1.6">
+          <b>"내 글의 DNA"를 AI가 분석해서 저장해둡니다.</b><br>
+          시트의 발행글들을 AI가 분석해서 글쓰기 톤·주제·CTA 패턴을 추출하고, 콘텐츠 생성 시 자동으로 적용돼요.
+          <span style="color:#6b7280">참여율 상위 글 위주로 분석합니다.</span>
+        </div>
+      </div>
+
+      <!-- 분석 카드 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">분석할 게시물</div>
+          <div style="font-size:22px;font-weight:700" id="personaCount">—</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">시트에서 자동 추출 · 글 내용 있는 행만</div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">마지막 분석</div>
+          <div style="font-size:22px;font-weight:700" id="personaLastDate">아직 없음</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px" id="personaLastInfo">분석을 시작해주세요</div>
+        </div>
+      </div>
+
+      <!-- 분석 실행 버튼 -->
+      <div style="text-align:center;margin-bottom:24px">
+        <button class="btn btn-primary" onclick="runPersonaAnalysis()" id="personaRunBtn" style="font-size:14px;padding:12px 28px">✨ 페르소나 분석 시작</button>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">분석에는 10~20초 정도 걸려요 · Gemini AI 사용</div>
+      </div>
+
+      <!-- 분석 결과 -->
+      <div id="personaResult" style="display:none">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">◉ 분석된 페르소나</div>
+        <div id="personaCards" style="display:flex;flex-direction:column;gap:12px"></div>
+
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-top:16px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:18px">✓</div>
+          <div style="font-size:12px;color:#15803d;line-height:1.5">
+            <b>이 페르소나가 콘텐츠 생성에 자동 적용됩니다.</b><br>
+            다음에 <b>콘텐츠 생성</b> 탭에서 프롬프트 만들 때 이 정보가 포함돼요.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ 글 피드백 -->
+  <div class="page" id="page-feedback">
+    <div class="page-top">
+      <div class="page-title">글 피드백</div>
+    </div>
+
+    <div style="padding:20px 28px">
+      <!-- 안내 -->
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:start;gap:12px">
+        <div style="font-size:22px">✎</div>
+        <div style="flex:1;font-size:12px;color:#92400e;line-height:1.6">
+          <b>발행한 글을 AI가 분석해서 강점·약점·개선글을 제안해줍니다.</b><br>
+          참여율 기준 정렬되어 있어요. 글을 선택하면 AI 피드백 + 개선글 3개를 생성합니다.
+        </div>
+      </div>
+
+      <!-- 발행글 리스트 -->
+      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:16px">
+        <!-- 좌측: 글 리스트 -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:600px;overflow-y:auto">
+          <div style="padding:12px 14px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:12px;font-weight:600">발행한 글 (참여율 순)</div>
+            <select id="feedbackSort" onchange="renderFeedbackList()" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit">
+              <option value="engagement">참여율 순</option>
+              <option value="views">조회수 순</option>
+              <option value="recent">최신 순</option>
+            </select>
+          </div>
+          <div id="feedbackPostList">
+            <div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">데이터 불러오는 중...</div>
+          </div>
+        </div>
+
+        <!-- 우측: 선택된 글의 피드백 -->
+        <div>
+          <div id="feedbackEmpty" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:60px 24px;text-align:center">
+            <div style="font-size:36px;margin-bottom:12px">←</div>
+            <div style="font-weight:600;margin-bottom:6px">왼쪽에서 글을 선택해주세요</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.6">
+              AI가 글을 분석해서 강점·약점·개선글을<br>제안해드립니다
+            </div>
+          </div>
+
+          <div id="feedbackDetail" style="display:none">
+            <!-- 선택된 원본 글 -->
+            <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:6px">원본 글</div>
+              <div id="feedbackOriginal" style="font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:10px"></div>
+              <div style="display:flex;gap:10px;font-size:11px;color:var(--text2);padding-top:8px;border-top:1px solid var(--border)">
+                <span id="feedbackStats"></span>
+              </div>
+            </div>
+
+            <!-- AI 분석 버튼 -->
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <button class="btn btn-primary btn-sm" onclick="runFeedbackAnalysis()" id="feedbackAnalyzeBtn">🔍 AI 분석</button>
+              <button class="btn btn-primary btn-sm" onclick="runImproveGenerate()" id="feedbackImproveBtn" disabled>✨ 개선글 생성</button>
+            </div>
+
+            <!-- AI 분석 결과 -->
+            <div id="feedbackAnalysisResult" style="display:none;background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+              <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🔍 AI 분석 결과</div>
+              <div id="feedbackAnalysisBody" style="font-size:13px;line-height:1.7;white-space:pre-wrap"></div>
+            </div>
+
+            <!-- 개선글 결과 -->
+            <div id="feedbackImproveResult" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px">
+              <div style="font-size:11px;color:#92400e;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">✨ AI 개선글 제안</div>
+              <div id="feedbackImproveBody" style="font-size:13px;line-height:1.7;white-space:pre-wrap"></div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="btn btn-ghost btn-sm" onclick="copyImproveResult()">📋 복사</button>
+                <button class="btn btn-ghost btn-sm" onclick="saveFeedbackToHistory()">💾 저장 기록에 저장</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1297,6 +1440,10 @@ function goPage(name, btn) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
+
+  // 페이지별 진입 시 처리
+  if (name === 'persona') updatePersonaCountDisplay();
+  if (name === 'feedback') renderFeedbackList();
 }
 
 // ── CHIPS
@@ -1779,11 +1926,25 @@ function buildPrompt() {
   };
   const ctaInstruction = ctaMap[cta] || '공감 또는 질문형 CTA 포함.';
 
+  // 페르소나 자동 반영
+  const personaBlock = currentPersona ? `
+
+【계정 페르소나 (페르소나 분석 결과)】
+- 프로필: ${currentPersona.profile}
+- 오디언스: ${currentPersona.audience}
+- 후크 패턴: ${currentPersona.hook}
+- 글쓰기 스타일: ${currentPersona.style}
+- CTA 패턴: ${currentPersona.cta}
+- 주제 패턴: ${currentPersona.topics}
+
+위 페르소나에 맞게 작성하세요.` : '';
+
   const p = `당신은 오즈키즈(ozkiz) 아동복 브랜드의 스레드(Threads) 전담 마케터입니다.
 
 브랜드: 오즈키즈 | 아동복 (0세~초등) | 15년 제조 경력 브랜드
 보이스: 따뜻하고 친근한 엄마 친구 같은 말투. 진심이 느껴지게. 판매보다 공감 우선.
 타겟: 자녀 둔 2030 엄마들 (스레드 사용자)
+${personaBlock}
 
 【조건】
 - 콘텐츠 유형: ${type}
@@ -1805,7 +1966,7 @@ ${extra ? `- 추가 요청 / 참고 자료:\n${extra}` : ''}
   rb.textContent = p;
   rb.dataset.raw = p;
   document.getElementById('ra-content').style.display = 'flex';
-  showToast('✓ 프롬프트가 생성되었어요');
+  showToast(currentPersona ? '✓ 페르소나 반영된 프롬프트 생성' : '✓ 프롬프트 생성됨 (페르소나 분석 시 더 정확해져요)');
 }
 
 // 복사 + AI 사이트 새 탭으로 열기
@@ -1834,7 +1995,495 @@ let references = []; // 시트에서 불러옴
 let refsLoading = false;
 
 // 시트에서 레퍼런스 데이터 가져오기
-async function loadReferences(force = false) {
+// ─────────────────────────────────────────────────────
+// 페르소나 분석 / 글 피드백 / 레퍼런스 변환
+// ─────────────────────────────────────────────────────
+
+// Gemini API 호출 헬퍼
+async function callGeminiAPI(prompt, maxTokens = 1500) {
+  if (!apiKey) {
+    throw new Error('Gemini API 키가 설정되지 않았어요. 좌측 하단에서 키를 등록해주세요.');
+  }
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.9 }
+      })
+    }
+  );
+  if (!res.ok) {
+    const e = await res.json();
+    throw new Error(e.error?.message || 'API 오류');
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// ── 페르소나 분석
+let currentPersona = JSON.parse(localStorage.getItem('oz_persona') || 'null');
+
+function updatePersonaCountDisplay() {
+  const el = document.getElementById('personaCount');
+  if (!el) return;
+  const valid = sheetData.filter(r => cleanText(r[COL.text]).trim().length > 30 && toNum(r[COL.views]) > 0);
+  el.textContent = valid.length + '개';
+
+  if (currentPersona) {
+    document.getElementById('personaLastDate').textContent = new Date(currentPersona.analyzedAt).toLocaleDateString('ko-KR');
+    document.getElementById('personaLastInfo').textContent = `${currentPersona.basedOn}개 게시물 분석 완료`;
+    renderPersonaCards();
+  }
+}
+
+function renderPersonaCards() {
+  const result = document.getElementById('personaResult');
+  const cards = document.getElementById('personaCards');
+  if (!currentPersona || !result || !cards) return;
+
+  result.style.display = 'block';
+
+  const sections = [
+    { key: 'profile', label: '프로필 컨셉', icon: '👤', color: '#3b82f6' },
+    { key: 'audience', label: '타겟 오디언스', icon: '🎯', color: '#16a34a' },
+    { key: 'hook', label: '글 후크 (관심 유도)', icon: '🪝', color: '#dc2626' },
+    { key: 'style', label: '글쓰기 스타일', icon: '✍️', color: '#7c3aed' },
+    { key: 'cta', label: 'CTA 패턴 (행동 유도)', icon: '👉', color: '#ea580c' },
+    { key: 'topics', label: '주제 & 패턴', icon: '📌', color: '#0891b2' },
+  ];
+
+  cards.innerHTML = sections.map(s => {
+    const content = currentPersona[s.key] || '분석 안 됨';
+    return `
+      <div style="background:#fff;border:1px solid var(--border);border-left:3px solid ${s.color};border-radius:8px;padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:16px">${s.icon}</span>
+          <span style="font-size:12px;font-weight:700;color:${s.color};text-transform:uppercase;letter-spacing:.05em">${s.label}</span>
+        </div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap">${content}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function runPersonaAnalysis() {
+  if (!apiKey) { showToast('먼저 API 키를 등록해주세요'); openModal(); return; }
+  if (!sheetData.length) { showToast('시트 데이터를 먼저 불러와주세요'); return; }
+
+  // 분석 대상: 글 있고 조회수 있는 것 중 참여율 상위 위주
+  const candidates = sheetData
+    .filter(r => cleanText(r[COL.text]).trim().length > 30 && toNum(r[COL.views]) > 0)
+    .map(r => ({ row: r, eng: calcEngagement(r), views: toNum(r[COL.views]) }))
+    .sort((a, b) => b.eng - a.eng)
+    .slice(0, 30); // 상위 30개
+
+  if (candidates.length < 5) {
+    showToast('분석에는 최소 5개 이상의 발행글이 필요해요');
+    return;
+  }
+
+  const btn = document.getElementById('personaRunBtn');
+  btn.disabled = true;
+  btn.textContent = '🤖 AI 분석 중... (10~20초)';
+
+  // 글 텍스트만 추출해서 프롬프트 구성
+  const posts = candidates.map((c, i) =>
+    `[${i+1}] (조회수 ${c.views.toLocaleString()}, 참여율 ${c.eng.toFixed(1)}%)\n${cleanText(c.row[COL.text])}`
+  ).join('\n\n---\n\n');
+
+  const prompt = `당신은 SNS 콘텐츠 전략가입니다. 오즈키즈(ozkiz)라는 아동복 브랜드의 스레드(Threads) 계정에서 발행한 글 ${candidates.length}개를 분석해주세요.
+
+게시물 (참여율 높은 순):
+${posts}
+
+위 게시물들을 보고 이 계정의 "페르소나"를 분석해주세요. 다음 6개 항목으로 정확히 구분해서 답해주세요. 각 항목은 2~4문장으로 구체적으로 작성하세요.
+
+응답 형식 (반드시 이 형식을 지켜주세요):
+
+[프로필]
+(이 계정 운영자의 포지셔닝, 어떤 사람으로 보이는지)
+
+[오디언스]
+(누가 이 글을 좋아하고 반응하는지, 타겟 독자 특성)
+
+[후크]
+(첫 줄/도입부에서 자주 쓰는 관심 유도 패턴)
+
+[스타일]
+(말투, 어휘, 문장 길이, 이모지 사용 등 글쓰기 톤)
+
+[CTA]
+(글 마지막에 어떤 행동을 유도하는지, 마무리 패턴)
+
+[주제]
+(자주 다루는 주제, 콘텐츠 패턴, 차별점)
+
+마케터가 다음 콘텐츠 작성 시 바로 적용할 수 있게 구체적으로 작성해주세요.`;
+
+  try {
+    const result = await callGeminiAPI(prompt, 2000);
+
+    // 결과 파싱
+    const parse = (key) => {
+      const re = new RegExp(`\\[${key}\\]\\s*\\n([\\s\\S]*?)(?=\\n\\[|$)`, 'i');
+      const m = result.match(re);
+      return m ? m[1].trim() : '분석 안 됨';
+    };
+
+    currentPersona = {
+      profile: parse('프로필'),
+      audience: parse('오디언스'),
+      hook: parse('후크'),
+      style: parse('스타일'),
+      cta: parse('CTA'),
+      topics: parse('주제'),
+      analyzedAt: new Date().toISOString(),
+      basedOn: candidates.length
+    };
+
+    localStorage.setItem('oz_persona', JSON.stringify(currentPersona));
+    document.getElementById('personaLastDate').textContent = new Date().toLocaleDateString('ko-KR');
+    document.getElementById('personaLastInfo').textContent = `${candidates.length}개 게시물 분석 완료`;
+    renderPersonaCards();
+    showToast('✓ 페르소나 분석 완료!');
+  } catch(e) {
+    showToast('분석 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ 페르소나 분석 다시 시작';
+  }
+}
+
+function clearPersona() {
+  if (!currentPersona) { showToast('저장된 페르소나가 없어요'); return; }
+  if (!confirm('저장된 페르소나를 삭제할까요?')) return;
+  currentPersona = null;
+  localStorage.removeItem('oz_persona');
+  document.getElementById('personaResult').style.display = 'none';
+  document.getElementById('personaLastDate').textContent = '아직 없음';
+  document.getElementById('personaLastInfo').textContent = '분석을 시작해주세요';
+  showToast('✓ 삭제됨');
+}
+
+// ── 글 피드백
+let selectedFeedbackPost = null;
+
+function renderFeedbackList() {
+  const list = document.getElementById('feedbackPostList');
+  if (!list) return;
+
+  if (!sheetData.length) {
+    list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">시트 데이터가 없어요</div>';
+    return;
+  }
+
+  const sortBy = document.getElementById('feedbackSort').value;
+  const posts = sheetData
+    .filter(r => cleanText(r[COL.text]).trim().length > 20 && toNum(r[COL.views]) > 0)
+    .map((r, i) => ({
+      idx: i,
+      row: r,
+      text: cleanText(r[COL.text]),
+      date: r[COL.date],
+      views: toNum(r[COL.views]),
+      likes: toNum(r[COL.likes]),
+      comments: toNum(r[COL.comments]),
+      reposts: toNum(r[COL.reposts]),
+      shares: toNum(r[COL.shares]),
+      engagement: calcEngagement(r),
+      link: String(r[COL.link]||'').trim()
+    }));
+
+  if (sortBy === 'views') posts.sort((a,b) => b.views - a.views);
+  else if (sortBy === 'recent') posts.sort((a,b) => (toDateObj(b.date)?.getTime()||0) - (toDateObj(a.date)?.getTime()||0));
+  else posts.sort((a,b) => b.engagement - a.engagement);
+
+  list.innerHTML = posts.slice(0, 50).map(p => {
+    const engColor = p.engagement >= 10 ? '#16a34a' : p.engagement >= 5 ? '#3b82f6' : 'var(--text2)';
+    return `
+      <div onclick="selectFeedbackPost(${p.idx})" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:4px">
+          <div style="font-size:11px;color:var(--text3)">${fmtDate(p.date)}</div>
+          <div style="font-size:11px;font-weight:700;color:${engColor}">${p.engagement.toFixed(1)}%</div>
+        </div>
+        <div style="font-size:12px;line-height:1.5;color:var(--text);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.text}</div>
+        <div style="display:flex;gap:10px;font-size:10px;color:var(--text3)">
+          <span>👁️ ${p.views.toLocaleString()}</span>
+          <span>❤️ ${p.likes.toLocaleString()}</span>
+          <span>💬 ${p.comments.toLocaleString()}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectFeedbackPost(idx) {
+  const r = sheetData[idx];
+  if (!r) return;
+
+  selectedFeedbackPost = {
+    idx, row: r,
+    text: cleanText(r[COL.text]),
+    views: toNum(r[COL.views]),
+    likes: toNum(r[COL.likes]),
+    comments: toNum(r[COL.comments]),
+    reposts: toNum(r[COL.reposts]),
+    shares: toNum(r[COL.shares]),
+    engagement: calcEngagement(r)
+  };
+
+  document.getElementById('feedbackEmpty').style.display = 'none';
+  document.getElementById('feedbackDetail').style.display = 'block';
+  document.getElementById('feedbackOriginal').textContent = selectedFeedbackPost.text;
+  document.getElementById('feedbackStats').innerHTML = `
+    <span>👁️ ${selectedFeedbackPost.views.toLocaleString()}</span>
+    <span>❤️ ${selectedFeedbackPost.likes.toLocaleString()}</span>
+    <span>💬 ${selectedFeedbackPost.comments.toLocaleString()}</span>
+    <span>🔁 ${selectedFeedbackPost.reposts.toLocaleString()}</span>
+    <span>↗ ${selectedFeedbackPost.shares.toLocaleString()}</span>
+    <span style="margin-left:auto;font-weight:700;color:#16a34a">참여율 ${selectedFeedbackPost.engagement.toFixed(1)}%</span>
+  `;
+
+  // 이전 결과 초기화
+  document.getElementById('feedbackAnalysisResult').style.display = 'none';
+  document.getElementById('feedbackImproveResult').style.display = 'none';
+  document.getElementById('feedbackImproveBtn').disabled = true;
+}
+
+async function runFeedbackAnalysis() {
+  if (!apiKey) { showToast('먼저 API 키를 등록해주세요'); openModal(); return; }
+  if (!selectedFeedbackPost) return;
+
+  const btn = document.getElementById('feedbackAnalyzeBtn');
+  btn.disabled = true;
+  btn.textContent = '🤖 분석 중...';
+
+  const personaContext = currentPersona ? `
+참고 - 이 계정의 페르소나:
+- 프로필: ${currentPersona.profile}
+- 오디언스: ${currentPersona.audience}
+- 스타일: ${currentPersona.style}
+` : '';
+
+  const prompt = `당신은 SNS 콘텐츠 전략가입니다. 오즈키즈(ozkiz) 아동복 브랜드의 스레드 게시물 1개를 분석해주세요.
+
+원본 글:
+"""
+${selectedFeedbackPost.text}
+"""
+
+성과:
+- 조회수: ${selectedFeedbackPost.views.toLocaleString()}
+- 좋아요: ${selectedFeedbackPost.likes.toLocaleString()}
+- 댓글: ${selectedFeedbackPost.comments.toLocaleString()}
+- 리포스트: ${selectedFeedbackPost.reposts.toLocaleString()}
+- 공유: ${selectedFeedbackPost.shares.toLocaleString()}
+- 참여율: ${selectedFeedbackPost.engagement.toFixed(1)}%
+${personaContext}
+다음 4개 항목으로 정확히 구분해서 답해주세요:
+
+[강점]
+(이 글이 잘한 점 2~3가지를 구체적으로)
+
+[약점]
+(개선할 수 있는 부분 2~3가지를 구체적으로)
+
+[알고리즘 분석]
+(참여율과 조회수를 보고 스레드 알고리즘에 어떻게 보였을지 추정)
+
+[개선 방향]
+(다음에 비슷한 주제로 쓸 때 어떻게 다르게 쓰면 좋을지 3가지 제안)
+
+각 항목은 마케터가 바로 실행할 수 있는 구체적 조언으로 작성해주세요.`;
+
+  try {
+    const result = await callGeminiAPI(prompt, 1500);
+    document.getElementById('feedbackAnalysisBody').innerHTML = result.replace(/\[강점\]/g, '<b style="color:#16a34a">🟢 강점</b>').replace(/\[약점\]/g, '<b style="color:#dc2626">🔴 약점</b>').replace(/\[알고리즘 분석\]/g, '<b style="color:#7c3aed">🟣 알고리즘 분석</b>').replace(/\[개선 방향\]/g, '<b style="color:#3b82f6">🔵 개선 방향</b>');
+    document.getElementById('feedbackAnalysisResult').style.display = 'block';
+    document.getElementById('feedbackImproveBtn').disabled = false;
+    showToast('✓ 분석 완료');
+  } catch(e) {
+    showToast('분석 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 AI 분석';
+  }
+}
+
+async function runImproveGenerate() {
+  if (!selectedFeedbackPost) return;
+  if (!apiKey) { showToast('먼저 API 키를 등록해주세요'); openModal(); return; }
+
+  const btn = document.getElementById('feedbackImproveBtn');
+  btn.disabled = true;
+  btn.textContent = '🤖 생성 중...';
+
+  const analysis = document.getElementById('feedbackAnalysisBody').textContent;
+  const personaContext = currentPersona ? `
+이 계정의 페르소나:
+- 스타일: ${currentPersona.style}
+- 후크: ${currentPersona.hook}
+- CTA: ${currentPersona.cta}
+` : '';
+
+  const prompt = `당신은 오즈키즈(ozkiz) 아동복 브랜드의 스레드 마케터입니다.
+
+아래 원본 글과 분석을 바탕으로 더 잘 될 가능성이 있는 개선글 3개를 작성해주세요.
+
+원본 글:
+"""
+${selectedFeedbackPost.text}
+"""
+
+분석 결과:
+${analysis}
+${personaContext}
+조건:
+- 같은 메시지/주제는 유지
+- 후크(첫 줄)를 강화해서 멈춤 유도
+- CTA를 명확하게
+- 3~6줄, 이모지 2~3개, 해시태그 3~5개 포함
+- 따뜻하고 친근한 엄마 친구 같은 톤
+
+응답 형식:
+
+【버전 1 — 호기심 후크】
+(글)
+
+【버전 2 — 공감 후크】
+(글)
+
+【버전 3 — 정보 후크】
+(글)
+
+부연 설명 없이 위 3개 버전만 출력해주세요.`;
+
+  try {
+    const result = await callGeminiAPI(prompt, 2000);
+    document.getElementById('feedbackImproveBody').innerHTML = result
+      .replace(/【버전 1[^】]*】/g, '<b style="color:#dc2626;display:block;margin-top:14px;font-size:13px">$&</b>')
+      .replace(/【버전 2[^】]*】/g, '<b style="color:#3b82f6;display:block;margin-top:14px;font-size:13px">$&</b>')
+      .replace(/【버전 3[^】]*】/g, '<b style="color:#16a34a;display:block;margin-top:14px;font-size:13px">$&</b>');
+    document.getElementById('feedbackImproveBody').dataset.raw = result;
+    document.getElementById('feedbackImproveResult').style.display = 'block';
+    showToast('✓ 개선글 생성 완료');
+  } catch(e) {
+    showToast('생성 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ 개선글 생성';
+  }
+}
+
+async function copyImproveResult() {
+  const text = document.getElementById('feedbackImproveBody').dataset.raw || '';
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ 복사됨');
+  } catch(e) {
+    showToast('복사 실패');
+  }
+}
+
+function saveFeedbackToHistory() {
+  const text = document.getElementById('feedbackImproveBody').dataset.raw || '';
+  if (!text) { showToast('저장할 내용이 없어요'); return; }
+  const item = {
+    id: Date.now(),
+    type: 'feedback',
+    title: `개선글: ${selectedFeedbackPost.text.slice(0, 30)}...`,
+    content: text,
+    createdAt: new Date().toISOString()
+  };
+  const history = JSON.parse(localStorage.getItem('oz_history') || '[]');
+  history.unshift(item);
+  localStorage.setItem('oz_history', JSON.stringify(history.slice(0, 100)));
+  showToast('✓ 저장 기록에 저장됨');
+  renderHistory();
+}
+
+// ── 레퍼런스 → 내 글 변환
+async function convertRefToMyPost(refId) {
+  const ref = references.find(r => r.id === refId);
+  if (!ref) return;
+  if (!apiKey) { showToast('먼저 API 키를 등록해주세요'); openModal(); return; }
+
+  showToast('🤖 변환 중... 10초 정도 걸려요');
+
+  const personaContext = currentPersona ? `
+이 계정의 페르소나:
+- 스타일: ${currentPersona.style}
+- 후크: ${currentPersona.hook}
+- CTA: ${currentPersona.cta}
+- 주제: ${currentPersona.topics}
+` : '';
+
+  const prompt = `당신은 오즈키즈(ozkiz) 아동복 브랜드의 스레드 마케터입니다.
+
+다른 계정에서 잘 터진 레퍼런스 글을 보고, 오즈키즈 브랜드 톤으로 새 글을 작성해주세요.
+
+레퍼런스 원본:
+"""
+${ref.content}
+"""
+
+이 글이 터진 포인트 (참고):
+${ref.point || '특별한 인사이트 없음'}
+
+성과: 조회수 ${ref.views.toLocaleString()}, 좋아요 ${ref.likes.toLocaleString()}, 댓글 ${ref.comments.toLocaleString()}
+키워드: ${ref.keyword || '없음'}
+${personaContext}
+
+조건:
+- 오즈키즈는 아동복(0세~초등) 브랜드, 타겟은 2030 엄마들
+- 직접 베끼지 말고, 핵심 패턴(후크/구조/감정선)만 가져와서 오즈키즈 맥락에 맞게 새로 쓰기
+- 따뜻하고 친근한 엄마 친구 같은 톤
+- 3~6줄, 이모지 2~3개, 해시태그 3~5개 (#오즈키즈 포함)
+- 스레드에 바로 올릴 수 있는 완성된 포스팅 3개 작성
+
+응답 형식:
+【버전 1】
+(글)
+
+【버전 2】
+(글)
+
+【버전 3】
+(글)
+
+부연 설명 없이 위 3개 버전만 출력해주세요.`;
+
+  try {
+    const result = await callGeminiAPI(prompt, 2000);
+
+    // 저장 기록에 저장
+    const item = {
+      id: Date.now(),
+      type: 'convert',
+      title: `변환: ${ref.content.slice(0, 30)}...`,
+      content: result,
+      createdAt: new Date().toISOString()
+    };
+    const history = JSON.parse(localStorage.getItem('oz_history') || '[]');
+    history.unshift(item);
+    localStorage.setItem('oz_history', JSON.stringify(history.slice(0, 100)));
+    renderHistory();
+
+    // 클립보드에도 복사
+    try { await navigator.clipboard.writeText(result); } catch(e) {}
+
+    // 결과 모달로 보여주기 (간단하게 alert로 대체)
+    alert(`✨ 변환 완료!\n\n📋 클립보드에 복사됐어요\n💾 저장 기록 탭에서도 확인 가능해요\n\n--- 미리보기 ---\n\n${result.slice(0, 400)}...`);
+    showToast('✓ 변환 완료 · 클립보드 + 저장기록');
+  } catch(e) {
+    alert('변환 실패: ' + e.message);
+  }
+}
+
+
   if (refsLoading) return;
   refsLoading = true;
 
@@ -2063,7 +2712,7 @@ function renderRefRows(rows) {
   });
 
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="11" style="padding:60px 24px;text-align:center">
+    body.innerHTML = `<tr><td colspan="12" style="padding:60px 24px;text-align:center">
       <div style="font-size:36px;margin-bottom:12px">${references.length ? '🔍' : '📋'}</div>
       <div style="font-weight:600;color:var(--text);margin-bottom:6px">${references.length ? '필터 결과가 없어요' : '아직 레퍼런스가 없어요'}</div>
       <div style="color:var(--text3);font-size:12px;line-height:1.6">
@@ -2093,6 +2742,7 @@ function renderRefRows(rows) {
       <td style="padding:10px"><span style="background:var(--surface3);padding:2px 7px;border-radius:6px;font-size:11px">${r.keyword||'-'}</span></td>
       <td style="padding:10px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#fffbeb" title="${(r.point||'').replace(/"/g,'&quot;')}">${r.point ? `💡 ${r.point.slice(0,50)}${r.point.length>50?'...':''}` : '<span style="color:var(--text3)">-</span>'}</td>
       <td style="padding:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.link?`<a href="${r.link}" target="_blank" style="color:#3b82f6">${r.link.slice(0,30)}...</a>`:'-'}</td>
+      <td style="padding:10px;text-align:center"><button onclick="convertRefToMyPost(${r.id})" style="background:#111;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:600" title="이 레퍼런스를 오즈키즈 톤으로 변환">✨ 변환</button></td>
     </tr>`;
   }).join('');
 }

@@ -310,9 +310,6 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   <div class="sidebar-divider"></div>
   <div class="sidebar-section">관리</div>
 
-  <button class="nav-item" onclick="goPage('routine',this)">
-    <span class="nav-icon">◷</span> 주간 루틴
-  </button>
   <button class="nav-item" onclick="goPage('history',this)">
     <span class="nav-icon">≡</span> 저장 기록
   </button>
@@ -459,6 +456,21 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       </div>
     </div>
     <div class="content-area">
+      <!-- 주간 루틴 체크리스트 -->
+      <div style="background:linear-gradient(135deg,#fef3c7 0%,#fef9e7 100%);border:1px solid #fde68a;border-radius:10px;padding:16px 18px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">📋</span>
+            <span style="font-size:14px;font-weight:700">이번 주 루틴</span>
+            <span id="weekRangeLabel" style="font-size:11px;color:#92400e;background:#fff;padding:3px 10px;border-radius:6px;font-weight:600"></span>
+          </div>
+          <div style="font-size:11px;color:#92400e">
+            진척률 <b id="weekProgressPct" style="font-size:14px">0%</b>
+          </div>
+        </div>
+        <div id="weekRoutineList" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"></div>
+      </div>
+
       <div id="calTitle" style="font-size:15px;font-weight:700;margin-bottom:16px"></div>
       <div class="cal-grid" id="calGrid"></div>
     </div>
@@ -477,14 +489,31 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             <b>복사 → ChatGPT/Claude/Gemini에 붙여넣기</b> 해서 사용하세요!
           </div>
 
-          <!-- 콘텐츠 유형 -->
-          <div class="section-label">콘텐츠 유형</div>
-          <div class="chip-row">
-            <button class="chip on" data-g="type" onclick="pickChip(this)">일반 포스팅</button>
-            <button class="chip" data-g="type" onclick="pickChip(this)">질문 · 폴</button>
-            <button class="chip" data-g="type" onclick="pickChip(this)">이벤트 · 특가</button>
-            <button class="chip" data-g="type" onclick="pickChip(this)">육아 팁</button>
-            <button class="chip" data-g="type" onclick="pickChip(this)">신상 소개</button>
+          <!-- 콘텐츠 믹스 추천 (이번 주 미발행 카테고리) -->
+          <div id="mixSuggestionBox" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;line-height:1.5">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="font-size:14px">💡</span>
+              <b style="color:#92400e">이번 주 추천</b>
+            </div>
+            <div id="mixSuggestionText" style="color:#78350f"></div>
+          </div>
+
+          <!-- 콘텐츠 믹스 -->
+          <div class="section-label" style="display:flex;align-items:center;gap:6px">
+            콘텐츠 믹스
+            <button onclick="openInfoModal('mix')" style="background:none;border:none;cursor:pointer;color:#6b7280;font-size:13px;padding:0;line-height:1" title="콘텐츠 믹스 가이드">ⓘ</button>
+          </div>
+          <div class="chip-row" style="margin-bottom:8px">
+            <button class="chip mix-chip on" data-g="mix" data-mix="authority" onclick="pickMixChip(this)">📚 권위 구축</button>
+            <button class="chip mix-chip" data-g="mix" data-mix="engagement" onclick="pickMixChip(this)">💬 참여 유도</button>
+            <button class="chip mix-chip" data-g="mix" data-mix="lead" onclick="pickMixChip(this)">📧 리드 생성</button>
+            <button class="chip mix-chip" data-g="mix" data-mix="promo" onclick="pickMixChip(this)">🛍️ 전환·홍보</button>
+          </div>
+
+          <!-- 세부 포맷 (믹스 선택에 따라 동적 변경) -->
+          <div class="section-label">세부 포맷</div>
+          <div class="chip-row" id="formatChips">
+            <!-- JS가 동적 채움 -->
           </div>
 
           <!-- CTA 목표 -->
@@ -547,7 +576,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
               <div style="font-size:36px;margin-bottom:12px">✦</div>
               <div style="color:var(--text);font-weight:600;font-size:14px;margin-bottom:6px">AI 프롬프트 생성 준비</div>
               <div style="color:var(--text3);font-size:12px;line-height:1.6">
-                왼쪽에서 콘텐츠 유형, CTA 목표, 발행 월 등을<br>
+                왼쪽에서 콘텐츠 믹스 유형과 세부 포맷, 발행 월 등을<br>
                 선택한 후 <b>✦ 프롬프트 생성</b> 버튼을 눌러주세요
               </div>
             </div>
@@ -811,55 +840,6 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     </div>
   </div>
 
-  <!-- ⑥ 주간 루틴 -->
-  <div class="page" id="page-routine">
-    <div class="page-top"><div class="page-title">주간 루틴</div></div>
-    <div>
-      <div class="routine-day">
-        <div class="routine-day-label">
-          <span class="day-tag mon">월요일</span>
-          <span class="routine-title">이번 주 콘텐츠 5개 초안 생성</span>
-        </div>
-        <div class="routine-desc">← 콘텐츠 생성 탭에서 유형·시즌 선택 후 AI 생성 5회 반복<br>마음에 드는 초안 저장 → Buffer에 복붙해서 요일별 예약 발행</div>
-        <div class="routine-time-badge">⏱ 약 30분</div>
-      </div>
-      <div class="routine-day">
-        <div class="routine-day-label">
-          <span class="day-tag">화 – 목</span>
-          <span class="routine-title">멘션 · 댓글 모니터링 및 답글</span>
-        </div>
-        <div class="routine-desc">스레드 알림 확인 → 댓글 직접 답글 작성<br>(중요 댓글은 트렌드 분석 탭에 레퍼런스로 저장)</div>
-        <div class="routine-time-badge">⏱ 하루 10분</div>
-      </div>
-      <div class="routine-day">
-        <div class="routine-day-label">
-          <span class="day-tag">금요일</span>
-          <span class="routine-title">성과 체크 + 다음 주 기획</span>
-        </div>
-        <div class="routine-desc">스레드 인사이트 → 조회수·좋아요·답글 수 메모<br>← 트렌드 분석 탭에서 "다음 주 콘텐츠 추천해줘" 요청</div>
-        <div class="routine-time-badge">⏱ 약 20분</div>
-      </div>
-      <div class="routine-day">
-        <div class="routine-day-label">
-          <span class="day-tag">수시로</span>
-          <span class="routine-title">트렌드 즉시 대응</span>
-        </div>
-        <div class="routine-desc">맘카페 · 육아 커뮤니티에서 뜨는 키워드 발견 시<br>← 트렌드 분석 탭 입력 → 콘텐츠 아이디어 즉시 생성</div>
-        <div class="routine-time-badge">⏱ 발생 시 15분</div>
-      </div>
-
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700;margin-bottom:12px">Buffer 무료 스케줄링 연결법</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;gap:10px;font-size:13px;color:var(--text2)"><span style="background:var(--surface3);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</span><span><strong style="color:var(--text)">buffer.com</strong> 가입 — 무료, 신용카드 불필요</span></div>
-          <div style="display:flex;gap:10px;font-size:13px;color:var(--text2)"><span style="background:var(--surface3);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</span><span>Threads 계정 연결 → 발행 채널 추가</span></div>
-          <div style="display:flex;gap:10px;font-size:13px;color:var(--text2)"><span style="background:var(--surface3);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</span><span>여기서 생성한 초안 복사 → Buffer에 붙여넣기 → 날짜·시간 설정</span></div>
-          <div style="display:flex;gap:10px;font-size:13px;color:var(--text2)"><span style="background:var(--surface3);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">4</span><span>예약 발행 → 자동으로 올라감 ✓</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ⑦ 저장 기록 -->
   <div class="page" id="page-history">
     <div class="page-top">
@@ -959,6 +939,19 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <div id="refDetailBody"></div>
     <div class="modal-btns" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
       <button class="btn btn-ghost btn-sm" onclick="closeRefDetail()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 정보 모달 (콘텐츠 믹스 가이드 등) -->
+<div class="modal-overlay" id="infoModal">
+  <div class="modal" style="max-width:560px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+      <button onclick="closeInfoModal()" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">×</button>
+    </div>
+    <div id="infoModalBody"></div>
+    <div class="modal-btns" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost btn-sm" onclick="closeInfoModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -1444,6 +1437,7 @@ function goPage(name, btn) {
   // 페이지별 진입 시 처리
   if (name === 'persona') updatePersonaCountDisplay();
   if (name === 'feedback') renderFeedbackList();
+  if (name === 'content') { updateFormatChips(); suggestMissingMix(); }
 }
 
 // ── CHIPS
@@ -1461,9 +1455,209 @@ function getChip(g) {
 let scheduledPosts = JSON.parse(localStorage.getItem('oz_scheduled') || '[]');
 let selectedScheduleId = null;
 
+// ── 주간 루틴 체크리스트 (이번 주 월~일)
+function renderWeeklyRoutine() {
+  const listEl = document.getElementById('weekRoutineList');
+  const rangeEl = document.getElementById('weekRangeLabel');
+  const pctEl = document.getElementById('weekProgressPct');
+  if (!listEl || !rangeEl || !pctEl) return;
+
+  // 이번 주 월요일~일요일 계산
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysFromMonday);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  rangeEl.textContent = `${monday.getMonth()+1}/${monday.getDate()} ~ ${sunday.getMonth()+1}/${sunday.getDate()}`;
+
+  // 주차 키 (이번 주 월요일 기준)
+  const weekKey = monday.toISOString().split('T')[0];
+
+  // ── 1. 매일 발행 (월~일 7일 기준, 발행글 수)
+  const postsThisWeek = sheetData.filter(r => {
+    const d = toDateObj(r[COL.date]);
+    if (!d) return false;
+    return d >= monday && d <= sunday && cleanText(r[COL.text]).trim().length > 0;
+  });
+  const dailyPostMap = {};
+  postsThisWeek.forEach(r => {
+    const d = toDateObj(r[COL.date]);
+    const key = d.toISOString().split('T')[0];
+    dailyPostMap[key] = (dailyPostMap[key] || 0) + 1;
+  });
+  let postedDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const checkDate = new Date(monday);
+    checkDate.setDate(monday.getDate() + i);
+    const key = checkDate.toISOString().split('T')[0];
+    if (dailyPostMap[key] && dailyPostMap[key] >= 1) postedDays++;
+  }
+  const r1Done = postedDays >= 7;
+  const r1Progress = `${postedDays}/7일`;
+  const r1Pct = (postedDays / 7) * 100;
+
+  // ── 2. 콘텐츠 믹스 (수동 체크 - localStorage)
+  const mixData = JSON.parse(localStorage.getItem('oz_weekly_mix') || '{}');
+  const thisWeekMix = mixData[weekKey] || { promo: false, empathy: false, info: false, authority: false };
+  const mixDone = Object.values(thisWeekMix).filter(Boolean).length;
+  const r2Done = mixDone >= 4;
+  const r2Progress = `${mixDone}/4 종류`;
+  const r2Pct = (mixDone / 4) * 100;
+
+  // ── 3. 레퍼런스 주 5개 이상
+  const refsThisWeek = (references || []).filter(ref => {
+    if (!ref.date) return false;
+    const d = new Date(ref.date);
+    return d >= monday && d <= sunday;
+  });
+  const refCount = Math.min(refsThisWeek.length, 5);
+  const r3Done = refCount >= 5;
+  const r3Progress = `${refsThisWeek.length}/5개`;
+  const r3Pct = (refCount / 5) * 100;
+
+  // 진척률 계산
+  const doneCount = (r1Done ? 1 : 0) + (r2Done ? 1 : 0) + (r3Done ? 1 : 0);
+  const pct = Math.round(doneCount / 3 * 100);
+  pctEl.textContent = pct + '%';
+  pctEl.style.color = pct === 100 ? '#16a34a' : pct >= 67 ? '#3b82f6' : '#92400e';
+
+  // 카드 렌더 (진행 바 포함)
+  const cardHtml = (icon, label, progress, pct, done, extra, info) => {
+    const barColor = done ? '#16a34a' : pct >= 50 ? '#3b82f6' : '#f59e0b';
+    return `
+    <div style="background:#fff;border:1px solid ${done?'#86efac':'#e5e7eb'};border-radius:8px;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span style="font-size:14px">${done ? '✅' : icon}</span>
+        <span style="font-size:11px;font-weight:700;color:${done?'#15803d':'#374151'}">${label}</span>
+        ${info ? `<button onclick="openInfoModal('${info}')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#6b7280;font-size:13px;padding:0;line-height:1" title="자세히 보기">ⓘ</button>` : ''}
+      </div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:18px;font-weight:700;color:${done?'#15803d':'#1f2937'}">${progress}</div>
+        <div style="font-size:11px;color:#6b7280;font-weight:600">${Math.round(pct)}%</div>
+      </div>
+      <div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;margin-bottom:8px">
+        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s"></div>
+      </div>
+      ${extra}
+    </div>`;
+  };
+
+  // 콘텐츠 믹스 체크박스 HTML
+  const mixCategories = [
+    { key: 'promo',     label: '🛍️ 제품홍보' },
+    { key: 'empathy',   label: '💬 공감' },
+    { key: 'info',      label: '📖 정보성' },
+    { key: 'authority', label: '📚 권위' }
+  ];
+  const mixCheckboxes = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:2px">
+      ${mixCategories.map(c => `
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#374151;padding:3px 4px;border-radius:4px;transition:background .15s" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+          <input type="checkbox" ${thisWeekMix[c.key]?'checked':''} onchange="toggleMixCheck('${c.key}', this.checked)" style="margin:0;cursor:pointer"/>
+          <span>${c.label}</span>
+        </label>
+      `).join('')}
+    </div>
+  `;
+
+  const r1Hint = r1Done ? '✓ 7일 모두 발행 완료!' : `${7 - postedDays}일 추가 필요`;
+  const r3Hint = r3Done ? '✓ 5개 이상 수집 완료!' : `${5 - refsThisWeek.length}개 더 필요`;
+
+  listEl.innerHTML = `
+    ${cardHtml('✍️', '매일 발행', r1Progress, r1Pct, r1Done, `<div style="font-size:10px;color:#6b7280">${r1Hint}</div>`, null)}
+    ${cardHtml('🎨', '콘텐츠 믹스', r2Progress, r2Pct, r2Done, mixCheckboxes, 'mix')}
+    ${cardHtml('📌', '레퍼런스 수집', r3Progress, r3Pct, r3Done, `<div style="font-size:10px;color:#6b7280">${r3Hint}</div>`, null)}
+  `;
+}
+
+// 콘텐츠 믹스 체크박스 토글
+function toggleMixCheck(key, checked) {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysFromMonday);
+  monday.setHours(0, 0, 0, 0);
+  const weekKey = monday.toISOString().split('T')[0];
+
+  const mixData = JSON.parse(localStorage.getItem('oz_weekly_mix') || '{}');
+  if (!mixData[weekKey]) mixData[weekKey] = { promo: false, empathy: false, info: false, authority: false };
+  mixData[weekKey][key] = checked;
+
+  // 8주 이상 된 데이터는 정리 (용량 관리)
+  const cutoff = new Date(monday);
+  cutoff.setDate(cutoff.getDate() - 56);
+  const cutoffKey = cutoff.toISOString().split('T')[0];
+  Object.keys(mixData).forEach(k => { if (k < cutoffKey) delete mixData[k]; });
+
+  localStorage.setItem('oz_weekly_mix', JSON.stringify(mixData));
+  renderWeeklyRoutine();
+}
+
+// 정보 모달
+function openInfoModal(type) {
+  const modal = document.getElementById('infoModal');
+  const body = document.getElementById('infoModalBody');
+  if (!modal || !body) return;
+
+  const contents = {
+    mix: `
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:18px">🎨</span> 성공적인 콘텐츠 믹스 구성 요소
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        효과적인 믹스를 만들기 위해 주로 조합하는 대표적인 콘텐츠 유형입니다.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:#eff6ff;border-left:3px solid #3b82f6;padding:10px 12px;border-radius:6px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">📚 권위 구축 <span style="color:#6b7280;font-weight:400;font-size:11px">(Educational)</span></div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:4px">브랜드의 전문성을 알리고 신뢰도 형성</div>
+          <div style="font-size:11px;color:#6b7280">💡 육아 정보, 소재 가이드, 사이즈 팁, 노하우 공유</div>
+        </div>
+        <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 12px;border-radius:6px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">💬 참여 유도 <span style="color:#6b7280;font-weight:400;font-size:11px">(Engagement)</span></div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:4px">고객과 소통하며 브랜드 친밀도 향상</div>
+          <div style="font-size:11px;color:#6b7280">💡 공감 글, 일상 글, 회사 일상, 질문/투표</div>
+        </div>
+        <div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:10px 12px;border-radius:6px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">📧 리드 생성 <span style="color:#6b7280;font-weight:400;font-size:11px">(Lead Generation)</span></div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:4px">잠재 고객의 정보를 확보하고 구매 고려를 유도</div>
+          <div style="font-size:11px;color:#6b7280">💡 무료 가이드 제공, 이벤트, 사전 알림 신청</div>
+        </div>
+        <div style="background:#fce7f3;border-left:3px solid #db2777;padding:10px 12px;border-radius:6px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">🛍️ 전환 및 홍보 <span style="color:#6b7280;font-weight:400;font-size:11px">(Promotional)</span></div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:4px">실제 구매나 서비스 이용을 직접적으로 유도</div>
+          <div style="font-size:11px;color:#6b7280">💡 신상품 소개, 후기, 프로모션 안내, 한정 특가</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:10px 12px;background:#f8fafc;border-radius:6px;font-size:11px;color:var(--text2);line-height:1.6">
+        <b>💡 추천 비율</b>: 매주 4가지 유형을 1개 이상씩 발행하면 균형 잡힌 콘텐츠 믹스가 완성됩니다.
+      </div>
+    `
+  };
+
+  body.innerHTML = contents[type] || '';
+  modal.classList.add('open');
+}
+
+function closeInfoModal() {
+  document.getElementById('infoModal').classList.remove('open');
+}
+
+
+
 function renderCalendar() {
   const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   document.getElementById('calTitle').textContent = `${calYear}년 ${months[calMonth]}`;
+
+  // 주간 루틴 체크리스트 렌더
+  renderWeeklyRoutine();
+
   const grid = document.getElementById('calGrid');
   const dows = ['일','월','화','수','목','금','토'];
   let html = dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
@@ -1912,12 +2106,133 @@ function renderFileList() {
 
 // ── GENERATORS
 // ── 프롬프트 생성기
+// ── 콘텐츠 믹스 데이터
+const MIX_DATA = {
+  authority: {
+    label: '📚 권위 구축',
+    desc: '브랜드 전문성을 알리고 신뢰도 형성',
+    formats: ['사이즈 가이드', '소재 비교', '세탁·관리 팁', '발달 단계별 옷 선택', '계절별 옷 입히기', '안전 기준·인증', '브랜드 노하우'],
+    guide: `이 글은 "권위 구축(Educational)" 유형입니다. 다음 원칙을 따르세요:
+- 브랜드의 15년 제조 경력과 전문성이 드러나도록 작성
+- 구체적이고 실용적인 정보 1~2개를 명확히 전달
+- 엄마들이 "저장해두고 다시 보고 싶은" 내용
+- 광고 톤 절대 금지 - 전문가가 정보 나눠주는 느낌
+- 데이터·수치·구체적 사례 활용 (예: "면 100% 제품은 첫 세탁 시 3~5% 줄어요")`
+  },
+  engagement: {
+    label: '💬 참여 유도',
+    desc: '고객과 소통하며 브랜드 친밀도 향상',
+    formats: ['공감 일상', '워킹맘 에피소드', '회사 일상', '질문·투표', '아이 키우는 고민', '엄마들의 공감 포인트', '소소한 일상 공유'],
+    guide: `이 글은 "참여 유도(Engagement)" 유형입니다. 다음 원칙을 따르세요:
+- 엄마들이 "맞아 맞아!" 외칠 만한 공감 포인트 발굴
+- 일상의 작은 순간·솔직한 감정 표현
+- 댓글 달고 싶어지는 질문 또는 여운으로 마무리
+- 제품 이야기 최소화 - 사람 이야기 중심
+- "당신은 어떠세요?" 같은 직접 질문 활용 권장`
+  },
+  lead: {
+    label: '📧 리드 생성',
+    desc: '잠재 고객 정보 확보·구매 고려 유도',
+    formats: ['무료 가이드 제공', '신상 사전 알림', '체험·증정 이벤트', '후기 작성 혜택', '뉴스레터 가입', '카탈로그·룩북 제공'],
+    guide: `이 글은 "리드 생성(Lead Generation)" 유형입니다. 다음 원칙을 따르세요:
+- 구체적인 혜택을 명확히 제시 (예: "월령별 사이즈표 PDF 무료")
+- 행동 유도 단계가 간단해야 함 (댓글 1개, 프로필 링크 1번 클릭 등)
+- 마감·한정 요소로 즉시성 강조
+- "받기" "신청" "참여" 등 명확한 액션 단어 사용`
+  },
+  promo: {
+    label: '🛍️ 전환·홍보',
+    desc: '실제 구매·서비스 이용을 직접 유도',
+    formats: ['신상품 소개', '실착샷·후기', '한정 특가', '시즌 추천 코디', '베스트셀러', 'MD 추천', '재입고 알림'],
+    guide: `이 글은 "전환·홍보(Promotional)" 유형입니다. 다음 원칙을 따르세요:
+- 노골적 판매 톤 금지 - "이 제품이 좋아요" 류 X
+- 사용자 관점에서 "왜 필요한지" 먼저 공감
+- 구체적 디테일 1~2개 (소재, 핏, 가격 메리트)
+- 후기·증거 활용 (실제 엄마들 반응)
+- 마지막에만 자연스럽게 행동 유도`
+  }
+};
+
+// 콘텐츠 믹스 칩 선택 + 세부 포맷 동적 업데이트
+function pickMixChip(el) {
+  document.querySelectorAll('[data-g="mix"]').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  updateFormatChips();
+}
+
+function updateFormatChips() {
+  const mixKey = (document.querySelector('[data-g="mix"].on') || {}).dataset?.mix || 'authority';
+  const formats = MIX_DATA[mixKey]?.formats || [];
+  const container = document.getElementById('formatChips');
+  if (!container) return;
+  container.innerHTML = formats.map((f, i) =>
+    `<button class="chip${i===0?' on':''}" data-g="format" onclick="pickChip(this)">${f}</button>`
+  ).join('');
+}
+
+// 이번 주 미발행 카테고리 자동 추천
+function suggestMissingMix() {
+  const box = document.getElementById('mixSuggestionBox');
+  const text = document.getElementById('mixSuggestionText');
+  if (!box || !text) return;
+
+  // 이번 주 월~일 계산
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysFromMonday);
+  monday.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(today); todayEnd.setHours(23,59,59,999);
+
+  if (!sheetData.length) { box.style.display = 'none'; return; }
+
+  // 이번 주 글들 카테고리 분류
+  const categoryKeywords = {
+    authority: ['육아 팁','팁','정보','가이드','전문가','노하우','경험','소재','세탁','사이즈'],
+    engagement: ['공감','일상','회사일상','회사 일상','육아','질문','폴'],
+    lead: ['이벤트','신청','증정','체험','가이드 받기'],
+    promo: ['제품','홍보','신상','공지','특가','후기','코디']
+  };
+
+  const found = new Set();
+  sheetData.forEach(r => {
+    const d = toDateObj(r[COL.date]);
+    if (!d || d < monday || d > todayEnd) return;
+    const type = String(r[COL.type] || '').trim();
+    const text = cleanText(r[COL.text]);
+    Object.entries(categoryKeywords).forEach(([cat, kws]) => {
+      if (kws.some(kw => type.includes(kw) || text.includes(kw))) found.add(cat);
+    });
+  });
+
+  const labelMap = {
+    authority: '📚 권위 구축',
+    engagement: '💬 참여 유도',
+    lead: '📧 리드 생성',
+    promo: '🛍️ 전환·홍보'
+  };
+  const missing = Object.keys(MIX_DATA).filter(k => !found.has(k));
+
+  if (!missing.length) {
+    text.innerHTML = `이번 주 4가지 카테고리 모두 발행 완료! 🎉 균형 잡힌 콘텐츠 믹스가 잘 구성됐어요.`;
+    box.style.display = 'block';
+  } else {
+    const firstMissing = missing[0];
+    text.innerHTML = `이번 주 <b>${missing.map(m => labelMap[m]).join(', ')}</b> 유형이 빠졌어요. <a href="javascript:void(0)" onclick="document.querySelector('[data-mix=\\'${firstMissing}\\']').click()" style="color:#92400e;font-weight:700;text-decoration:underline">${labelMap[firstMissing]} 만들기 →</a>`;
+    box.style.display = 'block';
+  }
+}
+
 function buildPrompt() {
-  const type = getChip('type');
-  const cta  = getChip('cta');
+  const mixEl = document.querySelector('[data-g="mix"].on');
+  const mixKey = mixEl?.dataset?.mix || 'authority';
+  const mixData = MIX_DATA[mixKey];
+  const format = getChip('format') || mixData.formats[0];
+  const cta = getChip('cta');
   const months = [...document.querySelectorAll('[data-g="month"].on')].map(el=>el.textContent.trim()).join(', ') || '미지정';
   const themes = [...document.querySelectorAll('[data-g="theme"].on')].map(el=>el.textContent.trim()).join(', ') || '없음';
-  const extra  = document.getElementById('contentExtra').value.trim();
+  const extra = document.getElementById('contentExtra').value.trim();
 
   const ctaMap = {
     '🔖 정보성 (저장)': '유용한 정보를 담아 저장·스크랩을 유도. 마지막에 "저장해두면 유용해요" 류 문구 포함.',
@@ -1929,44 +2244,60 @@ function buildPrompt() {
   // 페르소나 자동 반영
   const personaBlock = currentPersona ? `
 
-【계정 페르소나 (페르소나 분석 결과)】
-- 프로필: ${currentPersona.profile}
-- 오디언스: ${currentPersona.audience}
+【계정 페르소나 (분석 결과)】
+- 프로필 컨셉: ${currentPersona.profile}
+- 타겟 오디언스: ${currentPersona.audience}
 - 후크 패턴: ${currentPersona.hook}
 - 글쓰기 스타일: ${currentPersona.style}
 - CTA 패턴: ${currentPersona.cta}
 - 주제 패턴: ${currentPersona.topics}
 
-위 페르소나에 맞게 작성하세요.` : '';
+→ 위 페르소나의 톤·스타일을 정확히 반영하세요.` : '';
 
-  const p = `당신은 오즈키즈(ozkiz) 아동복 브랜드의 스레드(Threads) 전담 마케터입니다.
+  const p = `당신은 스레드(Threads) 콘텐츠 전략 전문가이자, 아동복·아동화·육아 카테고리의 마케팅 디렉터입니다.
 
-브랜드: 오즈키즈 | 아동복 (0세~초등) | 15년 제조 경력 브랜드
-보이스: 따뜻하고 친근한 엄마 친구 같은 말투. 진심이 느껴지게. 판매보다 공감 우선.
-타겟: 자녀 둔 2030 엄마들 (스레드 사용자)
+【브랜드 컨텍스트】
+- 브랜드명: 오즈키즈 (ozkiz)
+- 카테고리: 아동복·아동화 (0세~초등)
+- 강점: 15년 제조 경력, 자체 디자인·생산, 합리적 가격, 디테일에 신경 쓴 마감
+- 타겟: 0~10세 자녀를 둔 2030 엄마들 (스레드 활성 사용자)
+- 톤: 따뜻하고 친근한 엄마 친구 같은 말투. 판매보다 공감·정보 우선.
+
+【스레드 알고리즘 이해】
+- 스레드는 텍스트 중심 - 첫 줄(후크)이 노출의 80% 결정
+- 짧고 끊어 쓰는 문장이 잘 통함
+- 댓글·공유·저장 트리거 = 알고리즘 점수
+- 권장 길이: 1000자 이하, 3~6줄
+- 해시태그 3~5개, 이모지 2~3개 적정
 ${personaBlock}
 
-【조건】
-- 콘텐츠 유형: ${type}
-- CTA 목표: ${cta} → ${ctaInstruction}
+【콘텐츠 믹스 유형: ${mixData.label}】
+${mixData.guide}
+
+【세부 포맷: ${format}】
+
+【추가 조건】
+- CTA 목표: ${cta || '없음'} → ${ctaInstruction}
 - 발행 월: ${months}
 - 시즌/테마: ${themes}
 ${extra ? `- 추가 요청 / 참고 자료:\n${extra}` : ''}
 
-【작성 규칙】
-1. 3~6줄 (스레드 특성상 짧고 임팩트 있게)
-2. 이모지 2~3개
-3. 마지막에 해시태그 #오즈키즈 포함 3~5개
-4. CTA 목표에 맞는 마무리 문구 반드시 포함
-5. 실제 스레드에 바로 올릴 수 있는 완성된 포스팅만 작성 (설명·부연 없이)
+【작성 원칙 (스레드 특화)】
+1. 첫 줄 = 멈춤 유도. 스크롤 막을 만한 후크 (호기심·공감·정보 중 하나)
+2. 광고 톤·판매 톤 금지. 정보·공감 우선.
+3. 3~6줄, 짧게 끊어 쓰기
+4. 이모지 2~3개, 너무 많이 X
+5. 해시태그 #오즈키즈 필수 포함, 총 3~5개
+6. CTA 목표에 맞는 자연스러운 마무리
+7. 실제 스레드에 그대로 올릴 수 있는 완성 포스팅만 작성 (설명·부연 X)
 
-위 조건으로 스레드 포스팅 3개를 작성해주세요.`;
+위 조건으로 스레드 포스팅 3개 버전을 작성해주세요. 각 버전은 후크 스타일을 다르게 (호기심형/공감형/정보형) 작성하면 더 좋습니다.`;
 
   const rb = document.getElementById('rb-content');
   rb.textContent = p;
   rb.dataset.raw = p;
   document.getElementById('ra-content').style.display = 'flex';
-  showToast(currentPersona ? '✓ 페르소나 반영된 프롬프트 생성' : '✓ 프롬프트 생성됨 (페르소나 분석 시 더 정확해져요)');
+  showToast(currentPersona ? `✓ ${mixData.label} 프롬프트 생성 (페르소나 반영)` : `✓ ${mixData.label} 프롬프트 생성`);
 }
 
 // 복사 + AI 사이트 새 탭으로 열기
@@ -2182,19 +2513,20 @@ function renderFeedbackList() {
 
   const sortBy = document.getElementById('feedbackSort').value;
   const posts = sheetData
-    .filter(r => cleanText(r[COL.text]).trim().length > 20 && toNum(r[COL.views]) > 0)
-    .map((r, i) => ({
-      idx: i,
-      row: r,
-      text: cleanText(r[COL.text]),
-      date: r[COL.date],
-      views: toNum(r[COL.views]),
-      likes: toNum(r[COL.likes]),
-      comments: toNum(r[COL.comments]),
-      reposts: toNum(r[COL.reposts]),
-      shares: toNum(r[COL.shares]),
-      engagement: calcEngagement(r),
-      link: String(r[COL.link]||'').trim()
+    .map((r, i) => ({ row: r, originalIdx: i }))  // 원본 인덱스 먼저 보존
+    .filter(p => cleanText(p.row[COL.text]).trim().length > 20 && toNum(p.row[COL.views]) > 0)
+    .map(p => ({
+      idx: p.originalIdx,  // sheetData의 실제 인덱스
+      row: p.row,
+      text: cleanText(p.row[COL.text]),
+      date: p.row[COL.date],
+      views: toNum(p.row[COL.views]),
+      likes: toNum(p.row[COL.likes]),
+      comments: toNum(p.row[COL.comments]),
+      reposts: toNum(p.row[COL.reposts]),
+      shares: toNum(p.row[COL.shares]),
+      engagement: calcEngagement(p.row),
+      link: String(p.row[COL.link]||'').trim()
     }));
 
   if (sortBy === 'views') posts.sort((a,b) => b.views - a.views);

@@ -616,8 +616,8 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <div style="font-size:13px;font-weight:700;color:var(--text)">🔍 필터</div>
           <div style="display:flex;gap:8px;align-items:center">
             <span style="font-size:11px;color:var(--text2)">조건 결합:</span>
-            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="radio" name="refFilterMode" value="and" checked onchange="applyRefFilters()" style="margin:0"/>AND (모두 만족)</label>
-            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="radio" name="refFilterMode" value="or" onchange="applyRefFilters()" style="margin:0"/>OR (하나라도)</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="radio" name="refFilterMode" value="and" checked onchange="applyRefFiltersFromInput()" style="margin:0"/>AND (모두 만족)</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="radio" name="refFilterMode" value="or" onchange="applyRefFiltersFromInput()" style="margin:0"/>OR (하나라도)</label>
             <button class="btn btn-ghost btn-sm" onclick="resetRefFilters()" style="font-size:11px;padding:4px 10px">초기화</button>
           </div>
         </div>
@@ -627,9 +627,9 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <div>
             <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📅 기록일자 범위</div>
             <div style="display:flex;gap:4px;align-items:center">
-              <input type="date" id="refFilterDateFrom" onchange="applyRefFilters()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;flex:1;font-family:inherit"/>
+              <input type="date" id="refFilterDateFrom" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;flex:1;font-family:inherit"/>
               <span style="font-size:11px;color:var(--text3)">~</span>
-              <input type="date" id="refFilterDateTo" onchange="applyRefFilters()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;flex:1;font-family:inherit"/>
+              <input type="date" id="refFilterDateTo" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;flex:1;font-family:inherit"/>
             </div>
           </div>
 
@@ -637,9 +637,9 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <div>
             <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎨 미디어 첨부</div>
             <div style="display:flex;gap:8px;align-items:center;padding:6px 0">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="checkbox" id="refFilterImage" onchange="applyRefFilters()" style="margin:0"/>📷 이미지</label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="checkbox" id="refFilterVideo" onchange="applyRefFilters()" style="margin:0"/>🎬 영상</label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="checkbox" id="refFilterTextOnly" onchange="applyRefFilters()" style="margin:0"/>📝 텍스트만</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="checkbox" id="refFilterImage" onchange="applyRefFiltersFromInput()" style="margin:0"/>📷 이미지</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="checkbox" id="refFilterVideo" onchange="applyRefFiltersFromInput()" style="margin:0"/>🎬 영상</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="checkbox" id="refFilterTextOnly" onchange="applyRefFiltersFromInput()" style="margin:0"/>📝 텍스트만</label>
             </div>
           </div>
 
@@ -647,7 +647,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <div>
             <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📊 수치 이상</div>
             <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
-              <select id="refFilterMetric" onchange="applyRefFilters()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">
+              <select id="refFilterMetric" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">
                 <option value="">(선택)</option>
                 <option value="views">조회수</option>
                 <option value="likes">좋아요</option>
@@ -655,7 +655,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
                 <option value="reposts">리포스트</option>
                 <option value="shares">공유</option>
               </select>
-              <input type="number" id="refFilterMinValue" placeholder="100" oninput="applyRefFilters()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:80px;font-family:inherit"/>
+              <input type="number" id="refFilterMinValue" placeholder="100" oninput="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:80px;font-family:inherit"/>
               <span style="font-size:11px;color:var(--text2)">이상</span>
             </div>
           </div>
@@ -663,18 +663,28 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <!-- 키워드 검색 -->
           <div style="grid-column:1/-1">
             <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🔎 글/키워드 검색</div>
-            <input type="text" id="refFilterText" placeholder="검색어를 입력하세요 (글 내용, 키워드, 댓글내용에서 찾음)" oninput="applyRefFilters()" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+            <input type="text" id="refFilterText" placeholder="검색어를 입력하세요 (글 내용, 키워드, 댓글내용에서 찾음)" oninput="applyRefFiltersFromInput()" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
           </div>
         </div>
       </div>
 
-      <!-- 누적 통계 -->
-      <div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px;color:var(--text2)">
-        <span><b id="refCount" style="color:var(--text)">0</b>개 표시 중 (전체 <span id="refTotalCount">0</span>개)</span>
-        <span>·</span>
-        <span>총 조회수 <b id="refTotalViews" style="color:var(--text)">0</b></span>
-        <span>·</span>
-        <span>평균 좋아요 <b id="refAvgLikes" style="color:var(--text)">0</b></span>
+      <!-- 누적 통계 + 페이지 크기 선택 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--text2)">
+          <span><b id="refCount" style="color:var(--text)">0</b>개 표시 중 (전체 <span id="refTotalCount">0</span>개)</span>
+          <span>·</span>
+          <span>총 조회수 <b id="refTotalViews" style="color:var(--text)">0</b></span>
+          <span>·</span>
+          <span>평균 좋아요 <b id="refAvgLikes" style="color:var(--text)">0</b></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)">
+          <span>페이지당</span>
+          <select onchange="changeRefPageSize(this.value)" id="refPageSizeSelect" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer">
+            <option value="30">30개</option>
+            <option value="50">50개</option>
+            <option value="100">100개</option>
+          </select>
+        </div>
       </div>
 
       <!-- 누적 표 -->
@@ -701,6 +711,9 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           </tbody>
         </table>
       </div>
+
+      <!-- 페이지네이션 컨트롤 -->
+      <div id="refPaginationControls"></div>
     </div>
   </div>
 
@@ -994,6 +1007,22 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <div id="infoModalBody"></div>
     <div class="modal-btns" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
       <button class="btn btn-ghost btn-sm" onclick="closeInfoModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 레퍼런스 변환 결과 모달 -->
+<div class="modal-overlay" id="convertResultModal">
+  <div class="modal" style="max-width:680px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px">
+        <span style="font-size:18px">✨</span> 레퍼런스 변환 완료
+      </div>
+      <button onclick="closeConvertResultModal()" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">×</button>
+    </div>
+    <div id="convertResultBody"></div>
+    <div class="modal-btns" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm" onclick="closeConvertResultModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -2761,14 +2790,72 @@ ${personaContext}
     localStorage.setItem('oz_history', JSON.stringify(history.slice(0, 100)));
     renderHistory();
 
-    // 클립보드에도 복사
+    // 클립보드에 복사
     try { await navigator.clipboard.writeText(result); } catch(e) {}
 
-    // 결과 모달로 보여주기 (간단하게 alert로 대체)
-    alert(`✨ 변환 완료!\n\n📋 클립보드에 복사됐어요\n💾 저장 기록 탭에서도 확인 가능해요\n\n--- 미리보기 ---\n\n${result.slice(0, 400)}...`);
+    // 결과 모달 표시
+    showConvertResultModal(ref, result);
     showToast('✓ 변환 완료 · 클립보드 + 저장기록');
   } catch(e) {
-    alert('변환 실패: ' + e.message);
+    showToast('변환 실패: ' + e.message);
+  }
+}
+
+// 변환 결과 모달
+function showConvertResultModal(ref, result) {
+  const modal = document.getElementById('convertResultModal');
+  const body = document.getElementById('convertResultBody');
+  if (!modal || !body) return;
+
+  // 3개 버전 분리
+  const versions = [];
+  const re = /【버전\s*(\d+)[^】]*】([\s\S]*?)(?=【버전|$)/g;
+  let m;
+  while ((m = re.exec(result)) !== null) {
+    versions.push({ num: m[1], text: m[2].trim() });
+  }
+  // 못 잘랐으면 통째로
+  if (versions.length === 0) versions.push({ num: '전체', text: result });
+
+  const colors = ['#dc2626', '#3b82f6', '#16a34a', '#7c3aed'];
+
+  body.innerHTML = `
+    <div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.5">
+      <b>원본 레퍼런스</b>: ${ref.content.slice(0, 80)}${ref.content.length > 80 ? '...' : ''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${versions.map((v, i) => `
+        <div style="background:#fff;border:1px solid var(--border);border-left:3px solid ${colors[i] || '#6b7280'};border-radius:8px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:700;color:${colors[i] || '#6b7280'}">✨ 버전 ${v.num}</div>
+            <button onclick="copyConvertVersion(this, ${i})" style="background:#f3f4f6;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600">📋 복사</button>
+          </div>
+          <div data-version-text style="font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)">${v.text}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;margin-top:14px;font-size:11px;color:#15803d;line-height:1.5">
+      ✓ 전체 내용이 클립보드에 복사되었고, <b>저장 기록</b> 탭에서도 확인할 수 있어요
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function closeConvertResultModal() {
+  document.getElementById('convertResultModal').classList.remove('open');
+}
+
+async function copyConvertVersion(btn, idx) {
+  const card = btn.closest('div').parentElement;
+  const textEl = card.querySelector('[data-version-text]');
+  const text = textEl?.textContent || '';
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = '✓ 복사됨';
+    btn.style.background = '#dcfce7';
+    setTimeout(() => { btn.textContent = '📋 복사'; btn.style.background = '#f3f4f6'; }, 1500);
+  } catch(e) {
+    showToast('복사 실패');
   }
 }
 
@@ -2898,6 +2985,13 @@ function sortRefs(col) {
     refSortCol = col;
     refSortAsc = false;
   }
+  refPage = 1; // 정렬 변경 시 첫 페이지로
+  applyRefFilters();
+}
+
+// 필터 변경 시 1페이지로 리셋
+function applyRefFiltersFromInput() {
+  refPage = 1;
   applyRefFilters();
 }
 
@@ -2981,6 +3075,27 @@ function resetRefFilters() {
   document.getElementById('refFilterMinValue').value = '';
   document.getElementById('refFilterText').value = '';
   document.querySelector('input[name="refFilterMode"][value="and"]').checked = true;
+  refPage = 1;
+  applyRefFilters();
+}
+
+// 레퍼런스 페이지네이션 상태
+let refPage = 1;
+let refPageSize = 30;
+
+function changeRefPageSize(size) {
+  refPageSize = parseInt(size) || 30;
+  refPage = 1;
+  applyRefFilters();
+}
+
+function changeRefPage(delta) {
+  refPage = Math.max(1, refPage + delta);
+  applyRefFilters();
+}
+
+function goRefPage(page) {
+  refPage = page;
   applyRefFilters();
 }
 
@@ -2988,7 +3103,7 @@ function renderRefRows(rows) {
   const body = document.getElementById('refTableBody');
   if (!body) return;
 
-  // 통계
+  // 통계 (전체 필터된 결과 기준)
   document.getElementById('refCount').textContent = rows.length;
   document.getElementById('refTotalCount').textContent = references.length;
   document.getElementById('refTotalViews').textContent = rows.reduce((s,r)=>s+(r.views||0),0).toLocaleString();
@@ -3000,7 +3115,16 @@ function renderRefRows(rows) {
     if (el) el.textContent = c === refSortCol ? (refSortAsc ? '↑' : '↓') : '';
   });
 
-  if (!rows.length) {
+  // 페이지네이션 계산
+  const totalPages = Math.max(1, Math.ceil(rows.length / refPageSize));
+  if (refPage > totalPages) refPage = totalPages;
+  const startIdx = (refPage - 1) * refPageSize;
+  const pageRows = rows.slice(startIdx, startIdx + refPageSize);
+
+  // 페이지네이션 컨트롤 렌더
+  renderRefPagination(rows.length, totalPages);
+
+  if (!pageRows.length) {
     body.innerHTML = `<tr><td colspan="12" style="padding:60px 24px;text-align:center">
       <div style="font-size:36px;margin-bottom:12px">${references.length ? '🔍' : '📋'}</div>
       <div style="font-weight:600;color:var(--text);margin-bottom:6px">${references.length ? '필터 결과가 없어요' : '아직 레퍼런스가 없어요'}</div>
@@ -3013,7 +3137,7 @@ function renderRefRows(rows) {
     return;
   }
 
-  body.innerHTML = rows.map(r => {
+  body.innerHTML = pageRows.map(r => {
     const mediaIcons = [];
     if (r.hasImage) mediaIcons.push('📷');
     if (r.hasVideo) mediaIcons.push('🎬');
@@ -3034,6 +3158,45 @@ function renderRefRows(rows) {
       <td style="padding:10px;text-align:center"><button onclick="convertRefToMyPost(${r.id})" style="background:#111;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:600" title="이 레퍼런스를 오즈키즈 톤으로 변환">✨ 변환</button></td>
     </tr>`;
   }).join('');
+}
+
+// 페이지네이션 컨트롤 렌더
+function renderRefPagination(totalRows, totalPages) {
+  const el = document.getElementById('refPaginationControls');
+  if (!el) return;
+  if (totalRows <= refPageSize) {
+    el.innerHTML = '';
+    return;
+  }
+  // 페이지 번호 (현재 ± 2 표시)
+  const pageBtns = [];
+  const start = Math.max(1, refPage - 2);
+  const end = Math.min(totalPages, refPage + 2);
+  if (start > 1) {
+    pageBtns.push(`<button onclick="goRefPage(1)" style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer">1</button>`);
+    if (start > 2) pageBtns.push(`<span style="color:var(--text3);font-size:11px">···</span>`);
+  }
+  for (let i = start; i <= end; i++) {
+    const active = i === refPage;
+    pageBtns.push(`<button onclick="goRefPage(${i})" style="background:${active?'#111':'#fff'};color:${active?'#fff':'var(--text)'};border:1px solid ${active?'#111':'var(--border)'};border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:${active?'700':'400'}">${i}</button>`);
+  }
+  if (end < totalPages) {
+    if (end < totalPages - 1) pageBtns.push(`<span style="color:var(--text3);font-size:11px">···</span>`);
+    pageBtns.push(`<button onclick="goRefPage(${totalPages})" style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer">${totalPages}</button>`);
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px">
+      <div style="font-size:11px;color:var(--text3)">
+        ${(refPage-1)*refPageSize + 1} ~ ${Math.min(refPage*refPageSize, totalRows)} / 총 ${totalRows}개
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+        <button onclick="changeRefPage(-1)" ${refPage<=1?'disabled':''} style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;opacity:${refPage<=1?'0.4':'1'}">← 이전</button>
+        ${pageBtns.join('')}
+        <button onclick="changeRefPage(1)" ${refPage>=totalPages?'disabled':''} style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;opacity:${refPage>=totalPages?'0.4':'1'}">다음 →</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderRefTable() {

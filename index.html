@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ozkiz threads manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -603,7 +604,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <div class="page-top">
       <div class="page-title">스레드 레퍼런스</div>
       <div class="page-actions">
-        <a href="https://docs.google.com/spreadsheets/d/1IGyF16n9Ez6J6ZAtLiNVBqzdt4nZiQtmM3VJY2O_W9I/edit" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none">📊 시트 열기</a>
+        <button class="btn btn-primary btn-sm" onclick="openRefAddModal()">+ 레퍼런스 추가</button>
         <button class="btn btn-ghost btn-sm" onclick="loadReferences(true)">↻ 새로고침</button>
         <button class="btn btn-ghost btn-sm" onclick="exportRefCSV()">📥 CSV 다운로드</button>
       </div>
@@ -703,7 +704,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
               <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('keyword')">키워드 <span id="sort-keyword"></span></th>
               <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:200px">💡 댓글내용</th>
               <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2)">URL</th>
-              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:80px">변환</th>
+              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:130px">액션</th>
             </tr>
           </thead>
           <tbody id="refTableBody">
@@ -984,6 +985,89 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   </div>
 </div>
 
+<!-- 레퍼런스 추가/편집 모달 -->
+<div class="modal-overlay" id="refFormModal">
+  <div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700" id="refFormTitle">+ 레퍼런스 추가</div>
+      <button onclick="closeRefFormModal()" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">×</button>
+    </div>
+
+    <input type="hidden" id="refFormId" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📅 일자</div>
+        <input type="date" id="refFormDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🏷️ 키워드/태그</div>
+        <input type="text" id="refFormKeyword" placeholder="예: 등원룩, 봄코디" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🔗 URL</div>
+      <input type="url" id="refFormLink" placeholder="https://www.threads.com/..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">✍️ 첫 줄 <span style="color:var(--text3);font-weight:400">(선택)</span></div>
+      <input type="text" id="refFormFirstSentence" placeholder="후크가 되는 첫 문장" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📝 본문 *</div>
+      <textarea id="refFormContent" rows="5" placeholder="레퍼런스 글의 전체 내용을 붙여넣으세요" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6;font-family:inherit;resize:vertical"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">👁️ 조회수</div>
+        <input type="number" id="refFormViews" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">❤️ 좋아요</div>
+        <input type="number" id="refFormLikes" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">💬 댓글</div>
+        <input type="number" id="refFormComments" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🔁 리포스트</div>
+        <input type="number" id="refFormReposts" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">↗ 공유</div>
+        <input type="number" id="refFormShares" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">🎨 미디어</div>
+      <div style="display:flex;gap:14px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="checkbox" id="refFormImage" style="margin:0"/>📷 이미지</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="checkbox" id="refFormVideo" style="margin:0"/>🎬 영상</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="checkbox" id="refFormMusic" style="margin:0"/>🎵 음악</label>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">💡 인사이트 포인트 <span style="color:var(--text3);font-weight:400">(이 글이 잘 된 이유, 댓글 내용 등)</span></div>
+      <textarea id="refFormPoint" rows="2" placeholder="예: 공감 가는 워킹맘 일상, 첫 줄에서 호기심 자극" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6;font-family:inherit;resize:vertical"></textarea>
+    </div>
+
+    <div class="modal-btns" style="display:flex;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm" id="refFormDeleteBtn" onclick="confirmRefDelete()" style="color:var(--red);display:none">🗑️ 삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="closeRefFormModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="saveRefForm()" id="refFormSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 레퍼런스 상세보기 모달 -->
 <div class="modal-overlay" id="refDetailModal">
   <div class="modal" style="max-width:640px;max-height:85vh;overflow-y:auto">
@@ -1041,37 +1125,19 @@ let filterStart = '', filterEnd = ''; // 날짜 필터
 // 하드코딩 posts 제거 — sheetData로 대체
 const posts = {};
 
-// ── GOOGLE SHEETS CONFIG
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzdQ_4TbAXbCG4ZuLgXxVepZ-i_gKoSK0hhULOksqw0Zs1fBKt9UsJZIGfvIhCOvH2j/exec?key=ozkiz2026';
-const SHEET_API_FORCE = SHEET_API_URL + '&force=1';
+// ── SUPABASE CONFIG
+const SUPABASE_URL = 'https://tbltddivmxfuounnzcne.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_UyNSo1sU8K0HwUk2pvlZXA_aVLYS4-p';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 컬럼 인덱스 — 시트 구조 고정
-// A:일자(0) B:팔로워(1) C:분류(2) D:레퍼런스링크(3) E:레퍼런스글(4)
-// F:링크(5) G:글(6) H:이미지(7) I:업로드담당(8) J:댓글추가url(9)
-// K:조회수(10) L:좋아요(11) M:댓글(12) N:리포스트(13) O:공유(14) P:팔로우(15)
-let COL = { date:0, follower:1, type:2, link:5, text:6, views:10, likes:11, comments:12, reposts:13, shares:14, follows:15 };
-
-function detectColumns(headerRow) {
-  // D열(레퍼런스링크), E열(레퍼런스글)은 무조건 무시
-  // G열(글, 인덱스 6)만 text로 사용 — 고정값 사용
-  const h = headerRow.map(v => String(v).trim());
-  COL = {
-    date:     0,
-    follower: 1,
-    type:     2,
-    // 3: 레퍼런스링크 무시
-    // 4: 레퍼런스글 무시
-    link:     5,
-    text:     6,  // G열(글) 고정
-    views:    h.indexOf('조회수') !== -1 ? h.indexOf('조회수') : 10,
-    likes:    h.indexOf('좋아요') !== -1 ? h.indexOf('좋아요') : 11,
-    comments: h.indexOf('댓글')   !== -1 ? h.indexOf('댓글')   : 12,
-    reposts:  h.indexOf('리포스트') !== -1 ? h.indexOf('리포스트') : 13,
-    shares:   h.indexOf('공유')   !== -1 ? h.indexOf('공유')   : 14,
-    follows:  h.indexOf('팔로우') !== -1 ? h.indexOf('팔로우') : 15,
-  };
-  console.log('감지된 컬럼:', COL);
-}
+// 컬럼 매핑 (Supabase 컬럼명 → 사이트 내부 인덱스 호환용)
+// posts 테이블에서 사용
+const COL = {
+  date: 'date', follower: 'follower', type: 'type',
+  link: 'link', text: 'text', image_url: 'image_url',
+  views: 'views', likes: 'likes', comments: 'comments',
+  reposts: 'reposts', shares: 'shares', follows: 'follows'
+};
 
 function fmtNum(n) {
   if (isNaN(n) || n === '' || n === 0) return '—';
@@ -1131,39 +1197,17 @@ async function loadSheetData(force = false) {
   const dot = document.getElementById('syncDot');
   const msg = document.getElementById('syncMsg');
   dot.style.background = '#d97706';
-  msg.textContent = force ? '강제 새로고침 중...' : '시트 불러오는 중...';
+  msg.textContent = 'Supabase 불러오는 중...';
 
   try {
-    const url = force ? SHEET_API_FORCE : SHEET_API_URL;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('응답 오류');
-    const json = await res.json();
-    if (json.error) throw new Error('인증 실패');
+    // Supabase에서 posts 데이터 가져오기 (날짜순 정렬)
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*')
+      .order('date', { ascending: true });
 
-    // 첫 행 헤더로 컬럼 자동 감지
-    const rows = json;
-    if (!rows || rows.length < 2) throw new Error('데이터가 없습니다');
-    detectColumns(rows[0]);
-
-    // 빈 행 / #REF! 오류 / 팔로워 없는 행 제거
-    const data = rows.slice(1).filter(r => {
-      const dateVal = String(r[COL.date]||'').trim();
-      const follVal = String(r[COL.follower]||'').trim();
-      return dateVal &&
-             !dateVal.includes('#') &&
-             follVal &&
-             !follVal.includes('#') &&
-             parseInt(follVal.replace(/[^0-9]/g,'')) > 0;
-    });
-
-    if (!data.length) throw new Error('유효한 데이터가 없습니다');
-
-    // 숫자 변환 — #REF! 등 오류값은 0으로
-    const toNum = v => {
-      const s = String(v||'');
-      if (!s || s.includes('#') || s.trim() === '') return 0;
-      return parseInt(s.replace(/[^0-9]/g,'')) || 0;
-    };
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('데이터가 없습니다');
 
     // 전역 저장 후 렌더
     sheetData = data;
@@ -1172,7 +1216,7 @@ async function loadSheetData(force = false) {
 
     document.getElementById('sheetLastUpdate').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
     dot.style.background = '#16a34a';
-    msg.textContent = '구글 시트 연동됨 ✓';
+    msg.textContent = 'Supabase 연동됨 ✓';
 
   } catch(e) {
     dot.style.background = '#e5303e';
@@ -1180,42 +1224,55 @@ async function loadSheetData(force = false) {
     document.getElementById('recentTableBody').innerHTML = `
       <tr><td colspan="10" style="text-align:center;padding:40px 24px;font-size:13px">
         <div style="font-size:32px;margin-bottom:8px">⚠️</div>
-        <div style="font-weight:600;color:var(--text);margin-bottom:6px">시트 데이터를 불러올 수 없어요</div>
+        <div style="font-weight:600;color:var(--text);margin-bottom:6px">Supabase 데이터를 불러올 수 없어요</div>
         <div style="color:var(--text3);font-size:12px;line-height:1.6">
           • 인터넷 연결을 확인해주세요<br>
-          • Apps Script 배포가 활성 상태인지 확인해주세요<br>
-          • 우측 상단 <b style="color:var(--text2)">↻ 새로고침</b> 버튼을 눌러보세요
+          • Supabase 프로젝트 상태를 확인해주세요<br>
+          • 우측 상단 <b style="color:var(--text2)">↻ 새로고침</b> 버튼을 눌러보세요<br>
+          <span style="color:var(--red);font-size:11px">오류: ${e.message}</span>
         </div>
       </td></tr>`;
     console.error(e);
   }
 }
 
-// ── SHARED HELPERS (전역)
+// ── SHARED HELPERS (전역) - Supabase 데이터 형식 (YYYY-MM-DD 문자열, 정수) 처리
 function fmtDate(v) {
   const s = String(v||'');
+  if (!s) return '';
+  // YYYY-MM-DD 형식
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${parseInt(m[2])}/${parseInt(m[3])}`;
+  // ISO 형식
   if (s.includes('T')) { const d = new Date(s); return `${d.getMonth()+1}/${d.getDate()}`; }
-  const m = s.match(/(\d+)월\s*(\d+)일/);
-  if (m) return `${m[1]}/${m[2]}`;
+  // 한글 형식
+  const km = s.match(/(\d+)월\s*(\d+)일/);
+  if (km) return `${km[1]}/${km[2]}`;
   return s.split('T')[0] || s;
 }
 function toDateObj(v) {
-  const s = String(v||'');
+  if (!v) return null;
+  const s = String(v);
+  // YYYY-MM-DD 형식
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(m[1], parseInt(m[2])-1, parseInt(m[3]));
+  // ISO 형식
   if (s.includes('T')) return new Date(s);
-  const m = s.match(/(\d{4}).*?(\d{1,2})월.*?(\d{1,2})일/);
-  if (m) return new Date(m[1], m[2]-1, m[3]);
+  // 한글 형식
+  const km = s.match(/(\d{4}).*?(\d{1,2})월.*?(\d{1,2})일/);
+  if (km) return new Date(km[1], km[2]-1, km[3]);
   return null;
 }
 function cleanText(v) {
-  const s = String(v||'');
-  if (!s || s.includes('#REF') || s.includes('#ERROR') || s.includes('#N/A')) return '';
-  if (s.includes('valueType') || s.startsWith('{')) return '';
-  return s;
+  if (v == null) return '';
+  return String(v).trim();
 }
 function toNum(v) {
-  const s = String(v||'');
-  if (!s || s.includes('#') || s.trim() === '') return 0;
-  return parseInt(s.replace(/[^0-9]/g,'')) || 0;
+  if (v == null || v === '') return 0;
+  if (typeof v === 'number') return v;
+  const s = String(v);
+  if (s.includes('#')) return 0;
+  return parseInt(s.replace(/[^0-9-]/g,'')) || 0;
 }
 
 // ── RENDER DASHBOARD
@@ -2865,114 +2922,205 @@ async function loadReferences(force = false) {
 
   const body = document.getElementById('refTableBody');
   if (body) {
-    body.innerHTML = '<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">시트에서 데이터 불러오는 중...</td></tr>';
+    body.innerHTML = '<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">Supabase에서 데이터 불러오는 중...</td></tr>';
   }
 
   try {
-    const url = SHEET_API_URL + '&tab=refs' + (force ? '&force=1' : '');
-    const res = await fetch(url);
-    const json = await res.json();
+    // Supabase에서 refs 테이블 가져오기 (날짜 내림차순)
+    const { data, error } = await supabase
+      .from('refs')
+      .select('*')
+      .order('date', { ascending: false });
 
-    if (json.error) {
-      if (body) body.innerHTML = `<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--red)">오류: ${json.error}</td></tr>`;
-      refsLoading = false;
-      return;
-    }
+    if (error) throw error;
 
-    // 첫 행은 헤더, 나머지가 데이터
-    // 시트 컬럼: A:일자, B:태그, C:링크, D:조회수, E:첫줄, F:나머지, G:좋아요, H:댓글, I:리포스팅, J:공유, K:댓글내용, L:게시자댓글여부, M:이미지영상, N:음악
-    const rows = json.slice(1);
-    references = rows.map((r, i) => {
-      const date = r[0];
-      const dateStr = date instanceof Date || /^\d{4}/.test(String(date))
-        ? new Date(date).toISOString().split('T')[0]
-        : String(date || '');
-      const media = String(r[12] || '').trim();
-      const fullContent = String(r[5] || r[4] || '').trim();
-      const firstLine = String(r[4] || '').trim() || fullContent.split('\n')[0].slice(0, 60);
-
-      return {
-        id: i + 1,
-        date: dateStr,
-        keyword: String(r[1] || '').trim(),
-        link: String(r[2] || '').trim(),
-        views: parseInt(String(r[3] || '0').replace(/[^0-9]/g, '')) || 0,
-        firstSentence: firstLine,
-        content: fullContent,
-        likes: parseInt(String(r[6] || '0').replace(/[^0-9]/g, '')) || 0,
-        comments: parseInt(String(r[7] || '0').replace(/[^0-9]/g, '')) || 0,
-        reposts: parseInt(String(r[8] || '0').replace(/[^0-9]/g, '')) || 0,
-        shares: parseInt(String(r[9] || '0').replace(/[^0-9]/g, '')) || 0,
-        point: String(r[10] || '').trim(), // 댓글내용
-        creatorReply: String(r[11] || '').trim(), // 게시자 댓글 여부
-        hasImage: media.includes('이미지'),
-        hasVideo: media.includes('영상') || media.includes('동영상'),
-        hasMusic: String(r[13] || '').trim().toUpperCase() === 'O'
-      };
-    });
+    // Supabase 컬럼 → 사이트 내부 형식으로 매핑
+    references = (data || []).map(r => ({
+      id: r.id,
+      date: r.date || '',
+      keyword: r.tag || r.keyword || '',
+      link: r.link || '',
+      views: r.views || 0,
+      firstSentence: r.first_sentence || '',
+      content: r.content || '',
+      likes: r.likes || 0,
+      comments: r.comments || 0,
+      reposts: r.reposts || 0,
+      shares: r.shares || 0,
+      point: r.point || '',
+      hasImage: r.has_image || false,
+      hasVideo: r.has_video || false,
+      hasMusic: r.has_music || false,
+      image_url: r.image_url || ''
+    }));
 
     renderRefTable();
     refsLoading = false;
   } catch (e) {
     if (body) body.innerHTML = `<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--red)">불러오기 실패: ${e.message}</td></tr>`;
+    console.error('loadReferences error:', e);
     refsLoading = false;
   }
 }
 
-function addReference() {
-  const date = document.getElementById('refDate').value || new Date().toISOString().split('T')[0];
-  const content = document.getElementById('refContent').value.trim();
-  const link = document.getElementById('refLink').value.trim();
+// ── 레퍼런스 CRUD (Supabase)
 
-  if (!content && !link) { showToast('글 내용 또는 URL은 필수예요'); return; }
+// 레퍼런스 추가 모달 열기 (새로 작성)
+function openRefAddModal() {
+  document.getElementById('refFormTitle').textContent = '+ 레퍼런스 추가';
+  document.getElementById('refFormId').value = '';
+  document.getElementById('refFormDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('refFormKeyword').value = '';
+  document.getElementById('refFormLink').value = '';
+  document.getElementById('refFormFirstSentence').value = '';
+  document.getElementById('refFormContent').value = '';
+  document.getElementById('refFormViews').value = '';
+  document.getElementById('refFormLikes').value = '';
+  document.getElementById('refFormComments').value = '';
+  document.getElementById('refFormReposts').value = '';
+  document.getElementById('refFormShares').value = '';
+  document.getElementById('refFormImage').checked = false;
+  document.getElementById('refFormVideo').checked = false;
+  document.getElementById('refFormMusic').checked = false;
+  document.getElementById('refFormPoint').value = '';
+  document.getElementById('refFormDeleteBtn').style.display = 'none';
+  document.getElementById('refFormModal').classList.add('open');
+  setTimeout(() => document.getElementById('refFormLink').focus(), 100);
+}
 
-  const firstSentence = content.split(/[\n.!?]/)[0].trim().slice(0, 60);
+// 레퍼런스 편집 모달 열기 (기존 데이터 로드)
+function openRefEditModal(id) {
+  const ref = references.find(r => r.id === id);
+  if (!ref) { showToast('레퍼런스를 찾을 수 없어요'); return; }
 
-  const ref = {
-    id: Date.now(),
-    date,
+  document.getElementById('refFormTitle').textContent = '✏️ 레퍼런스 편집';
+  document.getElementById('refFormId').value = ref.id;
+  document.getElementById('refFormDate').value = ref.date || '';
+  document.getElementById('refFormKeyword').value = ref.keyword || '';
+  document.getElementById('refFormLink').value = ref.link || '';
+  document.getElementById('refFormFirstSentence').value = ref.firstSentence || '';
+  document.getElementById('refFormContent').value = ref.content || '';
+  document.getElementById('refFormViews').value = ref.views || '';
+  document.getElementById('refFormLikes').value = ref.likes || '';
+  document.getElementById('refFormComments').value = ref.comments || '';
+  document.getElementById('refFormReposts').value = ref.reposts || '';
+  document.getElementById('refFormShares').value = ref.shares || '';
+  document.getElementById('refFormImage').checked = !!ref.hasImage;
+  document.getElementById('refFormVideo').checked = !!ref.hasVideo;
+  document.getElementById('refFormMusic').checked = !!ref.hasMusic;
+  document.getElementById('refFormPoint').value = ref.point || '';
+  document.getElementById('refFormDeleteBtn').style.display = 'inline-block';
+  document.getElementById('refFormModal').classList.add('open');
+}
+
+function closeRefFormModal() {
+  document.getElementById('refFormModal').classList.remove('open');
+}
+
+// 레퍼런스 저장 (추가 또는 편집)
+async function saveRefForm() {
+  const content = document.getElementById('refFormContent').value.trim();
+  const link = document.getElementById('refFormLink').value.trim();
+
+  if (!content && !link) { showToast('본문 또는 URL은 필수예요'); return; }
+
+  const id = document.getElementById('refFormId').value;
+  const firstSentence = document.getElementById('refFormFirstSentence').value.trim()
+    || content.split(/[\n.!?]/)[0].trim().slice(0, 60);
+
+  const refData = {
+    date: document.getElementById('refFormDate').value || new Date().toISOString().split('T')[0],
+    tag: document.getElementById('refFormKeyword').value.trim(),
+    link,
+    views: parseInt(document.getElementById('refFormViews').value) || 0,
+    first_sentence: firstSentence,
     content,
-    firstSentence: firstSentence + (content.length > 60 ? '...' : ''),
-    views:    parseInt(document.getElementById('refViews').value) || 0,
-    likes:    parseInt(document.getElementById('refLikes').value) || 0,
-    comments: parseInt(document.getElementById('refComments').value) || 0,
-    reposts:  parseInt(document.getElementById('refReposts').value) || 0,
-    shares:   parseInt(document.getElementById('refShares').value) || 0,
-    keyword:  document.getElementById('refKeyword').value.trim(),
-    point:    document.getElementById('refPoint').value.trim(),
-    hasImage: document.getElementById('refHasImage').checked,
-    hasVideo: document.getElementById('refHasVideo').checked,
-    link
+    likes: parseInt(document.getElementById('refFormLikes').value) || 0,
+    comments: parseInt(document.getElementById('refFormComments').value) || 0,
+    reposts: parseInt(document.getElementById('refFormReposts').value) || 0,
+    shares: parseInt(document.getElementById('refFormShares').value) || 0,
+    keyword: '',
+    point: document.getElementById('refFormPoint').value.trim(),
+    has_image: document.getElementById('refFormImage').checked,
+    has_video: document.getElementById('refFormVideo').checked,
+    has_music: document.getElementById('refFormMusic').checked,
+    image_url: ''
   };
 
-  references.unshift(ref);
-  localStorage.setItem('oz_refs', JSON.stringify(references));
-  renderRefTable();
-  clearRefForm();
-  showToast('✓ 레퍼런스가 추가되었어요');
+  const saveBtn = document.getElementById('refFormSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '저장 중...';
+
+  try {
+    if (id) {
+      // 편집 (UPDATE)
+      const { error } = await supabase
+        .from('refs')
+        .update(refData)
+        .eq('id', parseInt(id));
+      if (error) throw error;
+      showToast('✓ 레퍼런스가 수정되었어요');
+    } else {
+      // 새로 추가 (INSERT)
+      const { error } = await supabase
+        .from('refs')
+        .insert(refData);
+      if (error) throw error;
+      showToast('✓ 레퍼런스가 추가되었어요');
+    }
+
+    closeRefFormModal();
+    await loadReferences(true);  // 새로고침
+  } catch (e) {
+    console.error('saveRefForm error:', e);
+    showToast('저장 실패: ' + e.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '저장';
+  }
 }
 
-function clearRefForm() {
-  ['refDate','refContent','refLink','refViews','refLikes','refComments','refReposts','refShares','refKeyword','refPoint'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('refHasImage').checked = false;
-  document.getElementById('refHasVideo').checked = false;
+// 편집 모달 내 삭제 버튼
+async function confirmRefDelete() {
+  const id = document.getElementById('refFormId').value;
+  if (!id) return;
+  if (!confirm('이 레퍼런스를 삭제할까요? 되돌릴 수 없어요!')) return;
+
+  try {
+    const { error } = await supabase
+      .from('refs')
+      .delete()
+      .eq('id', parseInt(id));
+    if (error) throw error;
+    closeRefFormModal();
+    await loadReferences(true);
+    showToast('✓ 삭제됨');
+  } catch (e) {
+    console.error('confirmRefDelete error:', e);
+    showToast('삭제 실패: ' + e.message);
+  }
 }
 
-function deleteRef(id) {
+// 테이블 행에서 직접 삭제
+async function deleteRefFromDB(id) {
   if (!confirm('이 레퍼런스를 삭제할까요?')) return;
-  references = references.filter(r => r.id !== id);
-  localStorage.setItem('oz_refs', JSON.stringify(references));
-  renderRefTable();
+  try {
+    const { error } = await supabase
+      .from('refs')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    await loadReferences(true);
+    showToast('✓ 삭제됨');
+  } catch (e) {
+    console.error('deleteRefFromDB error:', e);
+    showToast('삭제 실패: ' + e.message);
+  }
 }
 
-function clearAllRefs() {
-  if (!confirm('모든 레퍼런스를 삭제할까요? 되돌릴 수 없어요!')) return;
-  references = [];
-  localStorage.setItem('oz_refs', JSON.stringify(references));
-  renderRefTable();
-}
+// 옛 호환 함수들 (혹시 다른 곳에서 호출하는 경우 대비)
+function deleteRef(id) { deleteRefFromDB(id); }
+function clearAllRefs() { showToast('전체 삭제는 비활성화됨 (안전을 위해)'); }
 
 // ── 레퍼런스 정렬/필터 상태
 let refSortCol = 'date';
@@ -3155,7 +3303,11 @@ function renderRefRows(rows) {
       <td style="padding:10px"><span style="background:var(--surface3);padding:2px 7px;border-radius:6px;font-size:11px">${r.keyword||'-'}</span></td>
       <td style="padding:10px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#fffbeb" title="${(r.point||'').replace(/"/g,'&quot;')}">${r.point ? `💡 ${r.point.slice(0,50)}${r.point.length>50?'...':''}` : '<span style="color:var(--text3)">-</span>'}</td>
       <td style="padding:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.link?`<a href="${r.link}" target="_blank" style="color:#3b82f6">${r.link.slice(0,30)}...</a>`:'-'}</td>
-      <td style="padding:10px;text-align:center"><button onclick="convertRefToMyPost(${r.id})" style="background:#111;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:600" title="이 레퍼런스를 오즈키즈 톤으로 변환">✨ 변환</button></td>
+      <td style="padding:10px;text-align:center;white-space:nowrap">
+        <button onclick="convertRefToMyPost(${r.id})" style="background:#111;color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;margin-right:2px" title="이 레퍼런스를 오즈키즈 톤으로 변환">✨</button>
+        <button onclick="openRefEditModal(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;margin-right:2px" title="편집">✏️</button>
+        <button onclick="deleteRefFromDB(${r.id})" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer" title="삭제">🗑️</button>
+      </td>
     </tr>`;
   }).join('');
 }

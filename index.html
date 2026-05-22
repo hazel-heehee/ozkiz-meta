@@ -453,26 +453,36 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <button onclick="goToToday()" style="padding:5px 14px;font-size:12px;font-weight:600">오늘</button>
           <button onclick="changeMonth(1)">→</button>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openAddPost()">+ 추가</button>
+        <div style="position:relative;display:inline-block" id="calAddDropdown">
+          <button class="btn btn-primary btn-sm" onclick="toggleCalAddMenu(event)">+ 추가 ▾</button>
+          <div id="calAddMenu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:170px;z-index:100">
+            <button onclick="addPostFromCalBtn()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-size:13px;cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">✓ 발행 게시물 추가</button>
+            <button onclick="addScheduleFromCalBtn()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-size:13px;cursor:pointer;font-family:inherit" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">+ 예약 글 추가</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="content-area">
-      <!-- 주간 루틴 체크리스트 -->
-      <div style="background:linear-gradient(135deg,#fef3c7 0%,#fef9e7 100%);border:1px solid #fde68a;border-radius:10px;padding:16px 18px;margin-bottom:20px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:18px">📋</span>
-            <span style="font-size:14px;font-weight:700">이번 주 루틴</span>
-            <span id="weekRangeLabel" style="font-size:11px;color:#92400e;background:#fff;padding:3px 10px;border-radius:6px;font-weight:600"></span>
+      <!-- 주간 루틴 체크리스트 (컴팩트 + 접기/펼치기) -->
+      <div style="background:linear-gradient(135deg,#fef3c7 0%,#fef9e7 100%);border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:14px">
+        <!-- 헤더 (항상 보이는 한 줄) -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;cursor:pointer" onclick="toggleWeekRoutine()">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:14px">📋</span>
+            <span style="font-size:13px;font-weight:700">이번 주 루틴</span>
+            <span id="weekRangeLabel" style="font-size:11px;color:#92400e;background:#fff;padding:2px 8px;border-radius:5px;font-weight:600"></span>
+            <span id="weekRoutineSummary" style="font-size:11px;color:#92400e;margin-left:4px"></span>
           </div>
-          <div style="font-size:11px;color:#92400e">
-            진척률 <b id="weekProgressPct" style="font-size:14px">0%</b>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:#92400e">진척률 <b id="weekProgressPct" style="font-size:13px">0%</b></span>
+            <span id="weekRoutineToggleIcon" style="font-size:12px;color:#92400e;transition:transform .2s">▼</span>
           </div>
         </div>
-        <div id="weekRoutineList" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"></div>
+        <!-- 상세 (접힘 기본) -->
+        <div id="weekRoutineList" style="display:none;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid #fde68a"></div>
       </div>
 
-      <div id="calTitle" style="font-size:15px;font-weight:700;margin-bottom:16px"></div>
+      <div id="calTitle" style="font-size:15px;font-weight:700;margin-bottom:12px"></div>
       <div class="cal-grid" id="calGrid"></div>
     </div>
   </div>
@@ -978,9 +988,110 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   <div class="modal" style="max-width:600px;max-height:80vh;overflow-y:auto">
     <div class="modal-title" id="dayViewTitle">게시물</div>
     <div id="dayViewBody" style="margin-top:12px"></div>
-    <div class="modal-btns" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
-      <button class="btn btn-primary btn-sm" id="dayViewAddBtn">+ 예약 글 추가</button>
+    <div class="modal-btns" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" id="dayViewAddPostBtn">✓ 발행 게시물 추가</button>
+      <button class="btn btn-ghost btn-sm" id="dayViewAddBtn" style="border:1px dashed var(--border2)">+ 예약 글 추가</button>
       <button class="btn btn-ghost btn-sm" onclick="closeDayView()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 발행 게시물 추가/편집 모달 (posts 테이블) -->
+<div class="modal-overlay" id="postFormModal">
+  <div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700" id="postFormTitle">✓ 발행 게시물 추가</div>
+      <button onclick="closePostFormModal()" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">×</button>
+    </div>
+
+    <input type="hidden" id="postFormId" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📅 발행 일자 *</div>
+        <input type="date" id="postFormDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🏷️ 분류 (CTA)</div>
+        <select id="postFormType" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="">선택 안 함</option>
+          <option value="조회수">조회수</option>
+          <option value="좋아요">좋아요</option>
+          <option value="댓글">댓글</option>
+          <option value="리포스트">리포스트</option>
+          <option value="공유">공유</option>
+          <option value="팔로우">팔로우</option>
+          <option value="저장">저장</option>
+          <option value="링크클릭(홍보)">링크클릭(홍보)</option>
+          <option value="제품">제품</option>
+          <option value="공감">공감</option>
+          <option value="정보성">정보성</option>
+          <option value="권위">권위</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🔗 스레드 게시물 URL</div>
+      <input type="url" id="postFormLink" placeholder="https://www.threads.com/@ozkiz_official/post/..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📝 본문 *</div>
+      <textarea id="postFormText" rows="6" placeholder="실제 발행한 글 전체 내용을 붙여넣으세요" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6;font-family:inherit;resize:vertical"></textarea>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📷 이미지 URL <span style="color:var(--text3);font-weight:400">(선택)</span></div>
+      <input type="url" id="postFormImageUrl" placeholder="https://... (이미지 주소를 붙여넣으세요)" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;margin-bottom:8px"/>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎬 영상 URL <span style="color:var(--text3);font-weight:400">(선택)</span></div>
+      <input type="url" id="postFormVideoUrl" placeholder="https://... (영상 주소를 붙여넣으세요)" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">👥 팔로워 (게시 시점)</div>
+        <input type="number" id="postFormFollower" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">👁️ 조회수</div>
+        <input type="number" id="postFormViews" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">❤️ 좋아요</div>
+        <input type="number" id="postFormLikes" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">💬 댓글</div>
+        <input type="number" id="postFormComments" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🔁 리포스트</div>
+        <input type="number" id="postFormReposts" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">↗ 공유</div>
+        <input type="number" id="postFormShares" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">➕ 팔로우</div>
+        <input type="number" id="postFormFollows" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+    </div>
+
+    <div style="font-size:10px;color:var(--text3);margin-bottom:14px;padding:8px 10px;background:#f8fafc;border-radius:6px;line-height:1.5">
+      💡 통계는 나중에 다시 들어와서 업데이트할 수 있어요. <b>* 표시</b>된 항목(일자, 본문)만 필수예요.
+    </div>
+
+    <div class="modal-btns" style="display:flex;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm" id="postFormDeleteBtn" onclick="confirmPostDelete()" style="color:var(--red);display:none">🗑️ 삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="closePostFormModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="savePostForm()" id="postFormSaveBtn">저장</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1045,12 +1156,11 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     </div>
 
     <div style="margin-bottom:12px">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">🎨 미디어</div>
-      <div style="display:flex;gap:14px">
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="checkbox" id="refFormImage" style="margin:0"/>📷 이미지</label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="checkbox" id="refFormVideo" style="margin:0"/>🎬 영상</label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="checkbox" id="refFormMusic" style="margin:0"/>🎵 음악</label>
-      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📷 이미지 URL <span style="color:var(--text3);font-weight:400">(선택)</span></div>
+      <input type="url" id="refFormImageUrl" placeholder="https://... (이미지 주소를 붙여넣으세요)" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;margin-bottom:8px"/>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎬 영상 URL <span style="color:var(--text3);font-weight:400">(선택)</span></div>
+      <input type="url" id="refFormVideoUrl" placeholder="https://... (영상 주소를 붙여넣으세요)" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;line-height:1.5">💡 URL이 있으면 자동으로 "이미지/영상 있는 글"로 표시됩니다. 둘 다 비우면 텍스트 글.</div>
     </div>
 
     <div style="margin-bottom:14px">
@@ -1606,7 +1716,7 @@ function renderWeeklyRoutine() {
   // 주차 키 (이번 주 월요일 기준)
   const weekKey = monday.toISOString().split('T')[0];
 
-  // ── 1. 매일 발행 (월~일 7일 기준, 발행글 수)
+  // ── 1. 주 7건 발행 (월~일 7일 기준, 발행글 수)
   const postsThisWeek = sheetData.filter(r => {
     const d = toDateObj(r[COL.date]);
     if (!d) return false;
@@ -1626,7 +1736,7 @@ function renderWeeklyRoutine() {
     if (dailyPostMap[key] && dailyPostMap[key] >= 1) postedDays++;
   }
   const r1Done = postedDays >= 7;
-  const r1Progress = `${postedDays}/7일`;
+  const r1Progress = `${postedDays}/7건`;
   const r1Pct = (postedDays / 7) * 100;
 
   // ── 2. 콘텐츠 믹스 (수동 체크 - localStorage)
@@ -1662,14 +1772,14 @@ function renderWeeklyRoutine() {
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <span style="font-size:14px">${done ? '✅' : icon}</span>
         <span style="font-size:11px;font-weight:700;color:${done?'#15803d':'#374151'}">${label}</span>
+        <span style="font-size:10px;color:#6b7280;font-weight:500">(${progress})</span>
         ${info ? `<button onclick="openInfoModal('${info}')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#6b7280;font-size:13px;padding:0;line-height:1" title="자세히 보기">ⓘ</button>` : ''}
       </div>
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
-        <div style="font-size:18px;font-weight:700;color:${done?'#15803d':'#1f2937'}">${progress}</div>
-        <div style="font-size:11px;color:#6b7280;font-weight:600">${Math.round(pct)}%</div>
-      </div>
-      <div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;margin-bottom:8px">
-        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="flex:1;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s"></div>
+        </div>
+        <div style="font-size:10px;color:#6b7280;font-weight:600;min-width:32px;text-align:right">${Math.round(pct)}%</div>
       </div>
       ${extra}
     </div>`;
@@ -1693,15 +1803,45 @@ function renderWeeklyRoutine() {
     </div>
   `;
 
-  const r1Hint = r1Done ? '✓ 7일 모두 발행 완료!' : `${7 - postedDays}일 추가 필요`;
+  const r1Hint = r1Done ? '✓ 7건 모두 발행 완료!' : `${7 - postedDays}건 추가 필요`;
   const r3Hint = r3Done ? '✓ 5개 이상 수집 완료!' : `${5 - refsThisWeek.length}개 더 필요`;
 
   listEl.innerHTML = `
-    ${cardHtml('✍️', '매일 발행', r1Progress, r1Pct, r1Done, `<div style="font-size:10px;color:#6b7280">${r1Hint}</div>`, null)}
+    ${cardHtml('✍️', '주 7건 발행', r1Progress, r1Pct, r1Done, `<div style="font-size:10px;color:#6b7280">${r1Hint}</div>`, null)}
     ${cardHtml('🎨', '콘텐츠 믹스', r2Progress, r2Pct, r2Done, mixCheckboxes, 'mix')}
     ${cardHtml('📌', '레퍼런스 수집', r3Progress, r3Pct, r3Done, `<div style="font-size:10px;color:#6b7280">${r3Hint}</div>`, null)}
   `;
+
+  // 접힌 상태에서 보이는 요약 라인
+  const summaryEl = document.getElementById('weekRoutineSummary');
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      · <span style="color:${r1Done?'#15803d':'#92400e'}">${r1Done?'✓':'·'} 발행 ${r1Progress}</span>
+      · <span style="color:${r2Done?'#15803d':'#92400e'}">${r2Done?'✓':'·'} 믹스 ${r2Progress}</span>
+      · <span style="color:${r3Done?'#15803d':'#92400e'}">${r3Done?'✓':'·'} 레퍼런스 ${r3Progress}</span>
+    `;
+  }
 }
+
+// 주간 루틴 접기/펼치기
+function toggleWeekRoutine() {
+  const list = document.getElementById('weekRoutineList');
+  const icon = document.getElementById('weekRoutineToggleIcon');
+  if (!list || !icon) return;
+  const opened = list.style.display !== 'none';
+  list.style.display = opened ? 'none' : 'grid';
+  icon.style.transform = opened ? 'rotate(0deg)' : 'rotate(180deg)';
+  // 사용자 선호 저장
+  localStorage.setItem('oz_routine_open', opened ? '0' : '1');
+}
+
+// 페이지 로드 시 사용자 선호 복원
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const wasOpen = localStorage.getItem('oz_routine_open') === '1';
+    if (wasOpen) toggleWeekRoutine();
+  }, 100);
+});
 
 // 콘텐츠 믹스 체크박스 토글
 function toggleMixCheck(key, checked) {
@@ -1887,26 +2027,54 @@ function calDayClick(d) {
   });
   const schs = scheduledPosts.filter(p => p.year === calYear && p.month === calMonth && p.day === d);
 
-  if (!pubs.length && !schs.length) return;
-
+  // 게시물이 없어도 모달 열고 추가 버튼 보이게 (UX 개선)
   document.getElementById('dayViewTitle').textContent = `${calYear}년 ${calMonth+1}월 ${d}일 게시물`;
   let body = '';
+
+  if (!pubs.length && !schs.length) {
+    body = `<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">
+      <div style="font-size:32px;margin-bottom:8px">📭</div>
+      <div>이 날짜에는 게시물이 없어요</div>
+      <div style="font-size:11px;margin-top:8px">아래 버튼으로 추가해보세요</div>
+    </div>`;
+  }
 
   if (pubs.length) {
     body += `<div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">✓ 발행 완료 (${pubs.length})</div>`;
     body += pubs.map(r => {
       const txt = cleanText(r[COL.text]);
       const link = String(r[COL.link]||'').trim();
+      const imgUrl = String(r.image_url || '').trim();
+      const vidUrl = String(r.video_url || '').trim();
       const head = link
-        ? `<a href="${link}" target="_blank" style="color:#3b82f6;font-size:11px">🔗 게시물 보기</a>`
+        ? `<a href="${link}" target="_blank" style="color:#3b82f6;font-size:11px" onclick="event.stopPropagation()">🔗 게시물 보기</a>`
         : '';
+
+      // 미디어 미리보기
+      let mediaBlock = '';
+      if (imgUrl || vidUrl) {
+        mediaBlock = '<div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">';
+        if (imgUrl) {
+          mediaBlock += `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()" style="display:block">
+            <img src="${imgUrl}" style="max-height:80px;max-width:120px;border-radius:6px;border:1px solid var(--border);object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"/>
+            <span style="display:none;font-size:11px;color:#3b82f6;padding:6px 10px;border:1px solid var(--border);border-radius:6px">📷 이미지</span>
+          </a>`;
+        }
+        if (vidUrl) {
+          mediaBlock += `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#fce7f3;color:#9f1239;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">🎬 영상 보기</a>`;
+        }
+        mediaBlock += '</div>';
+      }
+
       return `<div style="background:rgba(34,197,94,.08);border-left:3px solid #16a34a;border-radius:6px;padding:10px 12px;margin-bottom:8px">
         <div style="font-size:13px;line-height:1.5;color:var(--text);margin-bottom:6px;white-space:pre-wrap">${txt.slice(0,200)}${txt.length>200?'...':''}</div>
-        <div style="display:flex;gap:12px;font-size:11px;color:var(--text3)">
+        ${mediaBlock}
+        <div style="display:flex;gap:12px;font-size:11px;color:var(--text3);align-items:center;flex-wrap:wrap">
           <span>👁️ ${toNum(r[COL.views]).toLocaleString()}</span>
           <span>❤️ ${toNum(r[COL.likes]).toLocaleString()}</span>
           <span>💬 ${toNum(r[COL.comments]).toLocaleString()}</span>
           ${head}
+          <button onclick="closeDayView();openPostFormModalEdit(${r.id})" style="margin-left:auto;background:#fff;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer">✏️ 편집</button>
         </div>
       </div>`;
     }).join('');
@@ -1915,17 +2083,21 @@ function calDayClick(d) {
   if (schs.length) {
     body += `<div style="font-size:11px;color:var(--text2);font-weight:600;margin:12px 0 8px;text-transform:uppercase;letter-spacing:.05em">📝 예약 글 (${schs.length})</div>`;
     body += schs.map(p => `
-      <div style="background:#f3f4f6;border-left:3px dashed #9ca3af;border-radius:6px;padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="closeDayView();openScheduleModalEdit('${p.id}')">
+      <div style="background:#f3f4f6;border-left:3px dashed #9ca3af;border-radius:6px;padding:10px 12px;margin-bottom:8px">
         <div style="font-size:13px;font-weight:600;margin-bottom:4px">${p.title}</div>
         ${p.type ? `<div style="font-size:10px;color:var(--text3);margin-bottom:6px">${p.type}</div>` : ''}
-        ${p.content ? `<div style="font-size:12px;color:var(--text2);line-height:1.5;white-space:pre-wrap">${p.content.slice(0,150)}${p.content.length>150?'...':''}</div>` : ''}
-        <div style="font-size:10px;color:#3b82f6;margin-top:6px">클릭하여 편집</div>
+        ${p.content ? `<div style="font-size:12px;color:var(--text2);line-height:1.5;white-space:pre-wrap;margin-bottom:8px">${p.content.slice(0,150)}${p.content.length>150?'...':''}</div>` : ''}
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          <button onclick="promoteScheduleToPost('${p.id}')" style="background:#16a34a;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600">✓ 발행 완료로 전환</button>
+          <button onclick="closeDayView();openScheduleModalEdit('${p.id}')" style="background:#fff;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer">✏️ 편집</button>
+        </div>
       </div>
     `).join('');
   }
 
   document.getElementById('dayViewBody').innerHTML = body;
   document.getElementById('dayViewAddBtn').onclick = () => { closeDayView(); openScheduleModalNew(d); };
+  document.getElementById('dayViewAddPostBtn').onclick = () => { closeDayView(); openPostFormModalNew(d); };
   document.getElementById('dayViewModal').classList.add('open');
 }
 
@@ -2081,13 +2253,188 @@ function handleDayDrop(e, day) {
   showToast(`✓ ${calMonth+1}/${day}로 이동`);
 }
 
-function openAddPost() {
-  // 오늘 날짜로 기본 설정
+// ── 캘린더 상단 + 추가 드롭다운
+function toggleCalAddMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('calAddMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+// 바깥 클릭 시 메뉴 닫기
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('calAddDropdown');
+  const menu = document.getElementById('calAddMenu');
+  if (dd && menu && !dd.contains(e.target)) menu.style.display = 'none';
+});
+
+function addPostFromCalBtn() {
+  document.getElementById('calAddMenu').style.display = 'none';
   const today = new Date();
-  if (today.getFullYear() === calYear && today.getMonth() === calMonth) {
-    openScheduleModalNew(today.getDate());
-  } else {
-    openScheduleModalNew(1);
+  const d = (today.getFullYear() === calYear && today.getMonth() === calMonth) ? today.getDate() : 1;
+  openPostFormModalNew(d);
+}
+function addScheduleFromCalBtn() {
+  document.getElementById('calAddMenu').style.display = 'none';
+  const today = new Date();
+  const d = (today.getFullYear() === calYear && today.getMonth() === calMonth) ? today.getDate() : 1;
+  openScheduleModalNew(d);
+}
+
+// 옛 호환용
+function openAddPost() { addScheduleFromCalBtn(); }
+
+// ── 발행 게시물 (posts) CRUD
+
+// 새 발행 게시물 모달
+function openPostFormModalNew(day) {
+  document.getElementById('postFormTitle').textContent = '✓ 발행 게시물 추가';
+  document.getElementById('postFormId').value = '';
+  // 캘린더에서 호출 시: 해당 일자 / 그 외: 오늘
+  const dateStr = day
+    ? `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+    : new Date().toISOString().split('T')[0];
+  document.getElementById('postFormDate').value = dateStr;
+  document.getElementById('postFormType').value = '';
+  document.getElementById('postFormLink').value = '';
+  document.getElementById('postFormText').value = '';
+  document.getElementById('postFormImageUrl').value = '';
+  document.getElementById('postFormVideoUrl').value = '';
+  document.getElementById('postFormFollower').value = '';
+  document.getElementById('postFormViews').value = '';
+  document.getElementById('postFormLikes').value = '';
+  document.getElementById('postFormComments').value = '';
+  document.getElementById('postFormReposts').value = '';
+  document.getElementById('postFormShares').value = '';
+  document.getElementById('postFormFollows').value = '';
+  document.getElementById('postFormDeleteBtn').style.display = 'none';
+  document.getElementById('postFormModal').classList.add('open');
+  setTimeout(() => document.getElementById('postFormText').focus(), 100);
+}
+
+// 기존 발행 게시물 편집 모달
+function openPostFormModalEdit(id) {
+  const post = sheetData.find(p => p.id === id);
+  if (!post) { showToast('게시물을 찾을 수 없어요'); return; }
+
+  document.getElementById('postFormTitle').textContent = '✏️ 발행 게시물 편집';
+  document.getElementById('postFormId').value = post.id;
+  document.getElementById('postFormDate').value = post.date || '';
+  document.getElementById('postFormType').value = post.type || '';
+  document.getElementById('postFormLink').value = post.link || '';
+  document.getElementById('postFormText').value = post.text || '';
+  document.getElementById('postFormImageUrl').value = post.image_url || '';
+  document.getElementById('postFormVideoUrl').value = post.video_url || '';
+  document.getElementById('postFormFollower').value = post.follower || '';
+  document.getElementById('postFormViews').value = post.views || '';
+  document.getElementById('postFormLikes').value = post.likes || '';
+  document.getElementById('postFormComments').value = post.comments || '';
+  document.getElementById('postFormReposts').value = post.reposts || '';
+  document.getElementById('postFormShares').value = post.shares || '';
+  document.getElementById('postFormFollows').value = post.follows || '';
+  document.getElementById('postFormDeleteBtn').style.display = 'inline-block';
+  document.getElementById('postFormModal').classList.add('open');
+}
+
+function closePostFormModal() {
+  document.getElementById('postFormModal').classList.remove('open');
+}
+
+// 발행 게시물 저장 (insert/update)
+async function savePostForm() {
+  const text = document.getElementById('postFormText').value.trim();
+  const date = document.getElementById('postFormDate').value;
+
+  if (!date) { showToast('날짜는 필수예요'); return; }
+  if (!text) { showToast('본문을 입력해주세요'); return; }
+
+  const id = document.getElementById('postFormId').value;
+  const postData = {
+    date,
+    type: document.getElementById('postFormType').value.trim(),
+    link: document.getElementById('postFormLink').value.trim(),
+    text,
+    image_url: document.getElementById('postFormImageUrl').value.trim(),
+    video_url: document.getElementById('postFormVideoUrl').value.trim(),
+    follower: parseInt(document.getElementById('postFormFollower').value) || 0,
+    views: parseInt(document.getElementById('postFormViews').value) || 0,
+    likes: parseInt(document.getElementById('postFormLikes').value) || 0,
+    comments: parseInt(document.getElementById('postFormComments').value) || 0,
+    reposts: parseInt(document.getElementById('postFormReposts').value) || 0,
+    shares: parseInt(document.getElementById('postFormShares').value) || 0,
+    follows: parseInt(document.getElementById('postFormFollows').value) || 0,
+  };
+
+  const btn = document.getElementById('postFormSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+
+  try {
+    if (id) {
+      const { error } = await sb.from('posts').update(postData).eq('id', parseInt(id));
+      if (error) throw error;
+      showToast('✓ 게시물이 수정되었어요');
+    } else {
+      const { error } = await sb.from('posts').insert(postData);
+      if (error) throw error;
+      showToast('✓ 발행 게시물이 추가되었어요');
+    }
+    closePostFormModal();
+    closeDayView();
+    await loadSheetData(true);
+  } catch (e) {
+    console.error('savePostForm error:', e);
+    showToast('저장 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '저장';
+  }
+}
+
+// 발행 게시물 삭제 (편집 모달 내 버튼)
+async function confirmPostDelete() {
+  const id = document.getElementById('postFormId').value;
+  if (!id) return;
+  if (!confirm('이 발행 게시물을 삭제할까요? 되돌릴 수 없어요!')) return;
+  try {
+    const { error } = await sb.from('posts').delete().eq('id', parseInt(id));
+    if (error) throw error;
+    closePostFormModal();
+    closeDayView();
+    await loadSheetData(true);
+    showToast('✓ 삭제됨');
+  } catch (e) {
+    console.error('confirmPostDelete error:', e);
+    showToast('삭제 실패: ' + e.message);
+  }
+}
+
+// 예약 글 → 발행 게시물 전환
+async function promoteScheduleToPost(scheduleId) {
+  const sch = scheduledPosts.find(p => p.id === scheduleId);
+  if (!sch) return;
+  if (!confirm(`이 예약 글을 발행 완료로 전환할까요?\n\n"${sch.title.slice(0,40)}"\n\n→ posts 테이블에 추가되고, 예약 글에서는 제거됩니다.`)) return;
+
+  const dateStr = `${sch.year}-${String(sch.month+1).padStart(2,'0')}-${String(sch.day).padStart(2,'0')}`;
+  const postData = {
+    date: dateStr,
+    type: sch.type || '',
+    link: '',
+    text: sch.content || sch.title,
+    image_url: '',
+    follower: 0, views: 0, likes: 0, comments: 0, reposts: 0, shares: 0, follows: 0
+  };
+
+  try {
+    const { error } = await sb.from('posts').insert(postData);
+    if (error) throw error;
+    // 예약 글 삭제
+    scheduledPosts = scheduledPosts.filter(p => p.id !== scheduleId);
+    localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
+    closeDayView();
+    await loadSheetData(true);
+    showToast('✓ 발행 완료로 전환됨 (통계는 나중에 채워주세요)');
+  } catch (e) {
+    console.error('promoteScheduleToPost error:', e);
+    showToast('전환 실패: ' + e.message);
   }
 }
 
@@ -2948,10 +3295,11 @@ async function loadReferences(force = false) {
       reposts: r.reposts || 0,
       shares: r.shares || 0,
       point: r.point || '',
-      hasImage: r.has_image || false,
-      hasVideo: r.has_video || false,
+      hasImage: !!(r.has_image || r.image_url),
+      hasVideo: !!(r.has_video || r.video_url),
       hasMusic: r.has_music || false,
-      image_url: r.image_url || ''
+      image_url: r.image_url || '',
+      video_url: r.video_url || ''
     }));
 
     renderRefTable();
@@ -2979,9 +3327,8 @@ function openRefAddModal() {
   document.getElementById('refFormComments').value = '';
   document.getElementById('refFormReposts').value = '';
   document.getElementById('refFormShares').value = '';
-  document.getElementById('refFormImage').checked = false;
-  document.getElementById('refFormVideo').checked = false;
-  document.getElementById('refFormMusic').checked = false;
+  document.getElementById('refFormImageUrl').value = '';
+  document.getElementById('refFormVideoUrl').value = '';
   document.getElementById('refFormPoint').value = '';
   document.getElementById('refFormDeleteBtn').style.display = 'none';
   document.getElementById('refFormModal').classList.add('open');
@@ -3005,9 +3352,8 @@ function openRefEditModal(id) {
   document.getElementById('refFormComments').value = ref.comments || '';
   document.getElementById('refFormReposts').value = ref.reposts || '';
   document.getElementById('refFormShares').value = ref.shares || '';
-  document.getElementById('refFormImage').checked = !!ref.hasImage;
-  document.getElementById('refFormVideo').checked = !!ref.hasVideo;
-  document.getElementById('refFormMusic').checked = !!ref.hasMusic;
+  document.getElementById('refFormImageUrl').value = ref.image_url || '';
+  document.getElementById('refFormVideoUrl').value = ref.video_url || '';
   document.getElementById('refFormPoint').value = ref.point || '';
   document.getElementById('refFormDeleteBtn').style.display = 'inline-block';
   document.getElementById('refFormModal').classList.add('open');
@@ -3028,6 +3374,10 @@ async function saveRefForm() {
   const firstSentence = document.getElementById('refFormFirstSentence').value.trim()
     || content.split(/[\n.!?]/)[0].trim().slice(0, 60);
 
+  // 미디어 URL 입력 → 자동으로 has_image / has_video 결정
+  const imageUrl = document.getElementById('refFormImageUrl').value.trim();
+  const videoUrl = document.getElementById('refFormVideoUrl').value.trim();
+
   const refData = {
     date: document.getElementById('refFormDate').value || new Date().toISOString().split('T')[0],
     tag: document.getElementById('refFormKeyword').value.trim(),
@@ -3041,10 +3391,11 @@ async function saveRefForm() {
     shares: parseInt(document.getElementById('refFormShares').value) || 0,
     keyword: '',
     point: document.getElementById('refFormPoint').value.trim(),
-    has_image: document.getElementById('refFormImage').checked,
-    has_video: document.getElementById('refFormVideo').checked,
-    has_music: document.getElementById('refFormMusic').checked,
-    image_url: ''
+    has_image: !!imageUrl,
+    has_video: !!videoUrl,
+    has_music: false,
+    image_url: imageUrl,
+    video_url: videoUrl
   };
 
   const saveBtn = document.getElementById('refFormSaveBtn');
@@ -3365,6 +3716,34 @@ function openRefDetail(id) {
   if (r.hasVideo) mediaTags.push('<span style="background:#fce7f3;color:#9f1239;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600">🎬 동영상</span>');
   if (!mediaTags.length) mediaTags.push('<span style="background:#f3f4f6;color:#6b7280;padding:3px 10px;border-radius:6px;font-size:11px">📝 텍스트만</span>');
 
+  // 미디어 미리보기 HTML 생성
+  let mediaPreview = '';
+  if (r.image_url) {
+    mediaPreview += `
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">📷 첨부 이미지</div>
+        <a href="${r.image_url}" target="_blank" style="display:block;text-decoration:none">
+          <img src="${r.image_url}" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid var(--border);object-fit:contain;background:#f8fafc" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+          <div style="display:none;padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;text-align:center">⚠️ 이미지를 불러올 수 없어요<br><span style="color:#3b82f6;word-break:break-all">${r.image_url}</span></div>
+        </a>
+      </div>
+    `;
+  }
+  if (r.video_url) {
+    mediaPreview += `
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">🎬 첨부 영상</div>
+        <a href="${r.video_url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text)">
+          <span style="font-size:24px">🎬</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px">영상 보기 →</div>
+            <div style="font-size:11px;color:#3b82f6;word-break:break-all;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.video_url}</div>
+          </div>
+        </a>
+      </div>
+    `;
+  }
+
   document.getElementById('refDetailTitle').textContent = `레퍼런스 · ${r.date}`;
   document.getElementById('refDetailBody').innerHTML = `
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
@@ -3379,6 +3758,8 @@ function openRefDetail(id) {
       <div style="text-align:center"><div style="font-size:11px;color:var(--text3);margin-bottom:2px">리포스트</div><div style="font-weight:700">${(r.reposts||0).toLocaleString()}</div></div>
       <div style="text-align:center"><div style="font-size:11px;color:var(--text3);margin-bottom:2px">공유</div><div style="font-weight:700">${(r.shares||0).toLocaleString()}</div></div>
     </div>
+
+    ${mediaPreview}
 
     <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">전체 글 내용</div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap;margin-bottom:16px;max-height:280px;overflow-y:auto">${r.content || '<span style="color:var(--text3)">내용 없음</span>'}</div>

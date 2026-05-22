@@ -1128,7 +1128,7 @@ const posts = {};
 // ── SUPABASE CONFIG
 const SUPABASE_URL = 'https://tbltddivmxfuounnzcne.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_UyNSo1sU8K0HwUk2pvlZXA_aVLYS4-p';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 컬럼 매핑 (Supabase 컬럼명 → 사이트 내부 인덱스 호환용)
 // posts 테이블에서 사용
@@ -1201,7 +1201,7 @@ async function loadSheetData(force = false) {
 
   try {
     // Supabase에서 posts 데이터 가져오기 (날짜순 정렬)
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('posts')
       .select('*')
       .order('date', { ascending: true });
@@ -2927,7 +2927,7 @@ async function loadReferences(force = false) {
 
   try {
     // Supabase에서 refs 테이블 가져오기 (날짜 내림차순)
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('refs')
       .select('*')
       .order('date', { ascending: false });
@@ -3054,7 +3054,7 @@ async function saveRefForm() {
   try {
     if (id) {
       // 편집 (UPDATE)
-      const { error } = await supabase
+      const { error } = await sb
         .from('refs')
         .update(refData)
         .eq('id', parseInt(id));
@@ -3062,7 +3062,7 @@ async function saveRefForm() {
       showToast('✓ 레퍼런스가 수정되었어요');
     } else {
       // 새로 추가 (INSERT)
-      const { error } = await supabase
+      const { error } = await sb
         .from('refs')
         .insert(refData);
       if (error) throw error;
@@ -3087,7 +3087,7 @@ async function confirmRefDelete() {
   if (!confirm('이 레퍼런스를 삭제할까요? 되돌릴 수 없어요!')) return;
 
   try {
-    const { error } = await supabase
+    const { error } = await sb
       .from('refs')
       .delete()
       .eq('id', parseInt(id));
@@ -3105,7 +3105,7 @@ async function confirmRefDelete() {
 async function deleteRefFromDB(id) {
   if (!confirm('이 레퍼런스를 삭제할까요?')) return;
   try {
-    const { error } = await supabase
+    const { error } = await sb
       .from('refs')
       .delete()
       .eq('id', id);

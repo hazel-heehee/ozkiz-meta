@@ -503,12 +503,13 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <!-- 표 뷰 -->
       <div id="calListView" style="display:none">
         <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff">
-          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1200px">
             <thead style="background:#f8fafc">
               <tr style="border-bottom:1px solid var(--border)">
                 <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap">일자</th>
                 <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px">미디어</th>
-                <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:280px">글</th>
+                <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:70px">분류</th>
+                <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:240px">글</th>
                 <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">팔로워</th>
                 <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">조회수</th>
                 <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">좋아요</th>
@@ -521,7 +522,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
               </tr>
             </thead>
             <tbody id="calListBody">
-              <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">데이터 불러오는 중...</td></tr>
+              <tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">데이터 불러오는 중...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1051,27 +1052,34 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 
     <input type="hidden" id="postFormId" />
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
       <div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📅 발행 일자 *</div>
         <input type="date" id="postFormDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🏷️ 분류 (CTA)</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎯 CTA 목표</div>
         <select id="postFormType" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
           <option value="">선택 안 함</option>
           <option value="조회수">조회수</option>
           <option value="좋아요">좋아요</option>
           <option value="댓글">댓글</option>
-          <option value="리포스트">리포스트</option>
           <option value="공유">공유</option>
-          <option value="팔로우">팔로우</option>
+          <option value="링크클릭">링크클릭</option>
+          <option value="리포스트">리포스트</option>
           <option value="저장">저장</option>
-          <option value="링크클릭(홍보)">링크클릭(홍보)</option>
-          <option value="제품">제품</option>
-          <option value="공감">공감</option>
-          <option value="정보성">정보성</option>
-          <option value="권위">권위</option>
+          <option value="팔로우">팔로우</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📂 분류(성격)</div>
+        <select id="postFormCategory" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="">선택 안 함</option>
+          <option value="홍보">홍보</option>
+          <option value="소통&공감">소통&공감</option>
+          <option value="정보">정보</option>
+          <option value="전문가">전문가(권위)</option>
+          <option value="etc">etc</option>
         </select>
       </div>
     </div>
@@ -2009,71 +2017,183 @@ function switchCalView(mode) {
   if (mode === 'list') renderCalListView();
 }
 
-// 표 뷰 렌더 (현재 월의 게시물)
-function renderCalListView() {
+// 표 뷰 렌더 (현재 월의 모든 날짜 — 게시물 있는/없는 날 모두 표시)
+async function renderCalListView() {
   const body = document.getElementById('calListBody');
   if (!body) return;
 
-  // 현재 월의 발행 게시물만 필터
-  const monthPosts = (sheetData || []).filter(r => {
+  body.innerHTML = `<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>`;
+
+  // 1) 현재 월의 팔로워 데이터 fetch
+  const monthStart = `${calYear}-${String(calMonth+1).padStart(2,'0')}-01`;
+  const monthEndDay = new Date(calYear, calMonth+1, 0).getDate();
+  const monthEnd = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(monthEndDay).padStart(2,'0')}`;
+
+  let followersByDate = {};
+  try {
+    const { data, error } = await sb.from('followers')
+      .select('*')
+      .gte('date', monthStart)
+      .lte('date', monthEnd);
+    if (!error && data) {
+      data.forEach(f => { followersByDate[f.date] = f; });
+    }
+  } catch (e) { console.warn('followers fetch:', e); }
+
+  // 2) 현재 월의 발행 게시물
+  const postsByDate = {};
+  (sheetData || []).forEach(r => {
     const d = toDateObj(r[COL.date]);
-    return d && d.getFullYear() === calYear && d.getMonth() === calMonth;
-  }).sort((a, b) => {
-    const da = toDateObj(a[COL.date]);
-    const db = toDateObj(b[COL.date]);
-    return (db?.getTime() || 0) - (da?.getTime() || 0);
+    if (d && d.getFullYear() === calYear && d.getMonth() === calMonth) {
+      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (!postsByDate[key]) postsByDate[key] = [];
+      postsByDate[key].push(r);
+    }
   });
 
-  if (!monthPosts.length) {
-    body.innerHTML = `<tr><td colspan="12" style="padding:60px 20px;text-align:center;color:var(--text3)">
-      <div style="font-size:32px;margin-bottom:8px">📭</div>
-      <div>이 달에는 발행한 게시물이 없어요</div>
-      <div style="font-size:11px;margin-top:6px">우측 상단 <b>+ 추가 ▾</b>에서 발행 게시물을 추가하세요</div>
-    </td></tr>`;
-    return;
+  // 3) 현재 월의 모든 날짜 (최신 → 과거)
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === calYear && today.getMonth() === calMonth;
+  const lastDayToShow = isCurrentMonth ? today.getDate() : monthEndDay;
+
+  // 분류 배지 색상
+  const catColors = {
+    '홍보': { bg: '#fef3c7', text: '#92400e' },
+    '소통&공감': { bg: '#fce7f3', text: '#9f1239' },
+    '정보': { bg: '#dbeafe', text: '#1e40af' },
+    '전문가': { bg: '#e0e7ff', text: '#3730a3' },
+    'etc': { bg: '#f3f4f6', text: '#374151' }
+  };
+
+  const dash = '<span style="color:var(--text3)">—</span>';
+  const nVal = (v) => { const n = toNum(v); return n === 0 ? dash : n.toLocaleString(); };
+
+  // 4) 행 생성 (최신 날짜 위)
+  let rows = [];
+  for (let d = lastDayToShow; d >= 1; d--) {
+    const dateKey = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const posts = postsByDate[dateKey] || [];
+    const follower = followersByDate[dateKey];
+    const followerCount = follower ? follower.count : 0;
+
+    // 요일 표시
+    const dt = new Date(calYear, calMonth, d);
+    const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
+    const isToday = isCurrentMonth && today.getDate() === d;
+    const dayColor = dt.getDay() === 0 ? '#dc2626' : dt.getDay() === 6 ? '#2563eb' : 'var(--text2)';
+    const dateCell = `<div style="font-size:12px;color:var(--text2)">${calMonth+1}/${d} <span style="color:${dayColor};font-size:11px">(${wd})</span>${isToday?' <span style="background:#16a34a;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:2px">오늘</span>':''}</div>`;
+
+    if (posts.length === 0) {
+      // 게시물 없는 날 — 팔로워만 인라인 입력
+      rows.push(`
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa" data-date="${dateKey}">
+          <td style="padding:9px 10px">${dateCell}</td>
+          <td style="padding:6px;text-align:center;color:var(--text3)">—</td>
+          <td style="padding:6px;text-align:center;color:var(--text3)">—</td>
+          <td style="padding:9px 10px;color:var(--text3);font-size:12px;font-style:italic">발행 없음</td>
+          <td style="padding:6px 10px;text-align:right">
+            <input type="number" value="${followerCount || ''}" placeholder="0"
+              onchange="saveFollowerCount('${dateKey}', this.value, this)"
+              onclick="event.stopPropagation()"
+              style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:right;font-family:inherit;background:#fff"/>
+          </td>
+          <td colspan="6" style="padding:9px 10px;text-align:center;color:var(--text3);font-size:11px">—</td>
+          <td style="padding:9px 10px;text-align:right;color:var(--text3)">—</td>
+          <td style="padding:9px 10px;text-align:center">
+            <button onclick="openPostFormModalNew(${d})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer" title="이 날짜에 발행글 추가">+ 글</button>
+          </td>
+        </tr>
+      `);
+    } else {
+      // 게시물 있는 날 — 각 게시물마다 행
+      posts.forEach((r, idx) => {
+        const isFirstOfDay = idx === 0;
+        const txt = cleanText(r[COL.text]);
+        const link = String(r[COL.link]||'').trim();
+        const imgUrl = String(r.image_url||'').trim();
+        const vidUrl = String(r.video_url||'').trim();
+        const engagement = calcEngagement(r);
+        const engColor = engagement >= 10 ? '#16a34a' : engagement >= 5 ? '#3b82f6' : 'var(--text2)';
+
+        // 미디어
+        let mediaCell;
+        if (imgUrl) {
+          mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()" title="이미지"><img src="${imgUrl}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border);vertical-align:middle" onerror="this.outerHTML='<span style=&quot;font-size:14px&quot;>📷</span>'"/></a>`;
+          if (vidUrl) mediaCell += ` <a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:13px">🎬</a>`;
+        } else if (vidUrl) {
+          mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:16px">🎬</a>`;
+        } else {
+          mediaCell = '<span style="color:var(--text3)" title="텍스트만">📝</span>';
+        }
+
+        // 분류 배지
+        const cat = r.category || '';
+        const catCell = cat && catColors[cat]
+          ? `<span style="background:${catColors[cat].bg};color:${catColors[cat].text};padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap">${cat==='소통&공감'?'소통':cat}</span>`
+          : '<span style="color:var(--text3)">—</span>';
+
+        // 팔로워 셀: 첫 게시물 행에만 인라인 입력
+        const followerCell = isFirstOfDay
+          ? `<input type="number" value="${followerCount || toNum(r[COL.follower]) || ''}" placeholder="0"
+              onchange="saveFollowerCount('${dateKey}', this.value, this)"
+              onclick="event.stopPropagation()"
+              style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:right;font-family:inherit;background:#fff"/>`
+          : '<span style="color:var(--text3)">″</span>';
+
+        rows.push(`
+          <tr style="border-bottom:1px solid var(--border);cursor:pointer" data-date="${dateKey}" data-post-id="${r.id}"
+              onclick="openPostFormModalEdit(${r.id})"
+              onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+            <td style="padding:9px 10px">${isFirstOfDay ? dateCell : ''}</td>
+            <td style="padding:6px;text-align:center">${mediaCell}</td>
+            <td style="padding:6px;text-align:center">${catCell}</td>
+            <td style="padding:9px 10px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${txt.slice(0,55)}${txt.length>55?'...':''} ${link?'<a href="'+link+'" target="_blank" onclick="event.stopPropagation()" style="color:#3b82f6;font-size:11px">🔗</a>':''}</td>
+            <td style="padding:6px 10px;text-align:right">${followerCell}</td>
+            <td style="padding:9px 10px;text-align:right;font-weight:600">${nVal(r[COL.views])}</td>
+            <td style="padding:9px 10px;text-align:right;color:var(--red)">${nVal(r[COL.likes])}</td>
+            <td style="padding:9px 10px;text-align:right">${nVal(r[COL.comments])}</td>
+            <td style="padding:9px 10px;text-align:right">${nVal(r[COL.reposts])}</td>
+            <td style="padding:9px 10px;text-align:right">${nVal(r[COL.shares])}</td>
+            <td style="padding:9px 10px;text-align:right">${nVal(r[COL.follows])}</td>
+            <td style="padding:9px 10px;text-align:right;font-weight:600;color:${engColor}">${engagement>0?engagement.toFixed(1)+'%':dash}</td>
+            <td style="padding:9px 10px;text-align:center;white-space:nowrap">
+              <button onclick="event.stopPropagation();openPostFormModalEdit(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;margin-right:2px" title="편집">✏️</button>
+              <button onclick="event.stopPropagation();deletePostFromDB(${r.id})" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer" title="삭제">🗑️</button>
+            </td>
+          </tr>
+        `);
+      });
+    }
   }
 
-  body.innerHTML = monthPosts.map(r => {
-    const txt = cleanText(r[COL.text]);
-    const link = String(r[COL.link]||'').trim();
-    const imgUrl = String(r.image_url||'').trim();
-    const vidUrl = String(r.video_url||'').trim();
-    const engagement = calcEngagement(r);
-    const engColor = engagement >= 10 ? '#16a34a' : engagement >= 5 ? '#3b82f6' : 'var(--text2)';
-    const dash = '<span style="color:var(--text3)">—</span>';
-    const nVal = (v) => { const n = toNum(v); return n === 0 ? dash : n.toLocaleString(); };
+  body.innerHTML = rows.length ? rows.join('') : `<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">이 달에는 데이터가 없어요</td></tr>`;
+}
 
-    // 미디어 셀
-    let mediaCell;
-    if (imgUrl) {
-      mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()" title="이미지 보기"><img src="${imgUrl}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;border:1px solid var(--border);vertical-align:middle" onerror="this.outerHTML='<span style=&quot;font-size:14px&quot;>📷</span>'"/></a>`;
-      if (vidUrl) mediaCell += ` <a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:14px">🎬</a>`;
-    } else if (vidUrl) {
-      mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:18px">🎬</a>`;
-    } else {
-      mediaCell = '<span style="color:var(--text3)" title="텍스트만">📝</span>';
-    }
+// 팔로워 값 저장 (날짜별 upsert)
+async function saveFollowerCount(dateKey, valueStr, inputEl) {
+  const count = parseInt(valueStr) || 0;
+  const orig = inputEl.style.borderColor;
+  inputEl.style.borderColor = '#d97706';
 
-    return `
-      <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openPostFormModalEdit(${r.id})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-        <td style="padding:9px 10px;white-space:nowrap;color:var(--text2);font-size:12px">${fmtDate(r[COL.date])}</td>
-        <td style="padding:6px;text-align:center">${mediaCell}</td>
-        <td style="padding:9px 10px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${txt.slice(0,60)}${txt.length>60?'...':''} ${link?'<a href="'+link+'" target="_blank" onclick="event.stopPropagation()" style="color:#3b82f6;font-size:11px">🔗</a>':''}</td>
-        <td style="padding:9px 10px;text-align:right">${nVal(r[COL.follower])}</td>
-        <td style="padding:9px 10px;text-align:right;font-weight:600">${nVal(r[COL.views])}</td>
-        <td style="padding:9px 10px;text-align:right;color:var(--red)">${nVal(r[COL.likes])}</td>
-        <td style="padding:9px 10px;text-align:right">${nVal(r[COL.comments])}</td>
-        <td style="padding:9px 10px;text-align:right">${nVal(r[COL.reposts])}</td>
-        <td style="padding:9px 10px;text-align:right">${nVal(r[COL.shares])}</td>
-        <td style="padding:9px 10px;text-align:right">${nVal(r[COL.follows])}</td>
-        <td style="padding:9px 10px;text-align:right;font-weight:600;color:${engColor}">${engagement>0?engagement.toFixed(1)+'%':dash}</td>
-        <td style="padding:9px 10px;text-align:center;white-space:nowrap">
-          <button onclick="event.stopPropagation();openPostFormModalEdit(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;margin-right:2px" title="편집">✏️</button>
-          <button onclick="event.stopPropagation();deletePostFromDB(${r.id})" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer" title="삭제">🗑️</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
+  try {
+    // upsert: 같은 date면 update, 없으면 insert (UNIQUE 제약 활용)
+    const { error } = await sb
+      .from('followers')
+      .upsert({ date: dateKey, count }, { onConflict: 'date' });
+    if (error) throw error;
+
+    inputEl.style.borderColor = '#16a34a';
+    inputEl.style.background = '#f0fdf4';
+    setTimeout(() => {
+      inputEl.style.borderColor = orig || 'var(--border)';
+      inputEl.style.background = '#fff';
+    }, 1000);
+  } catch (e) {
+    console.error('saveFollowerCount error:', e);
+    inputEl.style.borderColor = '#dc2626';
+    inputEl.style.background = '#fef2f2';
+    showToast('저장 실패: ' + e.message);
+  }
 }
 
 // 발행 게시물 빠른 삭제 (표에서)
@@ -2118,7 +2238,9 @@ function renderCalendar() {
         if (!publishedPosts[key]) publishedPosts[key] = [];
         publishedPosts[key].push({
           text: txt.slice(0, 14) + (txt.length > 14 ? '...' : ''),
-          link: String(r[COL.link] || '').trim()
+          link: String(r[COL.link] || '').trim(),
+          category: r.category || '',
+          type: r[COL.type] || ''
         });
       }
     });
@@ -2139,12 +2261,31 @@ function renderCalendar() {
     const pubs = publishedPosts[d] || [];
     const schs = scheduled[d] || [];
 
-    // 발행된 글 (녹색, 클릭 시 URL 이동)
-    const pubHtml = pubs.slice(0,2).map(p =>
-      p.link
-        ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${p.text}</a>`
-        : `<div class="cal-post-dot published">${p.text}</div>`
-    ).join('');
+    // 분류별 색상 (배경)
+    const catColors = {
+      '홍보': '#fef3c7',
+      '소통&공감': '#fce7f3',
+      '정보': '#dbeafe',
+      '전문가': '#e0e7ff',
+      'etc': '#f3f4f6'
+    };
+    const catLabels = {
+      '홍보': '홍보',
+      '소통&공감': '소통',
+      '정보': '정보',
+      '전문가': '전문가',
+      'etc': 'etc'
+    };
+
+    // 발행된 글 (녹색, 클릭 시 URL 이동) - 분류 배지 표시
+    const pubHtml = pubs.slice(0,2).map(p => {
+      const catBadge = p.category && catLabels[p.category]
+        ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px;vertical-align:middle">${catLabels[p.category]}</span>`
+        : '';
+      return p.link
+        ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${catBadge}${p.text}</a>`
+        : `<div class="cal-post-dot published">${catBadge}${p.text}</div>`;
+    }).join('');
 
     // 예약 글 (회색, 드래그 가능)
     const schHtml = schs.slice(0, Math.max(0, 3 - pubs.length)).map(p =>
@@ -2468,6 +2609,7 @@ function openPostFormModalNew(day) {
     : new Date().toISOString().split('T')[0];
   document.getElementById('postFormDate').value = dateStr;
   document.getElementById('postFormType').value = '';
+  document.getElementById('postFormCategory').value = '';
   document.getElementById('postFormLink').value = '';
   document.getElementById('postFormText').value = '';
   document.getElementById('postFormImageUrl').value = '';
@@ -2512,6 +2654,7 @@ function openPostFormModalEdit(id) {
   document.getElementById('postFormId').value = post.id;
   document.getElementById('postFormDate').value = post.date || '';
   document.getElementById('postFormType').value = post.type || '';
+  document.getElementById('postFormCategory').value = post.category || '';
   document.getElementById('postFormLink').value = post.link || '';
   document.getElementById('postFormText').value = post.text || '';
   document.getElementById('postFormImageUrl').value = post.image_url || '';
@@ -2543,6 +2686,7 @@ async function savePostForm() {
   const postData = {
     date,
     type: document.getElementById('postFormType').value.trim(),
+    category: document.getElementById('postFormCategory').value.trim(),
     link: document.getElementById('postFormLink').value.trim(),
     text,
     image_url: document.getElementById('postFormImageUrl').value.trim(),

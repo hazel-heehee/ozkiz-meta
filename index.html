@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ozkiz threads manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -2453,7 +2453,7 @@ const WEEKLY_PROMPT_TEMPLATE = `당신은 스레드(Threads) 콘텐츠 전략 �
   // ... 7개
 ]
 
-⚠️ 절대로 ```json 코드블록이나 설명 텍스트 추가하지 마세요. 순수 JSON 배열만 응답하세요.`;
+⚠️ 절대로 마크다운 코드블록이나 설명 텍스트 추가하지 마세요. 순수 JSON 배열만 응답하세요.`;
 
 // 모달 열기
 async function openWeeklyPlanModal() {

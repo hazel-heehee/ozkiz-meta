@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ozkiz threads manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -340,7 +340,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <div class="page-actions">
         <span id="sheetSyncStatus" style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">
           <span id="syncDot" style="width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block"></span>
-          <span id="syncMsg">시트 연동 중...</span>
+          <span id="syncMsg">Supabase 연동 중...</span>
         </span>
         <button class="btn btn-ghost btn-sm" onclick="loadSheetData(true)">↻ 새로고침</button>
       </div>
@@ -772,7 +772,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             </tr>
           </thead>
           <tbody id="refTableBody">
-            <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">시트에서 데이터 불러오는 중...</td></tr>
+            <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">Supabase에서 데이터 불러오는 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1433,7 +1433,11 @@ const posts = {};
 // ── SUPABASE CONFIG
 const SUPABASE_URL = 'https://tbltddivmxfuounnzcne.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_UyNSo1sU8K0HwUk2pvlZXA_aVLYS4-p';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false },  // 인증 세션 비활성화 (anon 키만 사용)
+  realtime: { params: { eventsPerSecond: 0 } },  // realtime 비활성화 (안 씀)
+  global: { headers: { 'X-Client-Info': 'ozkiz-threads-manager' } }
+});
 
 // 컬럼 매핑 (Supabase 컬럼명 → 사이트 내부 인덱스 호환용)
 // posts 테이블에서 사용
@@ -1505,18 +1509,23 @@ async function loadSheetData(force = false) {
   msg.textContent = 'Supabase 불러오는 중...';
 
   try {
-    // Supabase에서 posts 데이터 가져오기 (날짜순 정렬)
+    // Supabase에서 posts 데이터 가져오기
+    // 최신 데이터부터 정렬 → 대시보드(최신 게시물)가 빨리 표시됨
+    const t0 = performance.now();
     const { data, error } = await sb
       .from('posts')
-      .select('*')
-      .order('date', { ascending: true });
+      .select('id,date,follower,type,category,link,text,image_url,video_url,views,likes,comments,reposts,shares,follows')
+      .order('date', { ascending: false })
+      .limit(500);  // 최대 500개만 (보통 1년치)
 
     if (error) throw error;
     if (!data || !data.length) throw new Error('데이터가 없습니다');
 
-    // 전역 저장 후 렌더
-    sheetData = data;
-    renderDashboard(data);
+    // 차트/통계용으로는 오름차순 정렬이 필요하므로 reverse
+    sheetData = data.slice().reverse();
+    console.log(`✓ posts 로드: ${data.length}개 (${Math.round(performance.now()-t0)}ms)`);
+
+    renderDashboard(sheetData);
     renderCalendar();
 
     document.getElementById('sheetLastUpdate').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
@@ -1527,7 +1536,7 @@ async function loadSheetData(force = false) {
     dot.style.background = '#e5303e';
     msg.textContent = '연동 실패';
     document.getElementById('recentTableBody').innerHTML = `
-      <tr><td colspan="10" style="text-align:center;padding:40px 24px;font-size:13px">
+      <tr><td colspan="11" style="text-align:center;padding:40px 24px;font-size:13px">
         <div style="font-size:32px;margin-bottom:8px">⚠️</div>
         <div style="font-weight:600;color:var(--text);margin-bottom:6px">Supabase 데이터를 불러올 수 없어요</div>
         <div style="color:var(--text3);font-size:12px;line-height:1.6">
@@ -1862,8 +1871,11 @@ window.addEventListener('load', () => {
   if (apiKey) setConnected(true);
   renderCalendar();
   renderHistory();
-  loadReferences();
+  // 대시보드(posts) 우선 로드 — 사용자가 가장 먼저 보는 화면
   loadSheetData();
+  // 레퍼런스는 백그라운드로 (대시보드 렌더에 영향 X)
+  // 사용자가 '스레드 레퍼런스' 탭에 들어가면 그때 또 fresh 로드 가능
+  setTimeout(() => loadReferences(), 100);
   document.getElementById('updatedDate').textContent = '업데이트 ' + new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
 });
 
@@ -3862,11 +3874,11 @@ async function copyPromptAndOpen(target) {
   }
 }
 
-// ── 레퍼런스 (시트 연동)
-let references = []; // 시트에서 불러옴
+// ── 레퍼런스 (Supabase 연동)
+let references = []; // Supabase에서 불러옴
 let refsLoading = false;
 
-// 시트에서 레퍼런스 데이터 가져오기
+// Supabase에서 레퍼런스 데이터 가져오기
 // ─────────────────────────────────────────────────────
 // 페르소나 분석 / 글 피드백 / 레퍼런스 변환
 // ─────────────────────────────────────────────────────
@@ -4340,12 +4352,15 @@ async function loadReferences(force = false) {
 
   try {
     // Supabase에서 refs 테이블 가져오기 (날짜 내림차순)
+    const t0 = performance.now();
     const { data, error } = await sb
       .from('refs')
       .select('*')
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(500);
 
     if (error) throw error;
+    console.log(`✓ refs 로드: ${data?.length||0}개 (${Math.round(performance.now()-t0)}ms)`);
 
     // Supabase 컬럼 → 사이트 내부 형식으로 매핑
     references = (data || []).map(r => ({

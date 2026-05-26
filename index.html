@@ -315,6 +315,10 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <span class="nav-icon">≡</span> 저장 기록
   </button>
 
+  <button class="nav-item" onclick="goPage('kindergarten',this)">
+    <span class="nav-icon">📚</span> 유치원 일정
+  </button>
+
   <a href="https://www.threads.com/@ozkiz_official" target="_blank" class="nav-item" style="text-decoration:none;margin-top:auto;margin-bottom:6px">
     <span class="nav-icon" style="font-size:15px">⎋</span> 내 스레드 바로가기
     <span style="margin-left:auto;font-size:11px;color:var(--text3)">↗</span>
@@ -493,6 +497,10 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             <button onclick="addScheduleFromCalBtn()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-size:13px;cursor:pointer;font-family:inherit" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">+ 예약 글 추가</button>
           </div>
         </div>
+        <button id="weeklyPlanBtn" onclick="openWeeklyPlanModal()" class="btn btn-sm" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;position:relative" title="AI가 다음 주 7일치 콘텐츠를 자동 기획해서 예약 글로 저장합니다">
+          🤖 주간 자동 기획
+          <span id="thursdayBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700">목요일!</span>
+        </button>
       </div>
 
       <!-- 캘린더 뷰 -->
@@ -965,7 +973,89 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     </div>
   </div>
 
+  <!-- ⑦ 유치원 일정 -->
+  <div class="page" id="page-kindergarten">
+    <div class="page-top">
+      <div class="page-title">유치원 일정</div>
+      <div class="page-actions">
+        <button class="btn btn-primary btn-sm" onclick="openKgAddModal()">+ 일정 추가</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadKindergartenEvents()">↻ 새로고침</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#075985">
+        <b>📚 유치원 연간 일정을 미리 등록해두면 AI 자동 기획에 활용됩니다.</b><br>
+        • 운동회, 소풍, 졸업식, 입학식, 학부모 참여일 등<br>
+        • 주간 자동 기획 시 그 주 일정 자동 매칭 → 맞춤 콘텐츠 추천<br>
+        • 한 번 입력하면 계속 사용됨 (Supabase에 저장)
+      </div>
+
+      <!-- 카테고리별 필터 -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="kgCategoryFilter">
+        <button onclick="filterKgCategory('all')" class="kg-cat-btn active" data-cat="all" style="padding:5px 12px;border:1px solid var(--border);background:#111;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">전체</button>
+        <button onclick="filterKgCategory('행사')" class="kg-cat-btn" data-cat="행사" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">🎉 행사</button>
+        <button onclick="filterKgCategory('소풍')" class="kg-cat-btn" data-cat="소풍" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">🚌 소풍/현장학습</button>
+        <button onclick="filterKgCategory('체육')" class="kg-cat-btn" data-cat="체육" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">⚽ 체육/운동회</button>
+        <button onclick="filterKgCategory('학사')" class="kg-cat-btn" data-cat="학사" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">📚 학사일정</button>
+        <button onclick="filterKgCategory('휴원')" class="kg-cat-btn" data-cat="휴원" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">🏠 휴원/방학</button>
+        <button onclick="filterKgCategory('기타')" class="kg-cat-btn" data-cat="기타" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">📌 기타</button>
+      </div>
+
+      <div id="kgEventsList">
+        <div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+
 </main>
+
+<!-- 유치원 일정 추가/편집 모달 -->
+<div class="modal-overlay" id="kgFormModal">
+  <div class="modal" style="max-width:520px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700" id="kgFormTitle">+ 유치원 일정 추가</div>
+      <button onclick="closeKgFormModal()" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">×</button>
+    </div>
+
+    <input type="hidden" id="kgFormId" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📅 일자 *</div>
+        <input type="date" id="kgFormDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📂 카테고리</div>
+        <select id="kgFormCategory" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="행사">🎉 행사</option>
+          <option value="소풍">🚌 소풍/현장학습</option>
+          <option value="체육">⚽ 체육/운동회</option>
+          <option value="학사">📚 학사일정</option>
+          <option value="휴원">🏠 휴원/방학</option>
+          <option value="기타">📌 기타</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📝 일정명 *</div>
+      <input type="text" id="kgFormTitle2" placeholder="예: 봄 소풍, 운동회, 졸업식" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">💭 메모 <span style="color:var(--text3);font-weight:400">(선택)</span></div>
+      <textarea id="kgFormNote" rows="3" placeholder="예: 도시락 준비, 활동복 착용 권장" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+    </div>
+
+    <div class="modal-btns" style="display:flex;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm" id="kgFormDeleteBtn" onclick="confirmKgDelete()" style="color:var(--red);display:none">🗑️ 삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="closeKgFormModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="saveKgForm()" id="kgFormSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- API KEY MODAL -->
 <div class="modal-overlay" id="modal">
@@ -1038,6 +1128,58 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <button class="btn btn-primary btn-sm" id="dayViewAddPostBtn">✓ 발행 게시물 추가</button>
       <button class="btn btn-ghost btn-sm" id="dayViewAddBtn" style="border:1px dashed var(--border2)">+ 예약 글 추가</button>
       <button class="btn btn-ghost btn-sm" onclick="closeDayView()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 주간 자동 기획 모달 -->
+<div class="modal-overlay" id="weeklyPlanModal">
+  <div class="modal" style="max-width:760px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700">🤖 주간 자동 기획</div>
+      <button onclick="closeWeeklyPlanModal()" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">×</button>
+    </div>
+
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#075985">
+      <b>📅 다음 주 (<span id="planWeekRange"></span>) 7일치 콘텐츠를 AI가 기획합니다.</b><br>
+      • 권위 / 참여유도 / 리드생성 / 홍보 4가지 타입 골고루 섞어서<br>
+      • 7개 글이 다음 주 월~일에 <b>예약 글</b>로 자동 배치돼요<br>
+      • 생성된 글은 나중에 편집하거나 발행 후 "발행 완료로 전환" 가능
+    </div>
+
+    <!-- 자동 컨텍스트 (날씨 + 유치원 일정) -->
+    <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:#1e40af">🌤️ AI가 자동으로 참고할 정보 (서울 기준)</div>
+        <span style="font-size:10px;color:#3730a3;background:#fff;padding:2px 6px;border-radius:4px">자동 로드</span>
+      </div>
+      <div id="weeklyAutoContext" style="background:#fff;border-radius:6px;padding:10px 12px;max-height:200px;overflow-y:auto"></div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;display:flex;justify-content:space-between;align-items:center">
+        <span>📝 프롬프트 (필요시 수정)</span>
+        <button onclick="resetWeeklyPrompt()" style="background:none;border:none;color:#3b82f6;font-size:11px;cursor:pointer;text-decoration:underline">기본값으로 복원</button>
+      </div>
+      <textarea id="weeklyPlanPrompt" rows="14" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:12px;line-height:1.5;font-family:'SF Mono','Monaco',monospace;resize:vertical"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🗓️ 추가 컨텍스트 (선택)</div>
+        <input type="text" id="weeklyContext" placeholder="예: 이번주 비 많이 옴, 어린이날 시즌" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎯 발행 월</div>
+        <input type="text" id="weeklyMonth" readonly style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#f9fafb"/>
+      </div>
+    </div>
+
+    <div id="weeklyPlanResult" style="display:none;margin-bottom:14px"></div>
+
+    <div class="modal-btns" style="display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm" onclick="closeWeeklyPlanModal()">취소</button>
+      <button class="btn btn-primary btn-sm" onclick="runWeeklyPlan()" id="weeklyPlanRunBtn">🤖 AI 기획 시작</button>
     </div>
   </div>
 </div>
@@ -1736,6 +1878,7 @@ function goPage(name, btn) {
   if (name === 'persona') renderBrandGuide();
   if (name === 'feedback') renderFeedbackList();
   if (name === 'content') { updateFormatChips(); suggestMissingMix(); }
+  if (name === 'kindergarten') loadKindergartenEvents();
 }
 
 // ── CHIPS
@@ -1903,6 +2046,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // 마지막 캘린더 보기 모드 복원
     const savedView = localStorage.getItem('oz_cal_view');
     if (savedView === 'list') switchCalView('list');
+    // 목요일 배지 표시
+    updateThursdayBadge();
   }, 100);
 });
 
@@ -1981,6 +2126,521 @@ function closeInfoModal() {
 }
 
 
+
+// ── 유치원 일정 관리
+
+let kindergartenEvents = [];
+let currentKgFilter = 'all';
+
+async function loadKindergartenEvents() {
+  const listEl = document.getElementById('kgEventsList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">불러오는 중...</div>';
+
+  try {
+    const { data, error } = await sb
+      .from('kindergarten_events')
+      .select('*')
+      .order('date', { ascending: true });
+    if (error) throw error;
+    kindergartenEvents = data || [];
+    renderKgEvents();
+  } catch (e) {
+    console.error('loadKindergartenEvents:', e);
+    listEl.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--red);font-size:13px">불러오기 실패: ${e.message}</div>`;
+  }
+}
+
+function renderKgEvents() {
+  const listEl = document.getElementById('kgEventsList');
+  if (!listEl) return;
+
+  let events = kindergartenEvents;
+  if (currentKgFilter !== 'all') {
+    events = events.filter(e => e.category === currentKgFilter);
+  }
+
+  if (!events.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text3);font-size:13px">
+      <div style="font-size:36px;margin-bottom:10px">📭</div>
+      등록된 일정이 없어요<br>
+      <span style="font-size:11px">우측 상단 <b>+ 일정 추가</b>로 시작해보세요</span>
+    </div>`;
+    return;
+  }
+
+  // 월별 그룹화
+  const grouped = {};
+  events.forEach(e => {
+    const m = e.date.slice(0, 7);  // YYYY-MM
+    if (!grouped[m]) grouped[m] = [];
+    grouped[m].push(e);
+  });
+
+  const today = new Date().toISOString().split('T')[0];
+  const catEmoji = { '행사':'🎉','소풍':'🚌','체육':'⚽','학사':'📚','휴원':'🏠','기타':'📌' };
+  const catColors = {
+    '행사':'#fef3c7','소풍':'#dcfce7','체육':'#dbeafe','학사':'#e0e7ff','휴원':'#fce7f3','기타':'#f3f4f6'
+  };
+
+  let html = '';
+  for (const month of Object.keys(grouped).sort()) {
+    const [y, m] = month.split('-');
+    html += `<div style="margin-bottom:18px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--text);display:inline-block">${y}년 ${parseInt(m)}월</div>
+      <div style="display:grid;gap:6px;margin-top:8px">`;
+    for (const ev of grouped[month]) {
+      const isPast = ev.date < today;
+      const isToday = ev.date === today;
+      const wd = ['일','월','화','수','목','금','토'][new Date(ev.date).getDay()];
+      html += `
+        <div onclick="openKgEditModal(${ev.id})" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${isToday?'#fefce8':'#fff'};border:1px solid ${isToday?'#fde68a':'var(--border)'};border-radius:8px;cursor:pointer;opacity:${isPast&&!isToday?'.55':'1'}" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${isToday?'#fefce8':'#fff'}'">
+          <div style="min-width:80px;font-size:12px;color:var(--text2);font-weight:600">
+            ${ev.date.slice(5).replace('-','/')} <span style="color:${new Date(ev.date).getDay()===0?'#dc2626':new Date(ev.date).getDay()===6?'#2563eb':'var(--text3)'};font-size:11px">(${wd})</span>
+            ${isToday?'<span style="background:#16a34a;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;margin-left:4px">오늘</span>':''}
+          </div>
+          <span style="background:${catColors[ev.category]||'#f3f4f6'};padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap">${catEmoji[ev.category]||'📌'} ${ev.category||'기타'}</span>
+          <div style="flex:1;font-size:13px;font-weight:600">${ev.title}</div>
+          ${ev.note?`<div style="font-size:11px;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ev.note.replace(/"/g,'&quot;')}">💭 ${ev.note}</div>`:''}
+        </div>
+      `;
+    }
+    html += `</div></div>`;
+  }
+  listEl.innerHTML = html;
+}
+
+function filterKgCategory(cat) {
+  currentKgFilter = cat;
+  document.querySelectorAll('.kg-cat-btn').forEach(btn => {
+    if (btn.dataset.cat === cat) {
+      btn.style.background = '#111';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = '#fff';
+      btn.style.color = 'var(--text)';
+    }
+  });
+  renderKgEvents();
+}
+
+function openKgAddModal() {
+  document.getElementById('kgFormTitle').textContent = '+ 유치원 일정 추가';
+  document.getElementById('kgFormId').value = '';
+  document.getElementById('kgFormDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('kgFormCategory').value = '행사';
+  document.getElementById('kgFormTitle2').value = '';
+  document.getElementById('kgFormNote').value = '';
+  document.getElementById('kgFormDeleteBtn').style.display = 'none';
+  document.getElementById('kgFormModal').classList.add('open');
+  setTimeout(() => document.getElementById('kgFormTitle2').focus(), 100);
+}
+
+function openKgEditModal(id) {
+  const ev = kindergartenEvents.find(e => e.id === id);
+  if (!ev) return;
+  document.getElementById('kgFormTitle').textContent = '✏️ 일정 편집';
+  document.getElementById('kgFormId').value = ev.id;
+  document.getElementById('kgFormDate').value = ev.date;
+  document.getElementById('kgFormCategory').value = ev.category || '행사';
+  document.getElementById('kgFormTitle2').value = ev.title;
+  document.getElementById('kgFormNote').value = ev.note || '';
+  document.getElementById('kgFormDeleteBtn').style.display = 'inline-block';
+  document.getElementById('kgFormModal').classList.add('open');
+}
+
+function closeKgFormModal() { document.getElementById('kgFormModal').classList.remove('open'); }
+
+async function saveKgForm() {
+  const title = document.getElementById('kgFormTitle2').value.trim();
+  const date = document.getElementById('kgFormDate').value;
+  if (!title || !date) { showToast('날짜와 일정명은 필수예요'); return; }
+
+  const id = document.getElementById('kgFormId').value;
+  const data = {
+    date, title,
+    category: document.getElementById('kgFormCategory').value,
+    note: document.getElementById('kgFormNote').value.trim()
+  };
+
+  const btn = document.getElementById('kgFormSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+
+  try {
+    if (id) {
+      const { error } = await sb.from('kindergarten_events').update(data).eq('id', parseInt(id));
+      if (error) throw error;
+      showToast('✓ 일정이 수정되었어요');
+    } else {
+      const { error } = await sb.from('kindergarten_events').insert(data);
+      if (error) throw error;
+      showToast('✓ 일정이 추가되었어요');
+    }
+    closeKgFormModal();
+    await loadKindergartenEvents();
+  } catch (e) {
+    console.error('saveKgForm:', e);
+    showToast('저장 실패: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '저장';
+  }
+}
+
+async function confirmKgDelete() {
+  const id = document.getElementById('kgFormId').value;
+  if (!id || !confirm('이 일정을 삭제할까요?')) return;
+  try {
+    const { error } = await sb.from('kindergarten_events').delete().eq('id', parseInt(id));
+    if (error) throw error;
+    closeKgFormModal();
+    await loadKindergartenEvents();
+    showToast('✓ 삭제됨');
+  } catch (e) {
+    console.error('confirmKgDelete:', e);
+    showToast('삭제 실패: ' + e.message);
+  }
+}
+
+// ── 날씨 API (Open-Meteo, 서울 기준, 무료/키 불필요)
+const SEOUL_LAT = 37.5665;
+const SEOUL_LON = 126.9780;
+
+// WMO 날씨 코드 → 한글 + 이모지
+function weatherDesc(code) {
+  if (code === 0) return { emoji: '☀️', desc: '맑음' };
+  if (code <= 2) return { emoji: '🌤️', desc: '대체로 맑음' };
+  if (code === 3) return { emoji: '☁️', desc: '흐림' };
+  if (code <= 49) return { emoji: '🌫️', desc: '안개' };
+  if (code <= 59) return { emoji: '🌦️', desc: '이슬비' };
+  if (code <= 69) return { emoji: '🌧️', desc: '비' };
+  if (code <= 79) return { emoji: '🌨️', desc: '눈' };
+  if (code <= 84) return { emoji: '🌧️', desc: '소나기' };
+  if (code <= 99) return { emoji: '⛈️', desc: '뇌우' };
+  return { emoji: '🌡️', desc: '기상정보' };
+}
+
+async function fetchSeoulWeather(startDate, endDate) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${SEOUL_LAT}&longitude=${SEOUL_LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&start_date=${startDate}&end_date=${endDate}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('weather API failed');
+    const json = await res.json();
+    const daily = json.daily;
+    if (!daily) return null;
+    const result = [];
+    for (let i = 0; i < daily.time.length; i++) {
+      const { emoji, desc } = weatherDesc(daily.weather_code[i]);
+      result.push({
+        date: daily.time[i],
+        code: daily.weather_code[i],
+        desc, emoji,
+        tmax: Math.round(daily.temperature_2m_max[i]),
+        tmin: Math.round(daily.temperature_2m_min[i]),
+        rainPct: daily.precipitation_probability_max[i] || 0
+      });
+    }
+    return result;
+  } catch (e) {
+    console.error('fetchSeoulWeather:', e);
+    return null;
+  }
+}
+
+// 다음 주 컨텍스트 빌더 (날씨 + 유치원 일정 매칭)
+async function buildWeeklyContext(startDate, endDate) {
+  const lines = [];
+
+  // 1) 날씨
+  const weather = await fetchSeoulWeather(startDate, endDate);
+  if (weather && weather.length) {
+    lines.push('【다음 주 서울 날씨 예보】');
+    weather.forEach(w => {
+      const dt = new Date(w.date);
+      const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
+      lines.push(`- ${dt.getMonth()+1}/${dt.getDate()}(${wd}): ${w.emoji} ${w.desc}, ${w.tmin}~${w.tmax}°C, 강수확률 ${w.rainPct}%`);
+    });
+  }
+
+  // 2) 유치원 일정 (해당 주에 매칭되는 것만)
+  try {
+    const { data, error } = await sb
+      .from('kindergarten_events')
+      .select('*')
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true });
+    if (!error && data && data.length) {
+      lines.push('\n【다음 주 유치원 일정】');
+      data.forEach(ev => {
+        const dt = new Date(ev.date);
+        const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
+        const catEmoji = { '행사':'🎉','소풍':'🚌','체육':'⚽','학사':'📚','휴원':'🏠','기타':'📌' };
+        lines.push(`- ${dt.getMonth()+1}/${dt.getDate()}(${wd}): ${catEmoji[ev.category]||'📌'} ${ev.title}${ev.note?` (${ev.note})`:''}`);
+      });
+    } else {
+      lines.push('\n【다음 주 유치원 일정】\n- 특별한 일정 없음');
+    }
+  } catch (e) { console.warn('kg events fetch:', e); }
+
+  return lines.join('\n');
+}
+
+// 유치원 페이지 진입 시 자동 로드 (init 보강용)
+// ── 주간 자동 기획 (AI)
+
+// 기본 프롬프트 템플릿
+const WEEKLY_PROMPT_TEMPLATE = `당신은 스레드(Threads) 콘텐츠 전략 전문가이자, 아동복·아동화·육아 카테고리의 마케팅 디렉터입니다.
+
+【브랜드 컨텍스트】
+- 브랜드명: 오즈키즈 (ozkiz)
+- 카테고리: 아동복·아동화 (0세~초등)
+- 강점: 15년 제조 경력, 자체 디자인·생산, 합리적 가격, 디테일에 신경 쓴 마감
+- 타겟: 0~10세 자녀를 둔 2030 엄마들 (스레드 활성 사용자)
+- 톤: 따뜻하고 친근한 엄마 친구 같은 말투. 판매보다 공감·정보 우선.
+
+【스레드 알고리즘 이해】
+- 텍스트 중심, 첫 줄(후크)이 노출의 80% 결정
+- 짧고 끊어 쓰는 문장이 잘 통함
+- 댓글·공유·저장 트리거 = 알고리즘 점수
+- 권장 길이: 1000자 이하, 3~6줄
+- 해시태그 3~5개, 이모지 2~3개
+
+【작성 원칙】
+1. 첫 줄 = 스크롤 멈춤 유도 (호기심·공감·정보 중 하나)
+2. 광고 톤 금지, 정보·공감 우선
+3. 3~6줄, 짧게 끊어 쓰기
+4. 이모지 2~3개
+5. 해시태그 #오즈키즈 필수 + 3~5개
+6. 실제 스레드에 그대로 올릴 완성형 포스팅
+
+【발행 월】 {{MONTH}}월
+【추가 컨텍스트】 {{CONTEXT}}
+
+{{AUTO_CONTEXT}}
+
+【요청 사항】
+다음 주 7일치 (월~일) 콘텐츠를 기획해주세요.
+콘텐츠 믹스 4가지 타입을 골고루 섞어주세요:
+- 권위 구축 (정보·전문성): 사이즈 가이드, 소재 비교, 세탁법 등
+- 참여 유도: 공감 질문, 일상 공유로 댓글 유도
+- 리드 생성: 저장·공유 유도하는 유용한 정보
+- 홍보: 자사 제품을 자연스럽게 소개 (광고 톤 X)
+
+【출력 형식】
+반드시 아래 JSON 형식으로만 응답하세요. 다른 설명/마크다운/코드블록 없이 JSON만:
+
+[
+  {
+    "day": "월",
+    "type": "권위" 또는 "참여" 또는 "리드" 또는 "홍보",
+    "category": "정보" 또는 "소통&공감" 또는 "정보" 또는 "홍보",
+    "cta": "조회수" 또는 "좋아요" 또는 "댓글" 또는 "공유" 또는 "링크클릭" 또는 "리포스트" 또는 "저장" 또는 "팔로우",
+    "title": "글의 핵심 주제 한 줄 요약 (20자 이내)",
+    "content": "스레드에 그대로 올릴 완성형 본문 (첫 줄 후크 포함, 해시태그 포함)"
+  },
+  // ... 7개
+]`;
+
+// 모달 열기
+async function openWeeklyPlanModal() {
+  if (!apiKey) { showToast('먼저 Gemini API 키를 설정해주세요'); openModal(); return; }
+
+  // 다음 주 월요일 ~ 일요일 계산
+  const today = new Date();
+  const dow = today.getDay(); // 0=일, 1=월, ..., 6=토
+  const daysUntilNextMon = (8 - dow) % 7 || 7; // 다음 주 월요일까지
+  const nextMon = new Date(today);
+  nextMon.setDate(today.getDate() + daysUntilNextMon);
+  const nextSun = new Date(nextMon);
+  nextSun.setDate(nextMon.getDate() + 6);
+
+  const fmt = (d) => `${d.getMonth()+1}/${d.getDate()}`;
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  document.getElementById('planWeekRange').textContent = `${fmt(nextMon)} ~ ${fmt(nextSun)}`;
+  document.getElementById('weeklyMonth').value = `${nextMon.getMonth()+1}월`;
+  document.getElementById('weeklyContext').value = '';
+  document.getElementById('weeklyPlanPrompt').value = WEEKLY_PROMPT_TEMPLATE;
+  document.getElementById('weeklyPlanResult').style.display = 'none';
+  document.getElementById('weeklyPlanResult').innerHTML = '';
+
+  // 자동 컨텍스트 미리보기 영역
+  const autoEl = document.getElementById('weeklyAutoContext');
+  if (autoEl) {
+    autoEl.innerHTML = '<div style="color:var(--text3);font-size:11px">⏳ 날씨 & 유치원 일정 불러오는 중...</div>';
+  }
+
+  // 다음 주 시작 날짜 저장 (전역)
+  window.__nextMonday = nextMon;
+  window.__nextSunday = nextSun;
+
+  document.getElementById('weeklyPlanModal').classList.add('open');
+
+  // 비동기로 자동 컨텍스트 로드
+  const ctx = await buildWeeklyContext(ymd(nextMon), ymd(nextSun));
+  window.__autoContext = ctx;
+  if (autoEl) {
+    autoEl.innerHTML = `<pre style="margin:0;font-family:inherit;font-size:11px;line-height:1.6;color:#075985;white-space:pre-wrap">${ctx || '(자동 컨텍스트 없음)'}</pre>`;
+  }
+}
+
+function closeWeeklyPlanModal() {
+  document.getElementById('weeklyPlanModal').classList.remove('open');
+}
+
+function resetWeeklyPrompt() {
+  document.getElementById('weeklyPlanPrompt').value = WEEKLY_PROMPT_TEMPLATE;
+}
+
+// AI 호출 및 예약 글로 자동 배치
+async function runWeeklyPlan() {
+  const btn = document.getElementById('weeklyPlanRunBtn');
+  const resultEl = document.getElementById('weeklyPlanResult');
+  const prompt = document.getElementById('weeklyPlanPrompt').value;
+  const context = document.getElementById('weeklyContext').value.trim() || '특별한 이벤트 없음';
+  const month = document.getElementById('weeklyMonth').value.replace('월', '');
+
+  const finalPrompt = prompt
+    .replace('{{MONTH}}', month)
+    .replace('{{CONTEXT}}', context)
+    .replace('{{AUTO_CONTEXT}}', window.__autoContext || '');
+
+  btn.disabled = true;
+  btn.textContent = '🤖 AI 기획 중... (20~40초)';
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `<div style="padding:20px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;text-align:center;color:#075985;font-size:13px">
+    <div style="font-size:24px;margin-bottom:8px">⏳</div>
+    Gemini AI가 다음 주 콘텐츠를 기획하는 중...<br>
+    <span style="font-size:11px;color:#6b7280">20~40초 정도 걸려요</span>
+  </div>`;
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: finalPrompt }] }],
+        generationConfig: { temperature: 0.85, maxOutputTokens: 4096 }
+      })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`AI 호출 실패 (${res.status})`);
+    }
+
+    const json = await res.json();
+    let text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) throw new Error('AI가 빈 응답을 반환했어요');
+
+    // JSON 추출 (마크다운 코드블록 제거)
+    text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    // JSON 배열 부분만 추출
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('AI 응답에서 JSON을 찾을 수 없어요');
+
+    let posts;
+    try {
+      posts = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.error('JSON parse error:', e, 'raw:', text);
+      throw new Error('AI 응답 형식이 잘못됐어요. 다시 시도해주세요');
+    }
+
+    if (!Array.isArray(posts) || posts.length === 0) {
+      throw new Error('AI가 7개 글을 생성하지 않았어요');
+    }
+
+    // 미리보기 표시
+    resultEl.innerHTML = `
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#15803d;margin-bottom:8px">✓ ${posts.length}개 글 생성 완료! 미리보기:</div>
+      </div>
+      <div style="max-height:350px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+        ${posts.map((p, i) => {
+          const day = p.day || ['월','화','수','목','금','토','일'][i] || '?';
+          return `<div style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px">
+            <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center">
+              <span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:4px;font-weight:600">${day}</span>
+              ${p.type ? `<span style="background:#f3f4f6;color:#374151;padding:2px 6px;border-radius:4px;font-size:11px">${p.type}</span>` : ''}
+              ${p.category ? `<span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:11px">${p.category}</span>` : ''}
+              ${p.cta ? `<span style="background:#dbeafe;color:#1e40af;padding:2px 6px;border-radius:4px;font-size:11px">🎯 ${p.cta}</span>` : ''}
+              <span style="margin-left:auto;font-weight:600;color:var(--text2)">${p.title || ''}</span>
+            </div>
+            <div style="background:#fafafa;padding:8px 10px;border-radius:4px;white-space:pre-wrap;line-height:1.5;color:var(--text)">${(p.content||'').slice(0,180)}${(p.content||'').length>180?'...':''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:10px">
+        <button onclick="saveWeeklyPlanToSchedule()" class="btn btn-primary btn-sm" style="width:100%">📅 7일치 모두 예약 글로 저장</button>
+      </div>
+    `;
+
+    // 결과 전역 저장
+    window.__weeklyPlanResult = posts;
+
+    btn.disabled = false;
+    btn.textContent = '🤖 다시 생성';
+
+  } catch (e) {
+    console.error('runWeeklyPlan error:', e);
+    resultEl.innerHTML = `<div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:13px">
+      ❌ ${e.message}<br>
+      <span style="color:#6b7280;font-size:11px">다시 시도하거나 프롬프트를 조정해보세요</span>
+    </div>`;
+    btn.disabled = false;
+    btn.textContent = '🤖 AI 기획 시작';
+  }
+}
+
+// 생성된 7개 글을 예약 글로 저장 (localStorage)
+function saveWeeklyPlanToSchedule() {
+  const posts = window.__weeklyPlanResult;
+  const nextMon = window.__nextMonday;
+  if (!posts || !nextMon) { showToast('데이터가 없어요'); return; }
+
+  // 한글 요일 → 0(월)~6(일) 오프셋
+  const dayOffsets = { '월':0, '화':1, '수':2, '목':3, '금':4, '토':5, '일':6 };
+
+  let added = 0;
+  posts.forEach((p, i) => {
+    // day 필드가 한글 요일이면 그걸로, 아니면 인덱스로
+    let offset = dayOffsets[p.day];
+    if (offset === undefined) offset = i; // fallback: 순서대로 월~일
+
+    const targetDate = new Date(nextMon);
+    targetDate.setDate(nextMon.getDate() + offset);
+
+    const newPost = {
+      id: 'sch_' + Date.now() + '_' + i,
+      year: targetDate.getFullYear(),
+      month: targetDate.getMonth(),
+      day: targetDate.getDate(),
+      title: p.title || (p.content||'').slice(0, 30),
+      content: p.content || '',
+      type: p.type || '',  // 콘텐츠 타입(권위/참여 등)
+      category: p.category || '',
+      cta: p.cta || '',
+      _aiGenerated: true
+    };
+    scheduledPosts.push(newPost);
+    added++;
+  });
+
+  localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
+  closeWeeklyPlanModal();
+  renderCalendar();
+  showToast(`✓ ${added}개 예약 글이 다음 주에 자동 배치됐어요!`);
+}
+
+// 목요일이면 버튼 강조
+function updateThursdayBadge() {
+  const today = new Date();
+  const isThursday = today.getDay() === 4;
+  const badge = document.getElementById('thursdayBadge');
+  if (badge) badge.style.display = isThursday ? 'inline-block' : 'none';
+}
 
 // 캘린더/표 보기 모드
 let calViewMode = 'cal'; // 'cal' or 'list'
@@ -2753,7 +3413,8 @@ async function promoteScheduleToPost(scheduleId) {
   const dateStr = `${sch.year}-${String(sch.month+1).padStart(2,'0')}-${String(sch.day).padStart(2,'0')}`;
   const postData = {
     date: dateStr,
-    type: sch.type || '',
+    type: sch.cta || sch.type || '',  // CTA 우선, 없으면 type
+    category: sch.category || '',
     link: '',
     text: sch.content || sch.title,
     image_url: '',

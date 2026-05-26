@@ -2515,20 +2515,28 @@ async function runWeeklyPlan() {
   </div>`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: finalPrompt }] }],
-        generationConfig: { temperature: 0.85, maxOutputTokens: 4096 }
-      })
-    });
+    // 최신 모델 우선 시도, 실패 시 fallback
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let res = null;
+    let lastErr = null;
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`AI 호출 실패 (${res.status})`);
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: finalPrompt }] }],
+            generationConfig: { temperature: 0.85, maxOutputTokens: 4096 }
+          })
+        });
+        if (r.ok) { res = r; console.log(`✓ Using model: ${model}`); break; }
+        lastErr = `${model}: ${r.status}`;
+      } catch (e) { lastErr = `${model}: ${e.message}`; }
     }
+
+    if (!res) throw new Error(`모든 모델 호출 실패 (${lastErr})`);
 
     const json = await res.json();
     let text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';

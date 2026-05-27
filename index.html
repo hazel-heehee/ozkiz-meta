@@ -1954,9 +1954,26 @@ function renderWeeklyRoutine() {
   const r1Progress = `${postedDays}/7건`;
   const r1Pct = (postedDays / 7) * 100;
 
-  // ── 2. 콘텐츠 믹스 (수동 체크 - localStorage)
-  const mixData = JSON.parse(localStorage.getItem('oz_weekly_mix') || '{}');
-  const thisWeekMix = mixData[weekKey] || { promo: false, empathy: false, info: false, authority: false };
+  // ── 2. 콘텐츠 믹스 (이번 주 발행 글의 category 자동 매핑)
+  // 분류값 → 믹스 키 매핑
+  const categoryToMixKey = {
+    '홍보': 'promo',
+    '소통&공감': 'empathy',
+    '정보': 'info',
+    '전문가': 'authority'
+  };
+
+  const thisWeekMix = { promo: false, empathy: false, info: false, authority: false };
+  // 이번 주 발행된 글의 category를 자동으로 체크
+  (sheetData || []).forEach(r => {
+    const d = toDateObj(r[COL.date]);
+    if (d && d >= monday && d <= sunday) {
+      const cat = String(r.category || '').trim();
+      const mixKey = categoryToMixKey[cat];
+      if (mixKey) thisWeekMix[mixKey] = true;
+    }
+  });
+
   const mixDone = Object.values(thisWeekMix).filter(Boolean).length;
   const r2Done = mixDone >= 4;
   const r2Progress = `${mixDone}/4 종류`;
@@ -2000,7 +2017,7 @@ function renderWeeklyRoutine() {
     </div>`;
   };
 
-  // 콘텐츠 믹스 체크박스 HTML
+  // 콘텐츠 믹스 자동 표시 (이번 주 발행 글에서 자동 계산됨)
   const mixCategories = [
     { key: 'promo',     label: '🛍️ 제품홍보' },
     { key: 'empathy',   label: '💬 공감' },
@@ -2009,12 +2026,14 @@ function renderWeeklyRoutine() {
   ];
   const mixCheckboxes = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:2px">
-      ${mixCategories.map(c => `
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#374151;padding:3px 4px;border-radius:4px;transition:background .15s" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
-          <input type="checkbox" ${thisWeekMix[c.key]?'checked':''} onchange="toggleMixCheck('${c.key}', this.checked)" style="margin:0;cursor:pointer"/>
-          <span>${c.label}</span>
-        </label>
-      `).join('')}
+      ${mixCategories.map(c => {
+        const checked = thisWeekMix[c.key];
+        return `
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;padding:3px 4px;border-radius:4px;opacity:${checked?'1':'0.5'}" title="${checked?'✓ 이번 주에 발행함':'아직 발행 안 됨'}">
+          <span style="display:inline-flex;width:14px;height:14px;align-items:center;justify-content:center;background:${checked?'#16a34a':'#e5e7eb'};color:#fff;border-radius:3px;font-size:10px;font-weight:700">${checked?'✓':''}</span>
+          <span style="color:${checked?'#15803d':'#9ca3af'};font-weight:${checked?'600':'400'}">${c.label}</span>
+        </div>`;
+      }).join('')}
     </div>
   `;
 

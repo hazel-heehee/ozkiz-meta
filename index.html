@@ -3884,7 +3884,7 @@ let refsLoading = false;
 // ─────────────────────────────────────────────────────
 
 // Gemini API 호출 헬퍼
-async function callGeminiAPI(prompt, maxTokens = 1500) {
+async function callGeminiAPI(prompt, maxTokens = 1500, temperature = 0.9) {
   if (!apiKey) {
     throw new Error('Gemini API 키가 설정되지 않았어요. 좌측 하단에서 키를 등록해주세요.');
   }
@@ -3895,7 +3895,12 @@ async function callGeminiAPI(prompt, maxTokens = 1500) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.9 }
+        generationConfig: {
+          maxOutputTokens: maxTokens,
+          temperature: temperature,
+          topP: 0.95,
+          topK: 40
+        }
       })
     }
   );
@@ -4221,43 +4226,69 @@ async function convertRefToMyPost(refId) {
 - 주제: ${currentPersona.topics}
 ` : '';
 
-  const prompt = `당신은 오즈키즈(ozkiz) 아동복 브랜드의 스레드 마케터입니다.
+  const prompt = `당신은 오즈키즈(ozkiz) 아동복 브랜드의 스레드 마케터이자 카피라이터입니다.
 
-다른 계정에서 잘 터진 레퍼런스 글을 보고, 오즈키즈 브랜드 톤으로 새 글을 작성해주세요.
+다른 계정에서 잘 터진 글을 보고, 오즈키즈 톤으로 새로운 글을 써주세요.
 
-레퍼런스 원본:
+【레퍼런스 원본】
 """
 ${ref.content}
 """
 
-이 글이 터진 포인트 (참고):
+【이 글이 잘된 이유 (참고)】
 ${ref.point || '특별한 인사이트 없음'}
 
-성과: 조회수 ${ref.views.toLocaleString()}, 좋아요 ${ref.likes.toLocaleString()}, 댓글 ${ref.comments.toLocaleString()}
+【성과】
+조회수 ${ref.views.toLocaleString()}, 좋아요 ${ref.likes.toLocaleString()}, 댓글 ${ref.comments.toLocaleString()}
 키워드: ${ref.keyword || '없음'}
 ${personaContext}
 
-조건:
-- 오즈키즈는 아동복(0세~초등) 브랜드, 타겟은 2030 엄마들
-- 직접 베끼지 말고, 핵심 패턴(후크/구조/감정선)만 가져와서 오즈키즈 맥락에 맞게 새로 쓰기
-- 따뜻하고 친근한 엄마 친구 같은 톤
-- 3~6줄, 이모지 2~3개, 해시태그 3~5개 (#오즈키즈 포함)
-- 스레드에 바로 올릴 수 있는 완성된 포스팅 3개 작성
+【작업 방식】
 
-응답 형식:
-【버전 1】
+먼저, 레퍼런스 글을 깊이 분석해주세요:
+- 이 글이 왜 사람들에게 통했나? (감정? 정보? 공감? 호기심? 충격?)
+- 첫 줄 후크의 진짜 힘은 어디서 오나?
+- 글 구조나 리듬에서 매력적인 부분은?
+- 어떤 점을 오즈키즈/아동복 맥락으로 바꿀 수 있을까?
+
+그 다음, **완전히 다른 3가지 방향**으로 자유롭게 재해석해주세요.
+
+★ 중요 원칙:
+1. 정해진 틀 안에서만 쓰지 마세요. 레퍼런스의 매력 포인트를 가져와서 자유롭게 펼치세요.
+2. 3개 버전은 접근 방식 자체가 달라야 합니다 (감정선/주제 각도/구조/타겟 상황 등)
+3. 똑같이 "공감형 질문 3개" 같은 식은 피하세요
+4. 레퍼런스가 정보형이면 한 버전은 일상툰, 다른 건 발견 스토리, 또 다른 건 직접 데이터 공개 식으로 완전 다른 각도
+5. 후크는 패턴화하지 말고 매번 신선하게 — 의외성 / 감정 / 호기심 / 디테일 / 솔직함 / 유머 / 충격 등 어떤 무기든 써도 OK
+6. 오즈키즈 브랜드의 진짜 매력(15년 제조, 자체 디자인, 디테일 마감)이 자연스럽게 녹아들면 좋음 — 단, 광고 톤 절대 X
+
+【필수 조건】
+- 0~10세 자녀를 둔 2030 엄마들이 타겟
+- 따뜻하고 친근한 엄마 친구 같은 톤 (광고 톤·판매 톤 절대 X)
+- 3~6줄, 짧게 끊어 쓰기
+- 이모지 2~3개 적정
+- 해시태그 3~5개 (#오즈키즈 포함)
+- 스레드에 그대로 올릴 수 있는 완성형
+
+【출력 형식】
+
+먼저 분석을 한 줄로 적어주세요:
+〔이 글의 핵심 매력〕 ...간단히 한 줄
+
+그 다음 3개 버전:
+
+【버전 1】 (이 버전의 방향성을 한 단어로 적어주세요)
 (글)
 
-【버전 2】
+【버전 2】 (이 버전의 방향성을 한 단어로 적어주세요)
 (글)
 
-【버전 3】
+【버전 3】 (이 버전의 방향성을 한 단어로 적어주세요)
 (글)
 
-부연 설명 없이 위 3개 버전만 출력해주세요.`;
+부연 설명 없이 위 형식만 출력해주세요.`;
 
   try {
-    const result = await callGeminiAPI(prompt, 4000);
+    const result = await callGeminiAPI(prompt, 4000, 1.0);
 
     // 저장 기록에 저장
     const item = {
@@ -4289,28 +4320,47 @@ function showConvertResultModal(ref, result) {
   const body = document.getElementById('convertResultBody');
   if (!modal || !body) return;
 
-  // 3개 버전 분리
+  // 매력 분석 추출 (〔이 글의 핵심 매력〕 ...)
+  let analysis = '';
+  const aMatch = result.match(/〔[^〕]*〕\s*(.+?)(?=\n|$)/);
+  if (aMatch) analysis = aMatch[1].trim();
+
+  // 3개 버전 분리 — 방향성 라벨까지 추출
+  // 【버전 1】 (감성호소) 같은 형식
   const versions = [];
-  const re = /【버전\s*(\d+)[^】]*】([\s\S]*?)(?=【버전|$)/g;
+  const re = /【버전\s*(\d+)】\s*(?:\(([^)]+)\))?([\s\S]*?)(?=【버전|$)/g;
   let m;
   while ((m = re.exec(result)) !== null) {
-    versions.push({ num: m[1], text: m[2].trim() });
+    versions.push({
+      num: m[1],
+      label: (m[2] || '').trim(),
+      text: m[3].trim()
+    });
   }
   // 못 잘랐으면 통째로
-  if (versions.length === 0) versions.push({ num: '전체', text: result });
+  if (versions.length === 0) versions.push({ num: '전체', label: '', text: result });
 
   const colors = ['#dc2626', '#3b82f6', '#16a34a', '#7c3aed'];
+  const bgs = ['#fef2f2', '#eff6ff', '#f0fdf4', '#faf5ff'];
 
   body.innerHTML = `
-    <div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.5">
+    <div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:10px;font-size:12px;color:var(--text2);line-height:1.5">
       <b>원본 레퍼런스</b>: ${ref.content.slice(0, 80)}${ref.content.length > 80 ? '...' : ''}
     </div>
+    ${analysis ? `
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#92400e">
+        <b>💡 핵심 매력 분석:</b> ${analysis}
+      </div>
+    ` : ''}
     <div style="display:flex;flex-direction:column;gap:12px">
       ${versions.map((v, i) => `
-        <div style="background:#fff;border:1px solid var(--border);border-left:3px solid ${colors[i] || '#6b7280'};border-radius:8px;padding:14px 16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div style="font-size:12px;font-weight:700;color:${colors[i] || '#6b7280'}">✨ 버전 ${v.num}</div>
-            <button onclick="copyConvertVersion(this, ${i})" style="background:#f3f4f6;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600">📋 복사</button>
+        <div style="background:${bgs[i] || '#fff'};border:1px solid var(--border);border-left:3px solid ${colors[i] || '#6b7280'};border-radius:8px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <div style="font-size:12px;font-weight:700;color:${colors[i] || '#6b7280'}">✨ 버전 ${v.num}</div>
+              ${v.label ? `<span style="background:#fff;color:${colors[i]};border:1px solid ${colors[i]}33;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600">${v.label}</span>` : ''}
+            </div>
+            <button onclick="copyConvertVersion(this, ${i})" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600">📋 복사</button>
           </div>
           <div data-version-text style="font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)">${v.text}</div>
         </div>

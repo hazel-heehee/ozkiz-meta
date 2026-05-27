@@ -3985,16 +3985,17 @@ function renderFeedbackList() {
   if (!list) return;
 
   if (!sheetData.length) {
-    list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">시트 데이터가 없어요</div>';
+    list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">발행한 글이 없어요</div>';
     return;
   }
 
   const sortBy = document.getElementById('feedbackSort').value;
+  // 본문이 있는 모든 글 (조회수 0이어도 OK — 발행 직후 글 포함)
   const posts = sheetData
-    .map((r, i) => ({ row: r, originalIdx: i }))  // 원본 인덱스 먼저 보존
-    .filter(p => cleanText(p.row[COL.text]).trim().length > 20 && toNum(p.row[COL.views]) > 0)
+    .map((r, i) => ({ row: r, originalIdx: i }))
+    .filter(p => cleanText(p.row[COL.text]).trim().length > 20)
     .map(p => ({
-      idx: p.originalIdx,  // sheetData의 실제 인덱스
+      idx: p.originalIdx,
       row: p.row,
       text: cleanText(p.row[COL.text]),
       date: p.row[COL.date],
@@ -4004,26 +4005,47 @@ function renderFeedbackList() {
       reposts: toNum(p.row[COL.reposts]),
       shares: toNum(p.row[COL.shares]),
       engagement: calcEngagement(p.row),
-      link: String(p.row[COL.link]||'').trim()
+      link: String(p.row[COL.link]||'').trim(),
+      hasStats: toNum(p.row[COL.views]) > 0
     }));
 
-  if (sortBy === 'views') posts.sort((a,b) => b.views - a.views);
-  else if (sortBy === 'recent') posts.sort((a,b) => (toDateObj(b.date)?.getTime()||0) - (toDateObj(a.date)?.getTime()||0));
-  else posts.sort((a,b) => b.engagement - a.engagement);
+  if (sortBy === 'views') {
+    // 조회수 정렬: 통계 없는 글은 맨 위로 (최신 미입력 강조)
+    posts.sort((a,b) => {
+      if (!a.hasStats && b.hasStats) return -1;
+      if (a.hasStats && !b.hasStats) return 1;
+      if (!a.hasStats && !b.hasStats) return (toDateObj(b.date)?.getTime()||0) - (toDateObj(a.date)?.getTime()||0);
+      return b.views - a.views;
+    });
+  } else if (sortBy === 'recent') {
+    posts.sort((a,b) => (toDateObj(b.date)?.getTime()||0) - (toDateObj(a.date)?.getTime()||0));
+  } else {
+    // 참여율 정렬: 통계 없는 글은 맨 위로
+    posts.sort((a,b) => {
+      if (!a.hasStats && b.hasStats) return -1;
+      if (a.hasStats && !b.hasStats) return 1;
+      if (!a.hasStats && !b.hasStats) return (toDateObj(b.date)?.getTime()||0) - (toDateObj(a.date)?.getTime()||0);
+      return b.engagement - a.engagement;
+    });
+  }
 
   list.innerHTML = posts.slice(0, 50).map(p => {
     const engColor = p.engagement >= 10 ? '#16a34a' : p.engagement >= 5 ? '#3b82f6' : 'var(--text2)';
+    const dash = '<span style="color:var(--text3)">—</span>';
+    const noStatsBadge = !p.hasStats
+      ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;margin-left:6px">통계 미입력</span>'
+      : '';
     return `
-      <div onclick="selectFeedbackPost(${p.idx})" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div onclick="selectFeedbackPost(${p.idx})" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s${!p.hasStats?';background:#fffbeb':''}" onmouseover="this.style.background='${!p.hasStats?'#fef3c7':'var(--surface2)'}'" onmouseout="this.style.background='${!p.hasStats?'#fffbeb':''}'">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:4px">
-          <div style="font-size:11px;color:var(--text3)">${fmtDate(p.date)}</div>
-          <div style="font-size:11px;font-weight:700;color:${engColor}">${p.engagement.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--text3)">${fmtDate(p.date)}${noStatsBadge}</div>
+          <div style="font-size:11px;font-weight:700;color:${engColor}">${p.hasStats ? p.engagement.toFixed(1)+'%' : dash}</div>
         </div>
         <div style="font-size:12px;line-height:1.5;color:var(--text);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.text}</div>
         <div style="display:flex;gap:10px;font-size:10px;color:var(--text3)">
-          <span>👁️ ${p.views.toLocaleString()}</span>
-          <span>❤️ ${p.likes.toLocaleString()}</span>
-          <span>💬 ${p.comments.toLocaleString()}</span>
+          <span>👁️ ${p.hasStats ? p.views.toLocaleString() : dash}</span>
+          <span>❤️ ${p.hasStats ? p.likes.toLocaleString() : dash}</span>
+          <span>💬 ${p.hasStats ? p.comments.toLocaleString() : dash}</span>
         </div>
       </div>
     `;

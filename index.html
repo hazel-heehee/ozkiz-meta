@@ -1870,15 +1870,17 @@ function buildPostRow(r) {
 }
 
 // ── INIT
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   if (apiKey) setConnected(true);
   renderCalendar();
   renderHistory();
   // 대시보드(posts) 우선 로드 — 사용자가 가장 먼저 보는 화면
   loadSheetData();
   // 레퍼런스는 백그라운드로 (대시보드 렌더에 영향 X)
-  // 사용자가 '스레드 레퍼런스' 탭에 들어가면 그때 또 fresh 로드 가능
   setTimeout(() => loadReferences(), 100);
+  // 예약 글: 먼저 마이그레이션 시도 → 그 후 로드
+  await migrateScheduledPostsToSupabase();
+  loadScheduledPosts();
   document.getElementById('updatedDate').textContent = '업데이트 ' + new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
 });
 
@@ -1908,7 +1910,148 @@ function getChip(g) {
 }
 
 // ── CALENDAR (시트 데이터 + 예약 글)
-let scheduledPosts = JSON.parse(localStorage.getItem('oz_scheduled') || '[]');
+let scheduledPosts = [];  // Supabase에서 로드됨
+
+// ── 예약 글 Supabase 동기화 (모든 기기에서 동일하게 보이도록)
+
+// 한 번만 실행되는 마이그레이션: localStorage → Supabase
+async function migrateScheduledPostsToSupabase() {
+  const migrated = localStorage.getItem('oz_scheduled_migrated_v1');
+  if (migrated === 'done') return;
+
+  const local = JSON.parse(localStorage.getItem('oz_scheduled') || '[]');
+  if (!local.length) {
+    localStorage.setItem('oz_scheduled_migrated_v1', 'done');
+    return;
+  }
+
+  console.log(`📤 ${local.length}개의 로컬 예약 글을 Supabase로 이전 중...`);
+  try {
+    const rows = local.map(p => ({
+      year: p.year, month: p.month, day: p.day,
+      title: p.title || '',
+      content: p.content || '',
+      type: p.type || '',
+      category: p.category || '',
+      cta: p.cta || '',
+      ai_generated: !!p._aiGenerated,
+      client_id: String(p.id || '')
+    }));
+    const { error } = await sb.from('scheduled_posts').insert(rows);
+    if (error) throw error;
+    localStorage.setItem('oz_scheduled_migrated_v1', 'done');
+    console.log('✓ 예약 글 마이그레이션 완료');
+    showToast(`✓ ${local.length}개의 예약 글이 클라우드로 이전됐어요`);
+  } catch (e) {
+    console.error('migrateScheduledPostsToSupabase:', e);
+  }
+}
+
+// Supabase에서 모든 예약 글 로드
+async function loadScheduledPosts() {
+  try {
+    const { data, error } = await sb
+      .from('scheduled_posts')
+      .select('*')
+      .order('year', { ascending: true })
+      .order('month', { ascending: true })
+      .order('day', { ascending: true });
+    if (error) throw error;
+    scheduledPosts = (data || []).map(p => ({
+      id: p.id,  // Supabase의 BIGSERIAL id 사용
+      year: p.year, month: p.month, day: p.day,
+      title: p.title || '',
+      content: p.content || '',
+      type: p.type || '',
+      category: p.category || '',
+      cta: p.cta || '',
+      _aiGenerated: !!p.ai_generated
+    }));
+    console.log(`✓ scheduled_posts 로드: ${scheduledPosts.length}개`);
+    if (typeof renderCalendar === 'function') renderCalendar();
+  } catch (e) {
+    console.error('loadScheduledPosts:', e);
+  }
+}
+
+// 예약 글 추가 (Supabase에 저장 + 로컬 갱신)
+async function addScheduledPost(post) {
+  try {
+    const row = {
+      year: post.year, month: post.month, day: post.day,
+      title: post.title || '',
+      content: post.content || '',
+      type: post.type || '',
+      category: post.category || '',
+      cta: post.cta || '',
+      ai_generated: !!post._aiGenerated
+    };
+    const { data, error } = await sb
+      .from('scheduled_posts')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    scheduledPosts.push({
+      id: data.id,
+      year: data.year, month: data.month, day: data.day,
+      title: data.title || '',
+      content: data.content || '',
+      type: data.type || '',
+      category: data.category || '',
+      cta: data.cta || '',
+      _aiGenerated: !!data.ai_generated
+    });
+    return data.id;
+  } catch (e) {
+    console.error('addScheduledPost:', e);
+    showToast('예약 글 저장 실패: ' + e.message);
+    return null;
+  }
+}
+
+// 예약 글 업데이트
+async function updateScheduledPost(id, updates) {
+  try {
+    const row = {};
+    if (updates.year !== undefined) row.year = updates.year;
+    if (updates.month !== undefined) row.month = updates.month;
+    if (updates.day !== undefined) row.day = updates.day;
+    if (updates.title !== undefined) row.title = updates.title;
+    if (updates.content !== undefined) row.content = updates.content;
+    if (updates.type !== undefined) row.type = updates.type;
+    if (updates.category !== undefined) row.category = updates.category;
+    if (updates.cta !== undefined) row.cta = updates.cta;
+
+    const { error } = await sb.from('scheduled_posts').update(row).eq('id', id);
+    if (error) throw error;
+
+    // 로컬 데이터도 갱신
+    const idx = scheduledPosts.findIndex(p => p.id === id || String(p.id) === String(id));
+    if (idx !== -1) {
+      Object.assign(scheduledPosts[idx], updates);
+    }
+    return true;
+  } catch (e) {
+    console.error('updateScheduledPost:', e);
+    showToast('수정 실패: ' + e.message);
+    return false;
+  }
+}
+
+// 예약 글 삭제
+async function deleteScheduledPost(id) {
+  try {
+    const { error } = await sb.from('scheduled_posts').delete().eq('id', id);
+    if (error) throw error;
+    scheduledPosts = scheduledPosts.filter(p => p.id !== id && String(p.id) !== String(id));
+    return true;
+  } catch (e) {
+    console.error('deleteScheduledPost:', e);
+    showToast('삭제 실패: ' + e.message);
+    return false;
+  }
+}
 let selectedScheduleId = null;
 
 // ── 주간 루틴 체크리스트 (이번 주 월~일)
@@ -2767,8 +2910,8 @@ async function runWeeklyPlan() {
   }
 }
 
-// 생성된 7개 글을 예약 글로 저장 (localStorage)
-function saveWeeklyPlanToSchedule() {
+// 생성된 7개 글을 예약 글로 저장 (Supabase)
+async function saveWeeklyPlanToSchedule() {
   const posts = window.__weeklyPlanResult;
   const nextMon = window.__nextMonday;
   if (!posts || !nextMon) { showToast('데이터가 없어요'); return; }
@@ -2776,35 +2919,46 @@ function saveWeeklyPlanToSchedule() {
   // 한글 요일 → 0(월)~6(일) 오프셋
   const dayOffsets = { '월':0, '화':1, '수':2, '목':3, '금':4, '토':5, '일':6 };
 
-  let added = 0;
-  posts.forEach((p, i) => {
-    // day 필드가 한글 요일이면 그걸로, 아니면 인덱스로
+  // 모든 행 한 번에 INSERT (효율적)
+  const rows = posts.map((p, i) => {
     let offset = dayOffsets[p.day];
-    if (offset === undefined) offset = i; // fallback: 순서대로 월~일
-
+    if (offset === undefined) offset = i;
     const targetDate = new Date(nextMon);
     targetDate.setDate(nextMon.getDate() + offset);
-
-    const newPost = {
-      id: 'sch_' + Date.now() + '_' + i,
+    return {
       year: targetDate.getFullYear(),
       month: targetDate.getMonth(),
       day: targetDate.getDate(),
       title: p.title || (p.content||'').slice(0, 30),
       content: p.content || '',
-      type: p.type || '',  // 콘텐츠 타입(권위/참여 등)
+      type: p.type || '',
       category: p.category || '',
       cta: p.cta || '',
-      _aiGenerated: true
+      ai_generated: true
     };
-    scheduledPosts.push(newPost);
-    added++;
   });
 
-  localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
-  closeWeeklyPlanModal();
-  renderCalendar();
-  showToast(`✓ ${added}개 예약 글이 다음 주에 자동 배치됐어요!`);
+  try {
+    const { data, error } = await sb.from('scheduled_posts').insert(rows).select();
+    if (error) throw error;
+    // 로컬 캐시에도 추가
+    data.forEach(d => scheduledPosts.push({
+      id: d.id,
+      year: d.year, month: d.month, day: d.day,
+      title: d.title || '',
+      content: d.content || '',
+      type: d.type || '',
+      category: d.category || '',
+      cta: d.cta || '',
+      _aiGenerated: !!d.ai_generated
+    }));
+    closeWeeklyPlanModal();
+    renderCalendar();
+    showToast(`✓ ${data.length}개 예약 글이 다음 주에 자동 배치됐어요!`);
+  } catch (e) {
+    console.error('saveWeeklyPlanToSchedule:', e);
+    showToast('저장 실패: ' + e.message);
+  }
 }
 
 // 목요일이면 버튼 강조
@@ -3301,11 +3455,11 @@ function openScheduleModalNew(d) {
 
 // 기존 예약 글 편집
 function openScheduleModalEdit(id) {
-  const post = scheduledPosts.find(p => p.id === id);
+  const post = scheduledPosts.find(p => p.id === id || String(p.id) === String(id));
   if (!post) return;
   document.getElementById('scheduleModalTitle').textContent = '예약 글 편집';
   document.getElementById('scheduleId').value = post.id;
-  document.getElementById('scheduleDate').value = `${post.year}-${post.month}-${post.day}`;
+  document.getElementById('scheduleDate').value = `${post.year}-${String(post.month+1).padStart(2,'0')}-${String(post.day).padStart(2,'0')}`;
   document.getElementById('scheduleDateDisplay').textContent = `${post.year}년 ${post.month+1}월 ${post.day}일`;
   document.getElementById('scheduleTitle').value = post.title;
   document.getElementById('scheduleType').value = post.type || '';
@@ -3318,7 +3472,7 @@ function closeScheduleModal() {
   document.getElementById('scheduleModal').classList.remove('open');
 }
 
-function saveSchedule() {
+async function saveSchedule() {
   const title = document.getElementById('scheduleTitle').value.trim();
   if (!title) { showToast('제목을 입력해주세요'); return; }
 
@@ -3328,33 +3482,27 @@ function saveSchedule() {
   const content = document.getElementById('scheduleContent').value.trim();
 
   if (id) {
-    // 편집
-    const idx = scheduledPosts.findIndex(p => p.id === id);
-    if (idx !== -1) {
-      scheduledPosts[idx] = { ...scheduledPosts[idx], title, type, content, year, month, day };
-    }
+    // 편집 → updateScheduledPost (Supabase)
+    const numId = parseInt(id);
+    await updateScheduledPost(numId, { title, type, content, year, month, day });
   } else {
-    // 새로 추가
-    scheduledPosts.push({
-      id: 'sch_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    // 새로 추가 → addScheduledPost (Supabase)
+    await addScheduledPost({
       year, month, day,
-      title, type, content,
-      createdAt: new Date().toISOString()
+      title, type, content
     });
   }
 
-  localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
   closeScheduleModal();
   renderCalendar();
   showToast('✓ 저장 완료');
 }
 
-function deleteSchedule() {
+async function deleteSchedule() {
   const id = document.getElementById('scheduleId').value;
   if (!id) return;
   if (!confirm('이 예약 글을 삭제할까요?')) return;
-  scheduledPosts = scheduledPosts.filter(p => p.id !== id);
-  localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
+  await deleteScheduledPost(parseInt(id));
   closeScheduleModal();
   renderCalendar();
   showToast('✓ 삭제됨');
@@ -3369,15 +3517,14 @@ function selectSchedule(id, el) {
 }
 
 // Del 키로 선택된 예약글 삭제
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', async (e) => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && selectedScheduleId) {
     // 입력 필드에서는 동작 안 함
     const tag = document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     e.preventDefault();
     if (confirm('선택한 예약 글을 삭제할까요?')) {
-      scheduledPosts = scheduledPosts.filter(p => p.id !== selectedScheduleId);
-      localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
+      await deleteScheduledPost(parseInt(selectedScheduleId));
       selectedScheduleId = null;
       renderCalendar();
       showToast('✓ 삭제됨');
@@ -3419,16 +3566,12 @@ function handleDayDragOver(e) {
 function handleDayDragLeave(e) {
   e.currentTarget.classList.remove('drag-over');
 }
-function handleDayDrop(e, day) {
+async function handleDayDrop(e, day) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
   if (!draggedScheduleId) return;
-  const idx = scheduledPosts.findIndex(p => p.id === draggedScheduleId);
-  if (idx === -1) return;
-  scheduledPosts[idx].year = calYear;
-  scheduledPosts[idx].month = calMonth;
-  scheduledPosts[idx].day = day;
-  localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
+  const numId = parseInt(draggedScheduleId);
+  await updateScheduledPost(numId, { year: calYear, month: calMonth, day: day });
   renderCalendar();
   showToast(`✓ ${calMonth+1}/${day}로 이동`);
 }
@@ -3629,9 +3772,8 @@ async function promoteScheduleToPost(scheduleId) {
   try {
     const { error } = await sb.from('posts').insert(postData);
     if (error) throw error;
-    // 예약 글 삭제
-    scheduledPosts = scheduledPosts.filter(p => p.id !== scheduleId);
-    localStorage.setItem('oz_scheduled', JSON.stringify(scheduledPosts));
+    // 예약 글 삭제 (Supabase)
+    await deleteScheduledPost(scheduleId);
     closeDayView();
     await loadSheetData(true);
     showToast('✓ 발행 완료로 전환됨 (통계는 나중에 채워주세요)');

@@ -452,13 +452,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   <div class="page" id="page-calendar">
     <div class="page-top">
       <div class="page-title">콘텐츠 캘린더</div>
-      <div class="page-actions">
-        <!-- 보기 모드 토글 -->
-        <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px">
-          <button id="viewModeCal" onclick="switchCalView('cal')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">📅 캘린더</button>
-          <button id="viewModeList" onclick="switchCalView('list')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📋 표</button>
-        </div>
-      </div>
+      <div class="page-actions"></div>
     </div>
     <div class="content-area">
       <!-- 주간 루틴 체크리스트 (컴팩트 + 접기/펼치기) -->
@@ -483,27 +477,37 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <!-- 다가오는 유치원 일정 (콘텐츠 미리 준비 유도) -->
       <div id="upcomingKgEvents" style="display:none;background:linear-gradient(135deg,#eff6ff 0%,#f5f3ff 100%);border:1px solid #c7d2fe;border-radius:10px;padding:10px 14px;margin-bottom:14px"></div>
 
-      <!-- 월 네비게이션 (월 + 화살표 + 오늘 + 추가) -->
+      <!-- 월 네비게이션 한 줄 (좌측: 월+화살표+오늘 / 우측: AI기획 + 추가) -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <!-- 좌측: 월 + 이전/오늘/다음 -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span id="calTitle" style="font-size:18px;font-weight:700;letter-spacing:-.3px"></span>
-          <div style="display:flex;gap:2px;margin-left:6px">
+          <div style="display:flex;gap:2px">
             <button onclick="changeMonth(-1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;font-family:inherit" title="이전 달">←</button>
             <button onclick="goToToday()" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">오늘</button>
             <button onclick="changeMonth(1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;font-family:inherit" title="다음 달">→</button>
           </div>
         </div>
-        <div style="position:relative;display:inline-block" id="calAddDropdown">
-          <button class="btn btn-primary btn-sm" onclick="toggleCalAddMenu(event)">+ 추가 ▾</button>
-          <div id="calAddMenu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:170px;z-index:100">
-            <button onclick="addPostFromCalBtn()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-size:13px;cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">✓ 발행 게시물 추가</button>
-            <button onclick="addScheduleFromCalBtn()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-size:13px;cursor:pointer;font-family:inherit" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">+ 예약 글 추가</button>
+
+        <!-- 우측: 토글 + 추가 + AI 기획 -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <!-- 보기 모드 토글 -->
+          <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px">
+            <button id="viewModeCal" onclick="switchCalView('cal')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">📅 캘린더</button>
+            <button id="viewModeList" onclick="switchCalView('list')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📋 표</button>
           </div>
+          <div style="position:relative;display:inline-block" id="calAddDropdown">
+            <button class="btn btn-primary btn-sm" onclick="toggleCalAddMenu(event)">+ 추가 ▾</button>
+            <div id="calAddMenu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:170px;z-index:100">
+              <button onclick="addPostFromCalBtn()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-size:13px;cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">✓ 발행 게시물 추가</button>
+              <button onclick="addScheduleFromCalBtn()" style="display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-size:13px;cursor:pointer;font-family:inherit" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">+ 예약 글 추가</button>
+            </div>
+          </div>
+          <button id="weeklyPlanBtn" onclick="openWeeklyPlanModal()" class="btn btn-sm" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;position:relative" title="AI가 다음 주 7일치 콘텐츠를 자동 기획해서 예약 글로 저장합니다">
+            🤖 주간 자동 기획
+            <span id="thursdayBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700">목요일!</span>
+          </button>
         </div>
-        <button id="weeklyPlanBtn" onclick="openWeeklyPlanModal()" class="btn btn-sm" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;position:relative" title="AI가 다음 주 7일치 콘텐츠를 자동 기획해서 예약 글로 저장합니다">
-          🤖 주간 자동 기획
-          <span id="thursdayBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700">목요일!</span>
-        </button>
       </div>
 
       <!-- 캘린더 뷰 -->
@@ -3754,14 +3758,15 @@ async function confirmPostDelete() {
 
 // 예약 글 → 발행 게시물 전환
 async function promoteScheduleToPost(scheduleId) {
-  const sch = scheduledPosts.find(p => p.id === scheduleId);
-  if (!sch) return;
+  // id가 문자열로 들어올 수 있음 (HTML attribute) — 숫자/문자열 모두 매칭
+  const sch = scheduledPosts.find(p => p.id === scheduleId || String(p.id) === String(scheduleId));
+  if (!sch) { showToast('예약 글을 찾을 수 없어요'); return; }
   if (!confirm(`이 예약 글을 발행 완료로 전환할까요?\n\n"${sch.title.slice(0,40)}"\n\n→ posts 테이블에 추가되고, 예약 글에서는 제거됩니다.`)) return;
 
   const dateStr = `${sch.year}-${String(sch.month+1).padStart(2,'0')}-${String(sch.day).padStart(2,'0')}`;
   const postData = {
     date: dateStr,
-    type: sch.cta || sch.type || '',  // CTA 우선, 없으면 type
+    type: sch.cta || sch.type || '',
     category: sch.category || '',
     link: '',
     text: sch.content || sch.title,
@@ -3772,8 +3777,8 @@ async function promoteScheduleToPost(scheduleId) {
   try {
     const { error } = await sb.from('posts').insert(postData);
     if (error) throw error;
-    // 예약 글 삭제 (Supabase)
-    await deleteScheduledPost(scheduleId);
+    // 예약 글 삭제 (Supabase) — id를 정수로 변환
+    await deleteScheduledPost(parseInt(sch.id));
     closeDayView();
     await loadSheetData(true);
     showToast('✓ 발행 완료로 전환됨 (통계는 나중에 채워주세요)');

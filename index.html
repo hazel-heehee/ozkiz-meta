@@ -1751,8 +1751,22 @@ function applyFilter() {
   const e = document.getElementById('filterEnd').value;
   if (!sheetData.length) return;
   let filtered = sheetData;
-  if (s) filtered = filtered.filter(r => { const d = toDateObj(r[COL.date]); return d && d >= new Date(s); });
-  if (e) filtered = filtered.filter(r => { const d = toDateObj(r[COL.date]); return d && d <= new Date(e+'T23:59:59'); });
+
+  // YYYY-MM-DD 문자열 → 로컬 자정 Date 객체로 변환 (시간대 문제 방지)
+  const parseLocal = (str) => {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m-1, d);  // 로컬 시간 자정
+  };
+
+  if (s) {
+    const startDate = parseLocal(s);
+    filtered = filtered.filter(r => { const d = toDateObj(r[COL.date]); return d && d >= startDate; });
+  }
+  if (e) {
+    const endDate = parseLocal(e);
+    endDate.setHours(23, 59, 59, 999);  // 그 날 끝까지
+    filtered = filtered.filter(r => { const d = toDateObj(r[COL.date]); return d && d <= endDate; });
+  }
   const lbl = document.getElementById('filterLabel');
   lbl.textContent = filtered.length ? `${filtered.length}개 행 표시 중` : '해당 기간 데이터 없음';
   renderDashboard(filtered);
@@ -1760,7 +1774,8 @@ function applyFilter() {
 function setQuick(days) {
   const end = new Date();
   const start = new Date(); start.setDate(start.getDate() - days);
-  const fmt = d => d.toISOString().split('T')[0];
+  // 로컬 시간 기준 YYYY-MM-DD 포맷 (UTC 변환 없이)
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   document.getElementById('filterStart').value = fmt(start);
   document.getElementById('filterEnd').value = fmt(end);
   applyFilter();

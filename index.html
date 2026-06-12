@@ -2097,6 +2097,8 @@ function renderWeeklyRoutine() {
   const weekKey = monday.toISOString().split('T')[0];
 
   // ── 1. 주 7건 발행 (월~일 7일 기준, 발행글 수)
+  // 로컬 시간 기준 YYYY-MM-DD 헬퍼 (UTC 변환 X — 시간대 안전)
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const postsThisWeek = sheetData.filter(r => {
     const d = toDateObj(r[COL.date]);
     if (!d) return false;
@@ -2105,14 +2107,14 @@ function renderWeeklyRoutine() {
   const dailyPostMap = {};
   postsThisWeek.forEach(r => {
     const d = toDateObj(r[COL.date]);
-    const key = d.toISOString().split('T')[0];
+    const key = ymd(d);
     dailyPostMap[key] = (dailyPostMap[key] || 0) + 1;
   });
   let postedDays = 0;
   for (let i = 0; i < 7; i++) {
     const checkDate = new Date(monday);
     checkDate.setDate(monday.getDate() + i);
-    const key = checkDate.toISOString().split('T')[0];
+    const key = ymd(checkDate);
     if (dailyPostMap[key] && dailyPostMap[key] >= 1) postedDays++;
   }
   const r1Done = postedDays >= 7;
@@ -2147,7 +2149,10 @@ function renderWeeklyRoutine() {
   // ── 3. 레퍼런스 주 5개 이상
   const refsThisWeek = (references || []).filter(ref => {
     if (!ref.date) return false;
-    const d = new Date(ref.date);
+    // YYYY-MM-DD 문자열을 로컬 자정으로 파싱 (시간대 안전)
+    const parts = String(ref.date).slice(0, 10).split('-').map(Number);
+    if (parts.length < 3 || isNaN(parts[0])) return false;
+    const d = new Date(parts[0], parts[1]-1, parts[2]);
     return d >= monday && d <= sunday;
   });
   const refCount = Math.min(refsThisWeek.length, 5);

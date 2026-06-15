@@ -1182,7 +1182,74 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     </div>
   </div>
 
-  <div class="page" id="page-insta-calendar"><div class="page-top"><div class="page-title">📷 콘텐츠 캘린더</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중 — 다음 단계에서 추가됩니다</div></div></div>
+  <div class="page" id="page-insta-calendar">
+    <div class="page-top">
+      <div class="page-title">📷 콘텐츠 캘린더</div>
+      <div class="page-actions"></div>
+    </div>
+    <div class="content-area">
+      <!-- 다가오는 유치원 일정 (콘텐츠 미리 준비 유도) -->
+      <div id="instaUpcomingKgEvents" style="display:none;background:linear-gradient(135deg,#eff6ff 0%,#f5f3ff 100%);border:1px solid #c7d2fe;border-radius:10px;padding:10px 14px;margin-bottom:14px"></div>
+
+      <!-- 월 네비게이션 한 줄 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span id="instaCalTitle" style="font-size:18px;font-weight:700;letter-spacing:-.3px"></span>
+          <div style="display:flex;gap:2px">
+            <button onclick="changeInstaMonth(-1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;font-family:inherit">←</button>
+            <button onclick="goToInstaToday()" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">오늘</button>
+            <button onclick="changeInstaMonth(1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;font-family:inherit">→</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px">
+            <button id="instaViewModeCal" onclick="switchInstaCalView('cal')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">📅 캘린더</button>
+            <button id="instaViewModeList" onclick="switchInstaCalView('list')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📋 표</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openInstaPostNew()">+ 게시물 추가</button>
+          <button id="instaWeeklyPlanBtn" onclick="openInstaWeeklyPlanModal()" class="btn btn-sm" style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:#fff;border:none" title="AI가 다음 주 7일치 인스타 콘텐츠를 자동 기획">
+            🤖 주간 자동 기획
+          </button>
+        </div>
+      </div>
+
+      <!-- 캘린더 뷰 -->
+      <div id="instaCalGridView">
+        <div class="cal-grid" id="instaCalGrid"></div>
+      </div>
+
+      <!-- 표 뷰 -->
+      <div id="instaCalListView" style="display:none">
+        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1200px">
+            <thead style="background:#f8fafc">
+              <tr style="border-bottom:1px solid var(--border)">
+                <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap">일자</th>
+                <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px">미디어</th>
+                <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:80px">타입</th>
+                <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:80px">분류</th>
+                <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:240px">캡션</th>
+                <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">팔로워</th>
+                <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">조회수</th>
+                <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">도달</th>
+                <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">좋아요</th>
+                <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">저장</th>
+                <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">공유</th>
+                <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">참여율</th>
+                <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:80px">액션</th>
+              </tr>
+            </thead>
+            <tbody id="instaCalListBody">
+              <tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6">
+          💡 <b>행 클릭</b>하면 편집 모달이 열려요.
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="page" id="page-insta-feedback"><div class="page-top"><div class="page-title">📷 게시물 피드백</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
 
@@ -1190,13 +1257,179 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 
   <div class="page" id="page-insta-persona"><div class="page-top"><div class="page-title">📷 브랜드 가이드</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
 
-  <div class="page" id="page-insta-trend"><div class="page-top"><div class="page-title">📷 인스타 레퍼런스</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+  <div class="page" id="page-insta-trend">
+    <div class="page-top">
+      <div class="page-title">📷 인스타 레퍼런스</div>
+      <div class="page-actions">
+        <button class="btn btn-primary btn-sm" onclick="openInstaRefAddModal()">+ 레퍼런스 추가</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadInstaRefs(true)">↻ 새로고침</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <!-- 필터 -->
+      <div style="background:#f9fafb;border-radius:8px;padding:10px 14px;margin-bottom:12px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text2);font-weight:600">필터</span>
+          <select id="instaRefTypeFilter" onchange="renderInstaRefs()" style="padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:#fff">
+            <option value="">전체 타입</option>
+            <option value="릴스">릴스만</option>
+            <option value="피드">피드만</option>
+            <option value="캐러셀">캐러셀만</option>
+            <option value="스토리">스토리만</option>
+          </select>
+          <select id="instaRefCatFilter" onchange="renderInstaRefs()" style="padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:#fff">
+            <option value="">전체 카테고리</option>
+            <option value="제품성">제품성</option>
+            <option value="정보성">정보성</option>
+            <option value="감성">감성</option>
+            <option value="유머">유머</option>
+            <option value="UGC">UGC</option>
+          </select>
+          <select id="instaRefSort" onchange="renderInstaRefs()" style="padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:#fff">
+            <option value="date">최신순</option>
+            <option value="views">조회수 순</option>
+            <option value="likes">좋아요 순</option>
+          </select>
+          <input type="text" id="instaRefSearch" placeholder="검색 (브랜드/내용)" oninput="renderInstaRefs()" style="flex:1;min-width:160px;padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:#fff"/>
+          <span id="instaRefCount" style="font-size:11px;color:var(--text3)"></span>
+        </div>
+      </div>
+
+      <!-- 레퍼런스 테이블 -->
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
+          <thead style="background:#f8fafc">
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap">일자</th>
+              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px">미디어</th>
+              <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2)">브랜드</th>
+              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:70px">타입</th>
+              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:80px">분류</th>
+              <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:240px">후크 · 내용</th>
+              <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">조회수</th>
+              <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">좋아요</th>
+              <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">댓글</th>
+              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px">액션</th>
+            </tr>
+          </thead>
+          <tbody id="instaRefBody">
+            <tr><td colspan="10" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <div class="page" id="page-insta-competitors"><div class="page-top"><div class="page-title">📷 경쟁사 추적</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
 
   <div class="page" id="page-insta-checklist"><div class="page-top"><div class="page-title">📷 주간 체크리스트</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
 
 </main>
+
+<!-- 인스타 레퍼런스 추가/편집 모달 -->
+<div class="modal-overlay" id="instaRefFormModal">
+  <div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div id="instaRefFormTitle" style="font-size:15px;font-weight:700">+ 인스타 레퍼런스 추가</div>
+      <button onclick="closeInstaRefFormModal()" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">×</button>
+    </div>
+
+    <input type="hidden" id="instaRefFormId" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📅 일자</div>
+        <input type="date" id="instaRefFormDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📺 타입</div>
+        <select id="instaRefFormType" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="">선택</option>
+          <option value="릴스">릴스</option>
+          <option value="피드">피드</option>
+          <option value="캐러셀">캐러셀</option>
+          <option value="스토리">스토리</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">📂 분류</div>
+        <select id="instaRefFormCategory" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="">선택</option>
+          <option value="제품성">제품성</option>
+          <option value="정보성">정보성</option>
+          <option value="감성">감성</option>
+          <option value="유머">유머</option>
+          <option value="UGC">UGC</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🏢 브랜드</div>
+      <input type="text" id="instaRefFormBrand" placeholder="@brand 또는 브랜드명" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🔗 게시물 URL</div>
+      <input type="url" id="instaRefFormLink" placeholder="https://instagram.com/..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">✨ 후크 · 내용</div>
+      <textarea id="instaRefFormContent" rows="3" placeholder="후크나 핵심 메시지..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">💡 잘된 이유 · 관찰 포인트</div>
+      <textarea id="instaRefFormPoint" rows="2" placeholder="왜 이 글이 잘 됐을까?" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🖼️ 이미지 URL</div>
+        <input type="url" id="instaRefFormImageUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎬 영상 URL</div>
+        <input type="url" id="instaRefFormVideoUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-top:10px;border-top:1px dashed var(--border)">📊 성과 통계</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">조회수</div>
+          <input type="number" id="instaRefFormViews" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">좋아요</div>
+          <input type="number" id="instaRefFormLikes" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">댓글</div>
+          <input type="number" id="instaRefFormComments" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">저장</div>
+          <input type="number" id="instaRefFormSaves" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">공유</div>
+          <input type="number" id="instaRefFormShares" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-btns" style="display:flex;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm" id="instaRefFormDeleteBtn" onclick="deleteInstaRef()" style="color:var(--red);display:none">🗑️ 삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="closeInstaRefFormModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="saveInstaRef()" id="instaRefFormSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- 인스타 게시물 추가/편집 모달 -->
 <div class="modal-overlay" id="instaPostFormModal">
@@ -2277,6 +2510,12 @@ async function loadInstaPosts(force = false) {
     instaFollowers = followers || [];
 
     renderInstaDashboard(instaPosts);
+
+    // 인스타 캘린더가 활성화돼 있으면 같이 갱신
+    if (document.getElementById('page-insta-calendar')?.classList.contains('active')) {
+      renderInstaCalendar();
+      if (instaCalViewMode === 'list') renderInstaCalListView();
+    }
   } catch (e) {
     console.error('loadInstaPosts:', e);
     document.getElementById('instaRecentBody').innerHTML = `
@@ -2732,6 +2971,724 @@ async function deleteInstaPost() {
   }
 }
 
+// 인스타 다가오는 유치원 일정 위젯
+function renderInstaUpcomingKgEvents() {
+  const el = document.getElementById('instaUpcomingKgEvents');
+  if (!el) return;
+  const events = window.__kgEventsCache || [];
+  if (!events.length) { el.style.display = 'none'; return; }
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const in30 = new Date(today);
+  in30.setDate(today.getDate() + 30);
+
+  const upcoming = events.filter(ev => {
+    const d = new Date(ev.date);
+    return d >= today && d <= in30 && ev.category !== '휴원';
+  }).slice(0, 5);
+
+  if (!upcoming.length) { el.style.display = 'none'; return; }
+
+  const kgEmoji = { '행사':'🎉','소풍':'🚌','체육':'⚽','학사':'📚','휴원':'🏠','기타':'📌' };
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:14px">⏰</span>
+      <span style="font-size:13px;font-weight:700;color:#1e3a8a">다가오는 일정 — 콘텐츠 미리 준비!</span>
+      <span style="margin-left:auto;font-size:11px;color:#1e40af">30일 이내 ${upcoming.length}개</span>
+    </div>
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">
+      ${upcoming.map(ev => {
+        const d = new Date(ev.date);
+        const daysLeft = Math.ceil((d - today) / (1000*60*60*24));
+        const cat = ev.category || '기타';
+        const emoji = kgEmoji[cat] || '📌';
+        const dColor = daysLeft <= 3 ? '#dc2626' : daysLeft <= 7 ? '#d97706' : daysLeft <= 14 ? '#3b82f6' : '#6b7280';
+        return `
+          <div style="flex-shrink:0;background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:160px" title="${(ev.title||'').replace(/"/g,'&quot;')}${ev.note?' — '+(ev.note||'').replace(/"/g,'&quot;'):''}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <span style="font-size:14px">${emoji}</span>
+              <span style="font-size:10px;color:${dColor};font-weight:700;background:${dColor}1A;padding:1px 6px;border-radius:4px">D-${daysLeft}</span>
+            </div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.title || ''}</div>
+            <div style="font-size:10px;color:var(--text3)">${d.getMonth()+1}/${d.getDate()} (${['일','월','화','수','목','금','토'][d.getDay()]})</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📷 INSTAGRAM 캘린더 + 예약 글 + 레퍼런스
+// ══════════════════════════════════════════════════════════════
+
+// 캘린더 상태
+let instaCalYear = new Date().getFullYear();
+let instaCalMonth = new Date().getMonth();
+let instaCalViewMode = 'cal';  // 'cal' or 'list'
+let instaScheduledPosts = [];  // Supabase에서 로드
+let instaRefs = [];  // 레퍼런스
+
+// 인스타 예약 글 로드
+async function loadInstaScheduledPosts() {
+  try {
+    const { data, error } = await sb
+      .from('insta_scheduled_posts')
+      .select('*')
+      .order('year', { ascending: true })
+      .order('month', { ascending: true })
+      .order('day', { ascending: true });
+    if (error) throw error;
+    instaScheduledPosts = (data || []).map(p => ({
+      id: p.id,
+      year: p.year, month: p.month, day: p.day,
+      title: p.title || '',
+      content: p.content || '',
+      post_type: p.post_type || '',
+      category: p.category || '',
+      cta: p.cta || '',
+      _aiGenerated: !!p.ai_generated
+    }));
+    console.log(`✓ insta_scheduled_posts 로드: ${instaScheduledPosts.length}개`);
+    if (currentChannel === 'instagram') renderInstaCalendar();
+  } catch (e) {
+    console.error('loadInstaScheduledPosts:', e);
+  }
+}
+
+function changeInstaMonth(delta) {
+  instaCalMonth += delta;
+  if (instaCalMonth < 0) { instaCalMonth = 11; instaCalYear--; }
+  if (instaCalMonth > 11) { instaCalMonth = 0; instaCalYear++; }
+  renderInstaCalendar();
+}
+
+function goToInstaToday() {
+  const t = new Date();
+  instaCalYear = t.getFullYear();
+  instaCalMonth = t.getMonth();
+  renderInstaCalendar();
+}
+
+function switchInstaCalView(mode) {
+  instaCalViewMode = mode;
+  document.getElementById('instaCalGridView').style.display = mode === 'cal' ? 'block' : 'none';
+  document.getElementById('instaCalListView').style.display = mode === 'list' ? 'block' : 'none';
+
+  const calBtn = document.getElementById('instaViewModeCal');
+  const listBtn = document.getElementById('instaViewModeList');
+  if (mode === 'cal') {
+    calBtn.style.background = '#fff'; calBtn.style.fontWeight = '600'; calBtn.style.color = 'var(--text)'; calBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+    listBtn.style.background = 'transparent'; listBtn.style.fontWeight = '500'; listBtn.style.color = 'var(--text2)'; listBtn.style.boxShadow = 'none';
+  } else {
+    listBtn.style.background = '#fff'; listBtn.style.fontWeight = '600'; listBtn.style.color = 'var(--text)'; listBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+    calBtn.style.background = 'transparent'; calBtn.style.fontWeight = '500'; calBtn.style.color = 'var(--text2)'; calBtn.style.boxShadow = 'none';
+  }
+  localStorage.setItem('oz_insta_cal_view', mode);
+  if (mode === 'list') renderInstaCalListView();
+}
+
+// 인스타 캘린더 렌더 (스레드와 유사하지만 데이터는 인스타용)
+function renderInstaCalendar() {
+  const grid = document.getElementById('instaCalGrid');
+  if (!grid) return;
+
+  const title = document.getElementById('instaCalTitle');
+  title.textContent = `${instaCalYear}년 ${instaCalMonth+1}월`;
+
+  const today = new Date();
+  const firstDay = new Date(instaCalYear, instaCalMonth, 1);
+  const lastDay = new Date(instaCalYear, instaCalMonth+1, 0);
+  const first = firstDay.getDay();
+  const total = lastDay.getDate();
+
+  // 발행 게시물 (insta_posts에서 그 달)
+  const publishedPosts = {};
+  (instaPosts || []).forEach(r => {
+    if (!r.date) return;
+    const d = new Date(r.date);
+    if (d.getFullYear() === instaCalYear && d.getMonth() === instaCalMonth) {
+      const key = d.getDate();
+      const txt = String(r.text || '').slice(0, 14);
+      if (!txt) return;
+      if (!publishedPosts[key]) publishedPosts[key] = [];
+      publishedPosts[key].push({
+        id: r.id,
+        text: txt + (r.text && r.text.length > 14 ? '...' : ''),
+        link: String(r.link || '').trim(),
+        post_type: r.post_type || '',
+        category: r.category || ''
+      });
+    }
+  });
+
+  // 예약 글
+  const scheduled = {};
+  (instaScheduledPosts || []).forEach(p => {
+    if (p.year === instaCalYear && p.month === instaCalMonth) {
+      if (!scheduled[p.day]) scheduled[p.day] = [];
+      scheduled[p.day].push(p);
+    }
+  });
+
+  // 유치원 일정
+  const kgByDay = {};
+  (window.__kgEventsCache || []).forEach(ev => {
+    const d = new Date(ev.date);
+    if (d.getFullYear() === instaCalYear && d.getMonth() === instaCalMonth) {
+      const key = d.getDate();
+      if (!kgByDay[key]) kgByDay[key] = [];
+      kgByDay[key].push(ev);
+    }
+  });
+
+  // 분류 색상 (인스타 카테고리)
+  const catColors = {
+    '제품성': '#fef3c7',
+    '정보성': '#dbeafe',
+    '감성': '#fce7f3',
+    '유머': '#fef9c3',
+    'UGC': '#e0e7ff'
+  };
+  const typeColors = {
+    '릴스': '#fce7f3',
+    '피드': '#dbeafe',
+    '캐러셀': '#e0e7ff',
+    '스토리': '#fed7aa'
+  };
+  const kgEmoji = { '행사':'🎉','소풍':'🚌','체육':'⚽','학사':'📚','휴원':'🏠','기타':'📌' };
+
+  let html = '';
+  for (let i = 0; i < first; i++) html += `<div class="cal-day empty"></div>`;
+  for (let d = 1; d <= total; d++) {
+    const isToday = today.getFullYear()===instaCalYear && today.getMonth()===instaCalMonth && today.getDate()===d;
+    const pubs = publishedPosts[d] || [];
+    const schs = scheduled[d] || [];
+    const kgs = kgByDay[d] || [];
+
+    // 유치원 배지
+    const kgHtml = kgs.length > 0
+      ? `<div style="margin-bottom:3px">${kgs.slice(0,2).map(ev => {
+          const emoji = kgEmoji[ev.category||'기타'] || '📌';
+          const t = ev.title.length > 8 ? ev.title.slice(0,8)+'…' : ev.title;
+          return `<div style="background:#fffbeb;color:#92400e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;margin-bottom:1px;border:1px solid #fde68a" title="${ev.title.replace(/"/g,'&quot;')}">${emoji} ${t}</div>`;
+        }).join('')}</div>`
+      : '';
+
+    // 발행글 (녹색)
+    const pubHtml = pubs.slice(0,2).map(p => {
+      const typeBadge = p.post_type && typeColors[p.post_type]
+        ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
+        : '';
+      return p.link
+        ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${typeBadge}${p.text}</a>`
+        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${typeBadge}${p.text}</div>`;
+    }).join('');
+
+    // 예약글 (회색)
+    const schHtml = schs.slice(0,2).map(p => {
+      const typeBadge = p.post_type && typeColors[p.post_type]
+        ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
+        : '';
+      const t = (p.title || p.content || '').slice(0, 14);
+      return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" title="예약 글">${typeBadge}${t}${(p.title||p.content||'').length>14?'...':''}</div>`;
+    }).join('');
+
+    const moreCount = (pubs.length > 2 ? pubs.length-2 : 0) + (schs.length > 2 ? schs.length-2 : 0);
+    const moreHtml = moreCount > 0 ? `<div class="cal-more">+${moreCount}개</div>` : '';
+
+    const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
+    html += `<div class="cal-day${isToday?' today':''}" data-day="${d}">${numEl}${kgHtml}${pubHtml}${schHtml}${moreHtml}<button class="cal-add-btn" onclick="event.stopPropagation();openInstaScheduleNew(${d})" title="예약 글 추가">+</button></div>`;
+  }
+  grid.innerHTML = html;
+
+  if (instaCalViewMode === 'list') renderInstaCalListView();
+}
+
+// 표 뷰
+async function renderInstaCalListView() {
+  const body = document.getElementById('instaCalListBody');
+  if (!body) return;
+
+  body.innerHTML = `<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>`;
+
+  // 그 달의 인스타 팔로워 데이터
+  const monthStart = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-01`;
+  const monthEndDay = new Date(instaCalYear, instaCalMonth+1, 0).getDate();
+  const monthEnd = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(monthEndDay).padStart(2,'0')}`;
+
+  let followersByDate = {};
+  try {
+    const { data } = await sb.from('insta_followers').select('*').gte('date', monthStart).lte('date', monthEnd);
+    if (data) data.forEach(f => { followersByDate[f.date] = f; });
+  } catch(e){}
+
+  // 그 달의 게시물
+  const postsByDate = {};
+  (instaPosts || []).forEach(r => {
+    if (!r.date) return;
+    const d = new Date(r.date);
+    if (d.getFullYear() === instaCalYear && d.getMonth() === instaCalMonth) {
+      const key = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (!postsByDate[key]) postsByDate[key] = [];
+      postsByDate[key].push(r);
+    }
+  });
+
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === instaCalYear && today.getMonth() === instaCalMonth;
+  const lastDayToShow = isCurrentMonth ? today.getDate() : monthEndDay;
+
+  const catColors = {
+    '제품성': { bg:'#fef3c7', text:'#92400e' },
+    '정보성': { bg:'#dbeafe', text:'#1e40af' },
+    '감성':   { bg:'#fce7f3', text:'#9f1239' },
+    '유머':   { bg:'#fef9c3', text:'#854d0e' },
+    'UGC':    { bg:'#e0e7ff', text:'#3730a3' }
+  };
+  const typeColors = {
+    '릴스':   { bg:'#fce7f3', text:'#9f1239' },
+    '피드':   { bg:'#dbeafe', text:'#1e40af' },
+    '캐러셀': { bg:'#e0e7ff', text:'#3730a3' },
+    '스토리': { bg:'#fed7aa', text:'#9a3412' }
+  };
+
+  const dash = '<span style="color:var(--text3)">—</span>';
+  const nVal = (v) => { const n = parseInt(v)||0; return n === 0 ? dash : n.toLocaleString(); };
+
+  let rows = [];
+  for (let d = lastDayToShow; d >= 1; d--) {
+    const dateKey = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const posts = postsByDate[dateKey] || [];
+    const follower = followersByDate[dateKey];
+    const followerCount = follower ? follower.count : 0;
+
+    const dt = new Date(instaCalYear, instaCalMonth, d);
+    const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
+    const isToday = isCurrentMonth && today.getDate() === d;
+    const dayColor = dt.getDay() === 0 ? '#dc2626' : dt.getDay() === 6 ? '#2563eb' : 'var(--text2)';
+    const dateCell = `<div style="font-size:12px;color:var(--text2)">${instaCalMonth+1}/${d} <span style="color:${dayColor};font-size:11px">(${wd})</span>${isToday?' <span style="background:#16a34a;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:2px">오늘</span>':''}</div>`;
+
+    if (posts.length === 0) {
+      rows.push(`
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:9px 10px">${dateCell}</td>
+          <td style="padding:6px;text-align:center;color:var(--text3)">—</td>
+          <td style="padding:6px;text-align:center;color:var(--text3)">—</td>
+          <td style="padding:6px;text-align:center;color:var(--text3)">—</td>
+          <td style="padding:9px 10px;color:var(--text3);font-size:12px;font-style:italic">발행 없음</td>
+          <td style="padding:6px 10px;text-align:right">
+            <input type="number" value="${followerCount || ''}" placeholder="0"
+              onchange="saveInstaFollowerCount('${dateKey}', this.value, this)"
+              onclick="event.stopPropagation()"
+              style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:right;font-family:inherit;background:#fff"/>
+          </td>
+          <td colspan="5" style="padding:9px 10px;text-align:center;color:var(--text3);font-size:11px">—</td>
+          <td style="padding:9px 10px;text-align:right;color:var(--text3)">—</td>
+          <td style="padding:9px 10px;text-align:center">
+            <button onclick="openInstaPostNewFromDate('${dateKey}')" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer" title="이 날짜에 추가">+ 글</button>
+          </td>
+        </tr>
+      `);
+    } else {
+      posts.forEach((r, idx) => {
+        const isFirstOfDay = idx === 0;
+        const txt = String(r.text || '');
+        const link = String(r.link||'').trim();
+        const linkUrl = link && !link.startsWith('http') ? 'https://' + link : link;
+        const imgUrl = String(r.image_url||'').trim();
+        const vidUrl = String(r.video_url||'').trim();
+        const eng = (r.reach||0) > 0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.reach||1) * 100 : 0;
+        const engColor = eng >= 10 ? '#16a34a' : eng >= 5 ? '#3b82f6' : 'var(--text2)';
+
+        let mediaCell;
+        if (imgUrl) {
+          mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()"><img src="${imgUrl}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border)" onerror="this.outerHTML='📷'"/></a>`;
+        } else if (vidUrl) {
+          mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:16px">🎬</a>`;
+        } else {
+          mediaCell = '<span style="color:var(--text3)">📝</span>';
+        }
+
+        const type = r.post_type || '';
+        const typeCell = type && typeColors[type]
+          ? `<span style="background:${typeColors[type].bg};color:${typeColors[type].text};padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600">${type}</span>`
+          : dash;
+
+        const cat = r.category || '';
+        const catCell = cat && catColors[cat]
+          ? `<span style="background:${catColors[cat].bg};color:${catColors[cat].text};padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600">${cat}</span>`
+          : dash;
+
+        const followerCell = isFirstOfDay
+          ? `<input type="number" value="${followerCount || r.follower || ''}" placeholder="0"
+              onchange="saveInstaFollowerCount('${dateKey}', this.value, this)"
+              onclick="event.stopPropagation()"
+              style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:right;font-family:inherit;background:#fff"/>`
+          : '<span style="color:var(--text3)">″</span>';
+
+        rows.push(`
+          <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openInstaPostEdit(${r.id})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+            <td style="padding:9px 10px">${isFirstOfDay ? dateCell : ''}</td>
+            <td style="padding:6px;text-align:center">${mediaCell}</td>
+            <td style="padding:6px;text-align:center">${typeCell}</td>
+            <td style="padding:6px;text-align:center">${catCell}</td>
+            <td style="padding:9px 10px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${txt.slice(0,55)}${txt.length>55?'...':''} ${linkUrl?'<a href="'+linkUrl+'" target="_blank" onclick="event.stopPropagation()" style="color:#3b82f6;font-size:11px">🔗</a>':''}</td>
+            <td style="padding:6px 10px;text-align:right">${followerCell}</td>
+            <td style="padding:9px 10px;text-align:right;font-weight:600">${nVal(r.views)}</td>
+            <td style="padding:9px 10px;text-align:right">${nVal(r.reach)}</td>
+            <td style="padding:9px 10px;text-align:right;color:var(--red)">${nVal(r.likes)}</td>
+            <td style="padding:9px 10px;text-align:right">${nVal(r.saves)}</td>
+            <td style="padding:9px 10px;text-align:right">${nVal(r.shares)}</td>
+            <td style="padding:9px 10px;text-align:right;font-weight:600;color:${engColor}">${eng>0?eng.toFixed(1)+'%':dash}</td>
+            <td style="padding:9px 10px;text-align:center;white-space:nowrap">
+              <button onclick="event.stopPropagation();openInstaPostEdit(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;margin-right:2px">✏️</button>
+              <button onclick="event.stopPropagation();deleteInstaPostFromCal(${r.id})" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">🗑️</button>
+            </td>
+          </tr>
+        `);
+      });
+    }
+  }
+
+  body.innerHTML = rows.length ? rows.join('') : `<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">데이터 없음</td></tr>`;
+}
+
+// 인스타 팔로워 저장
+async function saveInstaFollowerCount(dateKey, val, inputEl) {
+  const count = parseInt(val) || 0;
+  inputEl.style.borderColor = '#d97706';
+  try {
+    const { error } = await sb.from('insta_followers').upsert({ date: dateKey, count }, { onConflict: 'date' });
+    if (error) throw error;
+    inputEl.style.borderColor = '#16a34a';
+    inputEl.style.background = '#f0fdf4';
+    setTimeout(() => { inputEl.style.borderColor = 'var(--border)'; inputEl.style.background = '#fff'; }, 1000);
+  } catch (e) {
+    console.error('saveInstaFollowerCount:', e);
+    inputEl.style.borderColor = '#dc2626';
+    showToast('저장 실패: ' + e.message);
+  }
+}
+
+async function deleteInstaPostFromCal(id) {
+  if (!confirm('이 인스타 게시물을 삭제할까요?')) return;
+  try {
+    const { error } = await sb.from('insta_posts').delete().eq('id', id);
+    if (error) throw error;
+    await loadInstaPosts(true);
+    showToast('✓ 삭제됨');
+  } catch (e) {
+    console.error(e);
+    showToast('삭제 실패: ' + e.message);
+  }
+}
+
+function openInstaPostNewFromDate(dateKey) {
+  openInstaPostNew();
+  document.getElementById('instaPostFormDate').value = dateKey;
+}
+
+// 예약 글 모달 (간단 버전 - 인스타용)
+function openInstaScheduleNew(day) {
+  const date = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const title = prompt(`📷 인스타 예약 글 제목 입력 (${date}):`);
+  if (!title || !title.trim()) return;
+  addInstaScheduledPost({ year: instaCalYear, month: instaCalMonth, day, title: title.trim(), content: '', post_type: '', category: '', cta: '' });
+}
+
+async function addInstaScheduledPost(post) {
+  try {
+    const { data, error } = await sb.from('insta_scheduled_posts').insert({
+      year: post.year, month: post.month, day: post.day,
+      title: post.title || '', content: post.content || '',
+      post_type: post.post_type || '', category: post.category || '', cta: post.cta || '',
+      ai_generated: !!post._aiGenerated
+    }).select().single();
+    if (error) throw error;
+    instaScheduledPosts.push({
+      id: data.id, year: data.year, month: data.month, day: data.day,
+      title: data.title || '', content: data.content || '',
+      post_type: data.post_type || '', category: data.category || '', cta: data.cta || '',
+      _aiGenerated: !!data.ai_generated
+    });
+    renderInstaCalendar();
+    showToast('✓ 예약 글 추가됨');
+  } catch (e) {
+    console.error('addInstaScheduledPost:', e);
+    showToast('실패: ' + e.message);
+  }
+}
+
+async function openInstaScheduleEdit(id) {
+  const sch = instaScheduledPosts.find(p => p.id === id);
+  if (!sch) return;
+  const choice = prompt(`📷 인스타 예약 글: "${sch.title}"\n\n[수정] 새 제목 입력 (취소 시 비워두고 OK)\n[삭제] "delete" 입력\n[발행 전환] "publish" 입력`, sch.title);
+  if (choice === null) return;
+
+  if (choice.toLowerCase() === 'delete') {
+    if (!confirm('이 예약 글을 삭제할까요?')) return;
+    try {
+      await sb.from('insta_scheduled_posts').delete().eq('id', id);
+      instaScheduledPosts = instaScheduledPosts.filter(p => p.id !== id);
+      renderInstaCalendar();
+      showToast('✓ 삭제됨');
+    } catch (e) { showToast('삭제 실패: ' + e.message); }
+  } else if (choice.toLowerCase() === 'publish') {
+    // posts에 추가 + scheduled 삭제
+    const dateStr = `${sch.year}-${String(sch.month+1).padStart(2,'0')}-${String(sch.day).padStart(2,'0')}`;
+    try {
+      await sb.from('insta_posts').insert({
+        date: dateStr, post_type: sch.post_type, category: sch.category,
+        link: '', text: sch.content || sch.title,
+        follower: 0, views: 0, reach: 0, likes: 0, comments: 0, saves: 0, shares: 0, follows: 0
+      });
+      await sb.from('insta_scheduled_posts').delete().eq('id', id);
+      instaScheduledPosts = instaScheduledPosts.filter(p => p.id !== id);
+      await loadInstaPosts(true);
+      showToast('✓ 발행 완료로 전환됨');
+    } catch (e) { showToast('실패: ' + e.message); }
+  } else if (choice.trim() && choice !== sch.title) {
+    try {
+      await sb.from('insta_scheduled_posts').update({ title: choice.trim() }).eq('id', id);
+      const idx = instaScheduledPosts.findIndex(p => p.id === id);
+      if (idx !== -1) instaScheduledPosts[idx].title = choice.trim();
+      renderInstaCalendar();
+      showToast('✓ 수정됨');
+    } catch (e) { showToast('수정 실패: ' + e.message); }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📷 INSTAGRAM 레퍼런스
+// ══════════════════════════════════════════════════════════════
+
+async function loadInstaRefs(force = false) {
+  const body = document.getElementById('instaRefBody');
+  if (body) body.innerHTML = '<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>';
+
+  try {
+    const t0 = performance.now();
+    const { data, error } = await sb.from('insta_refs').select('*').order('date', { ascending: false }).limit(500);
+    if (error) throw error;
+    instaRefs = data || [];
+    console.log(`✓ insta_refs 로드: ${instaRefs.length}개 (${Math.round(performance.now()-t0)}ms)`);
+    renderInstaRefs();
+  } catch (e) {
+    console.error('loadInstaRefs:', e);
+    if (body) body.innerHTML = `<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--red)">실패: ${e.message}</td></tr>`;
+  }
+}
+
+function renderInstaRefs() {
+  const body = document.getElementById('instaRefBody');
+  if (!body) return;
+
+  const typeFilter = document.getElementById('instaRefTypeFilter')?.value || '';
+  const catFilter = document.getElementById('instaRefCatFilter')?.value || '';
+  const sortBy = document.getElementById('instaRefSort')?.value || 'date';
+  const search = (document.getElementById('instaRefSearch')?.value || '').toLowerCase().trim();
+
+  let data = instaRefs.slice();
+  if (typeFilter) data = data.filter(r => r.post_type === typeFilter);
+  if (catFilter) data = data.filter(r => r.category === catFilter);
+  if (search) data = data.filter(r =>
+    String(r.brand||'').toLowerCase().includes(search) ||
+    String(r.content||'').toLowerCase().includes(search) ||
+    String(r.point||'').toLowerCase().includes(search)
+  );
+
+  if (sortBy === 'views') data.sort((a,b) => (b.views||0) - (a.views||0));
+  else if (sortBy === 'likes') data.sort((a,b) => (b.likes||0) - (a.likes||0));
+  else data.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  document.getElementById('instaRefCount').textContent = `${data.length}개 표시`;
+
+  if (!data.length) {
+    body.innerHTML = `<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:8px">📭</div>
+      등록된 레퍼런스가 없어요<br>
+      <span style="font-size:11px;margin-top:6px">우측 상단 <b>+ 레퍼런스 추가</b>로 시작해보세요</span>
+    </td></tr>`;
+    return;
+  }
+
+  const dash = '<span style="color:var(--text3)">—</span>';
+  const nVal = (v) => { const n = parseInt(v)||0; return n === 0 ? dash : n.toLocaleString(); };
+  const typeColors = {
+    '릴스':   { bg:'#fce7f3', text:'#9f1239' },
+    '피드':   { bg:'#dbeafe', text:'#1e40af' },
+    '캐러셀': { bg:'#e0e7ff', text:'#3730a3' },
+    '스토리': { bg:'#fed7aa', text:'#9a3412' }
+  };
+  const catColors = {
+    '제품성': { bg:'#fef3c7', text:'#92400e' },
+    '정보성': { bg:'#dbeafe', text:'#1e40af' },
+    '감성':   { bg:'#fce7f3', text:'#9f1239' },
+    '유머':   { bg:'#fef9c3', text:'#854d0e' },
+    'UGC':    { bg:'#e0e7ff', text:'#3730a3' }
+  };
+
+  body.innerHTML = data.map(r => {
+    const imgUrl = String(r.image_url||'').trim();
+    const vidUrl = String(r.video_url||'').trim();
+    const link = String(r.link||'').trim();
+    const linkUrl = link && !link.startsWith('http') ? 'https://' + link : link;
+    let mediaCell;
+    if (imgUrl) {
+      mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()"><img src="${imgUrl}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border)" onerror="this.outerHTML='📷'"/></a>`;
+    } else if (vidUrl) {
+      mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:16px">🎬</a>`;
+    } else if (linkUrl) {
+      mediaCell = `<a href="${linkUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:14px">🔗</a>`;
+    } else {
+      mediaCell = '<span style="color:var(--text3)">—</span>';
+    }
+
+    const type = r.post_type || '';
+    const typeCell = type && typeColors[type]
+      ? `<span style="background:${typeColors[type].bg};color:${typeColors[type].text};padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600">${type}</span>`
+      : dash;
+
+    const cat = r.category || '';
+    const catCell = cat && catColors[cat]
+      ? `<span style="background:${catColors[cat].bg};color:${catColors[cat].text};padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600">${cat}</span>`
+      : dash;
+
+    const content = String(r.content||'');
+    const point = String(r.point||'');
+
+    return `
+      <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openInstaRefEditModal(${r.id})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <td style="padding:9px 10px;white-space:nowrap;color:var(--text2);font-size:12px">${r.date ? r.date.slice(5).replace('-','/') : '—'}</td>
+        <td style="padding:6px;text-align:center">${mediaCell}</td>
+        <td style="padding:9px 10px;font-size:12px;font-weight:600">${r.brand || '—'}</td>
+        <td style="padding:6px;text-align:center">${typeCell}</td>
+        <td style="padding:6px;text-align:center">${catCell}</td>
+        <td style="padding:9px 10px;max-width:260px;overflow:hidden;font-size:12px">
+          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${content.slice(0,40)}${content.length>40?'...':''}</div>
+          ${point ? `<div style="font-size:10px;color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💡 ${point.slice(0,40)}${point.length>40?'...':''}</div>` : ''}
+        </td>
+        <td style="padding:9px 10px;text-align:right;font-size:12px;font-weight:600">${nVal(r.views)}</td>
+        <td style="padding:9px 10px;text-align:right;font-size:12px;color:var(--red)">${nVal(r.likes)}</td>
+        <td style="padding:9px 10px;text-align:right;font-size:12px">${nVal(r.comments)}</td>
+        <td style="padding:9px 10px;text-align:center">
+          <button onclick="event.stopPropagation();openInstaRefEditModal(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">✏️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openInstaRefAddModal() {
+  document.getElementById('instaRefFormTitle').textContent = '+ 인스타 레퍼런스 추가';
+  document.getElementById('instaRefFormId').value = '';
+  document.getElementById('instaRefFormDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('instaRefFormType').value = '';
+  document.getElementById('instaRefFormCategory').value = '';
+  document.getElementById('instaRefFormBrand').value = '';
+  document.getElementById('instaRefFormLink').value = '';
+  document.getElementById('instaRefFormContent').value = '';
+  document.getElementById('instaRefFormPoint').value = '';
+  document.getElementById('instaRefFormImageUrl').value = '';
+  document.getElementById('instaRefFormVideoUrl').value = '';
+  document.getElementById('instaRefFormViews').value = '';
+  document.getElementById('instaRefFormLikes').value = '';
+  document.getElementById('instaRefFormComments').value = '';
+  document.getElementById('instaRefFormSaves').value = '';
+  document.getElementById('instaRefFormShares').value = '';
+  document.getElementById('instaRefFormDeleteBtn').style.display = 'none';
+  document.getElementById('instaRefFormModal').classList.add('open');
+}
+
+function openInstaRefEditModal(id) {
+  const ref = instaRefs.find(r => r.id === id);
+  if (!ref) return;
+  document.getElementById('instaRefFormTitle').textContent = '✏️ 레퍼런스 편집';
+  document.getElementById('instaRefFormId').value = ref.id;
+  document.getElementById('instaRefFormDate').value = ref.date || '';
+  document.getElementById('instaRefFormType').value = ref.post_type || '';
+  document.getElementById('instaRefFormCategory').value = ref.category || '';
+  document.getElementById('instaRefFormBrand').value = ref.brand || '';
+  document.getElementById('instaRefFormLink').value = ref.link || '';
+  document.getElementById('instaRefFormContent').value = ref.content || '';
+  document.getElementById('instaRefFormPoint').value = ref.point || '';
+  document.getElementById('instaRefFormImageUrl').value = ref.image_url || '';
+  document.getElementById('instaRefFormVideoUrl').value = ref.video_url || '';
+  document.getElementById('instaRefFormViews').value = ref.views || '';
+  document.getElementById('instaRefFormLikes').value = ref.likes || '';
+  document.getElementById('instaRefFormComments').value = ref.comments || '';
+  document.getElementById('instaRefFormSaves').value = ref.saves || '';
+  document.getElementById('instaRefFormShares').value = ref.shares || '';
+  document.getElementById('instaRefFormDeleteBtn').style.display = 'inline-block';
+  document.getElementById('instaRefFormModal').classList.add('open');
+}
+
+function closeInstaRefFormModal() {
+  document.getElementById('instaRefFormModal').classList.remove('open');
+}
+
+async function saveInstaRef() {
+  const id = document.getElementById('instaRefFormId').value;
+  const data = {
+    date: document.getElementById('instaRefFormDate').value || null,
+    post_type: document.getElementById('instaRefFormType').value.trim(),
+    category: document.getElementById('instaRefFormCategory').value.trim(),
+    brand: document.getElementById('instaRefFormBrand').value.trim(),
+    link: document.getElementById('instaRefFormLink').value.trim(),
+    content: document.getElementById('instaRefFormContent').value.trim(),
+    point: document.getElementById('instaRefFormPoint').value.trim(),
+    image_url: document.getElementById('instaRefFormImageUrl').value.trim(),
+    video_url: document.getElementById('instaRefFormVideoUrl').value.trim(),
+    views: parseInt(document.getElementById('instaRefFormViews').value) || 0,
+    likes: parseInt(document.getElementById('instaRefFormLikes').value) || 0,
+    comments: parseInt(document.getElementById('instaRefFormComments').value) || 0,
+    saves: parseInt(document.getElementById('instaRefFormSaves').value) || 0,
+    shares: parseInt(document.getElementById('instaRefFormShares').value) || 0
+  };
+  const btn = document.getElementById('instaRefFormSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    if (id) {
+      const { error } = await sb.from('insta_refs').update(data).eq('id', parseInt(id));
+      if (error) throw error;
+      showToast('✓ 수정됨');
+    } else {
+      const { error } = await sb.from('insta_refs').insert(data);
+      if (error) throw error;
+      showToast('✓ 레퍼런스 추가됨');
+    }
+    closeInstaRefFormModal();
+    await loadInstaRefs(true);
+  } catch (e) {
+    console.error(e);
+    showToast('실패: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '저장';
+  }
+}
+
+async function deleteInstaRef() {
+  const id = document.getElementById('instaRefFormId').value;
+  if (!id || !confirm('이 레퍼런스를 삭제할까요?')) return;
+  try {
+    await sb.from('insta_refs').delete().eq('id', parseInt(id));
+    closeInstaRefFormModal();
+    await loadInstaRefs(true);
+    showToast('✓ 삭제됨');
+  } catch (e) {
+    showToast('실패: ' + e.message);
+  }
+}
+
+// 인스타 주간 자동 기획 (placeholder - 다음 단계에서)
+function openInstaWeeklyPlanModal() {
+  showToast('🚧 인스타 주간 자동 기획은 다음 단계에서 추가됩니다');
+}
+
 // ── 채널 전환 (인스타그램 ↔ 스레드)
 let currentChannel = localStorage.getItem('oz_current_channel') || 'instagram';
 
@@ -2799,6 +3756,19 @@ function goPage(name, btn) {
   if (name === 'kindergarten') loadKindergartenEvents();
   // 인스타 페이지
   if (name === 'insta-dashboard') loadInstaPosts();
+  if (name === 'insta-calendar') {
+    // 캘린더 진입 시 게시물 + 예약글 둘 다 로드
+    if (!instaPosts || !instaPosts.length) loadInstaPosts();
+    loadInstaScheduledPosts();
+    // 유치원 일정 캐시 없으면 가져오기
+    if (!window.__kgEventsCache) fetchKgEventsForCache();
+    // 마지막 사용 뷰 복원
+    const savedView = localStorage.getItem('oz_insta_cal_view') || 'cal';
+    switchInstaCalView(savedView);
+    renderInstaCalendar();
+    renderInstaUpcomingKgEvents();
+  }
+  if (name === 'insta-trend') loadInstaRefs();
 }
 
 // ── CHIPS

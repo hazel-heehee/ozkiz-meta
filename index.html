@@ -368,7 +368,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <div class="stat-change" id="dash-follower-change">불러오는 중...</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">최근 7개 평균 조회수</div>
+          <div class="stat-label" id="dash-views-label">평균 조회수</div>
           <div class="stat-val" id="dash-views">—</div>
           <div class="stat-change" id="dash-views-change">불러오는 중...</div>
         </div>
@@ -1609,11 +1609,30 @@ function renderDashboard(data) {
   fc.textContent = followerDiff >= 0 ? `↑ 기간 내 +${followerDiff.toLocaleString()}명` : `↓ ${Math.abs(followerDiff).toLocaleString()}명`;
   fc.className = 'stat-change ' + (followerDiff >= 0 ? 'up' : 'down');
 
+  // 평균 조회수 (현재 필터된 기간 전체 기준)
+  // 기간 필터 적용 시: 그 기간의 모든 게시물 평균
+  // 기간 필터 없을 시: 전체 게시물 평균
   const hasViews = data.filter(r => toNum(r[COL.views]) > 0);
-  const recent7  = hasViews.slice(-7);
-  const avgViews = recent7.length ? Math.round(recent7.reduce((s,r) => s + toNum(r[COL.views]), 0) / recent7.length) : 0;
+  const avgViews = hasViews.length ? Math.round(hasViews.reduce((s,r) => s + toNum(r[COL.views]), 0) / hasViews.length) : 0;
   document.getElementById('dash-views').textContent = fmtNum(avgViews);
-  document.getElementById('dash-views-change').textContent = `최근 ${recent7.length}개 게시물 평균`;
+
+  // 라벨 동적으로 표시 (필터에 따라)
+  const filterStartVal = document.getElementById('filterStart')?.value;
+  const filterEndVal = document.getElementById('filterEnd')?.value;
+  let viewLabel = '평균 조회수';
+  let viewSubLabel = `게시물 ${hasViews.length}개 평균`;
+  if (filterStartVal || filterEndVal) {
+    // 기간 필터 적용된 경우
+    if (filterStartVal && filterEndVal) {
+      viewSubLabel = `${filterStartVal.slice(5).replace('-','/')} ~ ${filterEndVal.slice(5).replace('-','/')} · ${hasViews.length}개 평균`;
+    } else if (filterStartVal) {
+      viewSubLabel = `${filterStartVal.slice(5).replace('-','/')}부터 · ${hasViews.length}개 평균`;
+    } else {
+      viewSubLabel = `${filterEndVal.slice(5).replace('-','/')}까지 · ${hasViews.length}개 평균`;
+    }
+  }
+  document.getElementById('dash-views-label').textContent = viewLabel;
+  document.getElementById('dash-views-change').textContent = viewSubLabel;
 
   // 참여율 계산: 조회수가 있는 게시물 기준
   const hasViewsForEng = data.filter(r => toNum(r[COL.views]) > 0);

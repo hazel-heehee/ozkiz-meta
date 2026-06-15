@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ozkiz threads manager</title>
+<title>ozkiz · META 채널 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -268,48 +268,91 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 <!-- SIDEBAR -->
 <nav class="sidebar">
   <div class="sidebar-logo" style="flex-direction:column;align-items:flex-start;gap:8px">
-    <div style="display:flex;align-items:center;gap:10px">
-  
-      <div>
-        <div class="logo-name" style="font-size:14px;letter-spacing:-.2px">ozkiz threads</div>
-        <div class="logo-handle" style="font-size:11px;margin-top:1px">AI 콘텐츠 매니저</div>
+    <div style="display:flex;align-items:center;gap:10px;width:100%">
+      <div style="flex:1">
+        <div class="logo-name" style="font-size:14px;letter-spacing:-.2px">META 채널 관리</div>
+        <div class="logo-handle" style="font-size:11px;margin-top:1px">ozkiz · AI 콘텐츠 매니저</div>
       </div>
     </div>
+
+    <!-- 채널 토글 -->
+    <div style="display:flex;gap:4px;width:100%;background:var(--surface3);border-radius:8px;padding:3px">
+      <button id="channelInstaBtn" onclick="switchChannel('instagram')" style="flex:1;padding:6px 8px;font-size:11px;font-weight:700;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">📷 인스타</button>
+      <button id="channelThreadsBtn" onclick="switchChannel('threads')" style="flex:1;padding:6px 8px;font-size:11px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📱 스레드</button>
+    </div>
+
     <div style="padding:0 2px;line-height:1.6">
       <div style="font-size:10px;color:var(--text3)" id="updatedDate"></div>
     </div>
   </div>
 
-  <div class="sidebar-section">운영</div>
-  <button class="nav-item active" onclick="goPage('dashboard',this)">
-    <span class="nav-icon">◎</span> 대시보드
-  </button>
-  <button class="nav-item" onclick="goPage('calendar',this)">
-    <span class="nav-icon">▦</span> 콘텐츠 캘린더
-  </button>
-  <button class="nav-item" onclick="goPage('feedback',this)">
-    <span class="nav-icon">✎</span> 글 피드백
-  </button>
+  <!-- ━━━ 인스타그램 채널 메뉴 ━━━ -->
+  <div class="channel-menu" data-channel="instagram">
+    <div class="sidebar-section">운영 (인스타)</div>
+    <button class="nav-item active" onclick="goPage('insta-dashboard',this)">
+      <span class="nav-icon">◎</span> 인사이트
+    </button>
+    <button class="nav-item" onclick="goPage('insta-calendar',this)">
+      <span class="nav-icon">▦</span> 콘텐츠 캘린더
+    </button>
+    <button class="nav-item" onclick="goPage('insta-feedback',this)">
+      <span class="nav-icon">✎</span> 게시물 피드백
+    </button>
 
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">AI 도구</div>
+    <button class="nav-item" onclick="goPage('insta-content',this)">
+      <span class="nav-icon">✦</span> 콘텐츠 기획
+    </button>
+    <button class="nav-item" onclick="goPage('insta-persona',this)">
+      <span class="nav-icon">◉</span> 브랜드 가이드
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">탐색</div>
+    <button class="nav-item" onclick="goPage('insta-trend',this)">
+      <span class="nav-icon">↗</span> 인스타 레퍼런스
+    </button>
+    <button class="nav-item" onclick="goPage('insta-competitors',this)">
+      <span class="nav-icon">◈</span> 경쟁사 추적
+    </button>
+    <button class="nav-item" onclick="goPage('insta-checklist',this)">
+      <span class="nav-icon">◉</span> 주간 체크리스트
+    </button>
+  </div>
+
+  <!-- ━━━ 스레드 채널 메뉴 ━━━ -->
+  <div class="channel-menu" data-channel="threads" style="display:none">
+    <div class="sidebar-section">운영 (스레드)</div>
+    <button class="nav-item" onclick="goPage('dashboard',this)">
+      <span class="nav-icon">◎</span> 대시보드
+    </button>
+    <button class="nav-item" onclick="goPage('calendar',this)">
+      <span class="nav-icon">▦</span> 콘텐츠 캘린더
+    </button>
+    <button class="nav-item" onclick="goPage('feedback',this)">
+      <span class="nav-icon">✎</span> 글 피드백
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">AI 도구</div>
+    <button class="nav-item" onclick="goPage('content',this)">
+      <span class="nav-icon">✦</span> 콘텐츠 생성
+    </button>
+    <button class="nav-item" onclick="goPage('persona',this)">
+      <span class="nav-icon">◉</span> 브랜드 가이드
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">탐색</div>
+    <button class="nav-item" onclick="goPage('trend',this)">
+      <span class="nav-icon">↗</span> 스레드 레퍼런스
+    </button>
+  </div>
+
+  <!-- ━━━ 공통 메뉴 (양 채널 모두 표시) ━━━ -->
   <div class="sidebar-divider"></div>
-  <div class="sidebar-section">AI 도구</div>
-
-  <button class="nav-item" onclick="goPage('content',this)">
-    <span class="nav-icon">✦</span> 콘텐츠 생성
-  </button>
-  <button class="nav-item" onclick="goPage('persona',this)">
-    <span class="nav-icon">◉</span> 브랜드 가이드
-  </button>
-
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section">탐색</div>
-
-  <button class="nav-item" onclick="goPage('trend',this)">
-    <span class="nav-icon">↗</span> 스레드 레퍼런스
-  </button>
-
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section">관리</div>
+  <div class="sidebar-section">공통</div>
 
   <button class="nav-item" onclick="goPage('history',this)">
     <span class="nav-icon">≡</span> 저장 기록
@@ -319,8 +362,8 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <span class="nav-icon">📚</span> 유치원 일정
   </button>
 
-  <a href="https://www.threads.com/@ozkiz_official" target="_blank" class="nav-item" style="text-decoration:none;margin-top:auto;margin-bottom:6px">
-    <span class="nav-icon" style="font-size:15px">⎋</span> 내 스레드 바로가기
+  <a href="https://www.instagram.com/ozkiz_official/" target="_blank" id="channelLink" class="nav-item" style="text-decoration:none;margin-top:auto;margin-bottom:6px">
+    <span class="nav-icon" style="font-size:15px">⎋</span> <span id="channelLinkText">내 인스타 바로가기</span>
     <span style="margin-left:auto;font-size:11px;color:var(--text3)">↗</span>
   </a>
 
@@ -334,7 +377,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 <main class="main">
 
   <!-- ① 대시보드 -->
-  <div class="page active" id="page-dashboard">
+  <div class="page" id="page-dashboard">
     <div class="page-top">
       <div class="page-title">대시보드</div>
       <div class="page-actions">
@@ -1013,6 +1056,42 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       </div>
     </div>
   </div>
+
+  <!-- ━━━━━━━━━━ 인스타그램 페이지들 (1단계: 골격만, 다음 단계에서 기능 채움) ━━━━━━━━━━ -->
+
+  <div class="page active" id="page-insta-dashboard">
+    <div class="page-top">
+      <div class="page-title">📷 인사이트</div>
+    </div>
+    <div class="content-area">
+      <div id="instaPlaceholder" style="background:linear-gradient(135deg,#fce7f3 0%,#fef3c7 100%);border-radius:12px;padding:40px 30px;text-align:center">
+        <div style="font-size:48px;margin-bottom:14px">🚧</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">인스타그램 기능 준비 중</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto">
+          단계별로 구축하고 있어요!<br>
+          • <b>1단계</b> ✓ 사이트 통합 골격 (지금 단계)<br>
+          • <b>2단계</b> Supabase 인스타 테이블 생성<br>
+          • <b>3단계</b> 인사이트 / 캘린더 / 레퍼런스 기능<br>
+          • <b>4단계</b> 경쟁사 / 체크리스트 기능<br><br>
+          <span style="color:var(--text3);font-size:11px">현재 인스타 사이트는 그대로 사용 가능: <a href="https://hazel-heehee.github.io/insta-dashboard/" target="_blank" style="color:#3b82f6">기존 사이트 ↗</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-insta-calendar"><div class="page-top"><div class="page-title">📷 콘텐츠 캘린더</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중 — 다음 단계에서 추가됩니다</div></div></div>
+
+  <div class="page" id="page-insta-feedback"><div class="page-top"><div class="page-title">📷 게시물 피드백</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+
+  <div class="page" id="page-insta-content"><div class="page-top"><div class="page-title">📷 콘텐츠 기획</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+
+  <div class="page" id="page-insta-persona"><div class="page-top"><div class="page-title">📷 브랜드 가이드</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+
+  <div class="page" id="page-insta-trend"><div class="page-top"><div class="page-title">📷 인스타 레퍼런스</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+
+  <div class="page" id="page-insta-competitors"><div class="page-top"><div class="page-title">📷 경쟁사 추적</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+
+  <div class="page" id="page-insta-checklist"><div class="page-top"><div class="page-title">📷 주간 체크리스트</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
 
 </main>
 
@@ -1920,9 +1999,91 @@ window.addEventListener('load', async () => {
   await migrateScheduledPostsToSupabase();
   loadScheduledPosts();
   document.getElementById('updatedDate').textContent = '업데이트 ' + new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+
+  // 마지막 사용 채널 복원 — 기본은 인스타 (HTML에서 이미 인스타가 active 상태)
+  // 마지막 채널이 스레드일 때만 스레드 모드로 전환
+  if (currentChannel === 'threads') {
+    // 메뉴 그룹 토글
+    document.querySelectorAll('.channel-menu').forEach(menu => {
+      menu.style.display = menu.dataset.channel === 'threads' ? 'block' : 'none';
+    });
+    const tBtn = document.getElementById('channelThreadsBtn');
+    const iBtn = document.getElementById('channelInstaBtn');
+    if (tBtn && iBtn) {
+      tBtn.style.background = '#fff'; tBtn.style.fontWeight = '700'; tBtn.style.color = 'var(--text)'; tBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+      iBtn.style.background = 'transparent'; iBtn.style.fontWeight = '500'; iBtn.style.color = 'var(--text2)'; iBtn.style.boxShadow = 'none';
+    }
+    const link = document.getElementById('channelLink');
+    const linkText = document.getElementById('channelLinkText');
+    if (link && linkText) {
+      link.href = 'https://www.threads.com/@ozkiz_official';
+      linkText.textContent = '내 스레드 바로가기';
+    }
+    // 스레드 대시보드 페이지 활성화
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const dashPage = document.getElementById('page-dashboard');
+    const dashBtn = document.querySelector('.channel-menu[data-channel="threads"] .nav-item');
+    if (dashPage) dashPage.classList.add('active');
+    if (dashBtn) dashBtn.classList.add('active');
+  }
 });
 
 // ── NAV
+// ── 채널 전환 (인스타그램 ↔ 스레드)
+let currentChannel = localStorage.getItem('oz_current_channel') || 'instagram';
+
+function switchChannel(channel) {
+  currentChannel = channel;
+  localStorage.setItem('oz_current_channel', channel);
+
+  // 메뉴 그룹 표시/숨김
+  document.querySelectorAll('.channel-menu').forEach(menu => {
+    menu.style.display = menu.dataset.channel === channel ? 'block' : 'none';
+  });
+
+  // 채널 토글 버튼 스타일
+  const tBtn = document.getElementById('channelThreadsBtn');
+  const iBtn = document.getElementById('channelInstaBtn');
+  if (channel === 'threads') {
+    tBtn.style.background = '#fff';
+    tBtn.style.fontWeight = '700';
+    tBtn.style.color = 'var(--text)';
+    tBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+    iBtn.style.background = 'transparent';
+    iBtn.style.fontWeight = '500';
+    iBtn.style.color = 'var(--text2)';
+    iBtn.style.boxShadow = 'none';
+  } else {
+    iBtn.style.background = '#fff';
+    iBtn.style.fontWeight = '700';
+    iBtn.style.color = 'var(--text)';
+    iBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+    tBtn.style.background = 'transparent';
+    tBtn.style.fontWeight = '500';
+    tBtn.style.color = 'var(--text2)';
+    tBtn.style.boxShadow = 'none';
+  }
+
+  // 채널 바로가기 링크 변경
+  const link = document.getElementById('channelLink');
+  const linkText = document.getElementById('channelLinkText');
+  if (link && linkText) {
+    if (channel === 'threads') {
+      link.href = 'https://www.threads.com/@ozkiz_official';
+      linkText.textContent = '내 스레드 바로가기';
+    } else {
+      link.href = 'https://www.instagram.com/ozkiz_official/';
+      linkText.textContent = '내 인스타 바로가기';
+    }
+  }
+
+  // 채널 전환 시 첫 페이지로 이동
+  const firstPage = channel === 'threads' ? 'dashboard' : 'insta-dashboard';
+  const firstBtn = document.querySelector(`.channel-menu[data-channel="${channel}"] .nav-item`);
+  if (firstBtn) goPage(firstPage, firstBtn);
+}
+
 function goPage(name, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));

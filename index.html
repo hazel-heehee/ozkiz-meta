@@ -1251,11 +1251,236 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     </div>
   </div>
 
-  <div class="page" id="page-insta-feedback"><div class="page-top"><div class="page-title">📷 게시물 피드백</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+  <div class="page" id="page-insta-feedback">
+    <div class="page-top">
+      <div class="page-title">📷 게시물 피드백</div>
+    </div>
+    <div class="content-area">
+      <div style="background:#fef9e7;border-left:3px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;line-height:1.6">
+        <b>발행한 인스타 게시물을 AI가 분석해서 강점·약점·개선글을 제안해줍니다.</b><br>
+        참여율 기준 정렬되어 있어요. 게시물을 선택하면 AI 피드백 + 개선글 3개를 생성합니다.
+      </div>
 
-  <div class="page" id="page-insta-content"><div class="page-top"><div class="page-title">📷 콘텐츠 기획</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 220px);min-height:500px">
+        <!-- 좌측: 게시물 리스트 -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:13px;font-weight:700">발행한 게시물 (참여율 순)</div>
+            <select id="instaFeedbackSort" onchange="renderInstaFeedbackList()" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;background:#fff">
+              <option value="engagement">참여율 순</option>
+              <option value="views">조회수 순</option>
+              <option value="recent">최신 순</option>
+            </select>
+          </div>
+          <div id="instaFeedbackList" style="overflow-y:auto;flex:1">
+            <div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">데이터를 불러오는 중...</div>
+          </div>
+        </div>
 
-  <div class="page" id="page-insta-persona"><div class="page-top"><div class="page-title">📷 브랜드 가이드</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+        <!-- 우측: AI 피드백 결과 -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;overflow:hidden">
+          <div id="instaFeedbackResult" style="overflow-y:auto;flex:1;padding:14px">
+            <div style="text-align:center;padding:60px 20px;color:var(--text3)">
+              <div style="font-size:32px;margin-bottom:10px">←</div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px">왼쪽에서 게시물을 선택해주세요</div>
+              <div style="font-size:11px">AI가 게시물을 분석해서 강점·약점·개선글을 제안해드립니다</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-insta-content">
+    <div class="page-top">
+      <div class="page-title">📷 콘텐츠 기획</div>
+    </div>
+    <div class="content-area">
+      <div style="background:#fef9e7;border-left:3px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;line-height:1.6">
+        <b>레퍼런스 · 키워드 · 유치원 일정 · 시즌을 조합해 인스타 콘텐츠 기획안을 AI가 생성합니다.</b><br>
+        Gemini API 또는 Claude.ai 둘 다 사용할 수 있어요.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <!-- 좌측: 입력 -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+
+          <!-- 1. 콘텐츠 포맷 -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;margin-bottom:6px">1. 콘텐츠 포맷</div>
+            <div id="instaContentFormatChips" style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="chip on" data-g="instaFormat">자동 (AI 선택)</button>
+              <button class="chip" data-g="instaFormat">릴스 중심</button>
+              <button class="chip" data-g="instaFormat">피드 중심</button>
+              <button class="chip" data-g="instaFormat">캐러셀 중심</button>
+              <button class="chip" data-g="instaFormat">릴스+캐러셀 믹스</button>
+            </div>
+          </div>
+
+          <!-- 2. 키워드 -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;margin-bottom:6px">2. 적용할 키워드 <span style="color:var(--text3);font-weight:400;font-size:11px">쉼표로 구분</span></div>
+            <input type="text" id="instaPlanKeywords" placeholder="여름, 물놀이, 신상" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+          </div>
+
+          <!-- 3. 시즌/테마 -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;margin-bottom:6px">3. 시즌 · 테마</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="chip on" data-g="instaSeason">자동</button>
+              <button class="chip" data-g="instaSeason">봄</button>
+              <button class="chip" data-g="instaSeason">여름</button>
+              <button class="chip" data-g="instaSeason">가을</button>
+              <button class="chip" data-g="instaSeason">겨울</button>
+              <button class="chip" data-g="instaSeason">신학기</button>
+              <button class="chip" data-g="instaSeason">어린이날</button>
+            </div>
+          </div>
+
+          <!-- 4. 다음 주 유치원 일정 -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;margin-bottom:6px">4. 다음 주 유치원 일정 <span style="color:var(--text3);font-weight:400;font-size:11px">자동 로드</span></div>
+            <div id="instaPlanKgEvents" style="background:#f9fafb;border-radius:6px;padding:8px 10px;font-size:11px;line-height:1.6;min-height:40px;color:var(--text2)">
+              불러오는 중...
+            </div>
+          </div>
+
+          <!-- 5. 참고할 레퍼런스 -->
+          <div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-size:12px;font-weight:700">5. 참고할 레퍼런스 <span style="color:var(--text3);font-weight:400;font-size:11px">2~5개 권장</span></div>
+              <span id="instaPlanRefCount" style="font-size:10px;color:var(--text3)">0개 선택</span>
+            </div>
+            <div id="instaPlanRefList" style="background:#f9fafb;border-radius:6px;padding:8px;max-height:160px;overflow-y:auto;font-size:11px">
+              레퍼런스를 불러오는 중...
+            </div>
+          </div>
+
+          <!-- 6. 추가 요구사항 -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;margin-bottom:6px">6. 추가 요구사항 <span style="color:var(--text3);font-weight:400;font-size:11px">선택</span></div>
+            <textarea id="instaPlanExtra" rows="2" placeholder="예: 저장 유도 강하게, 영상 후크는 첫 3초 임팩트" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+
+          <button onclick="generateInstaPlan()" id="instaPlanGenBtn" class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#ec4899,#8b5cf6);border:none;padding:12px;font-size:13px;font-weight:700">
+            ✦ AI 기획안 프롬프트 생성
+          </button>
+        </div>
+
+        <!-- 우측: 결과 -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;min-height:400px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:700">생성된 프롬프트</div>
+            <div style="display:flex;gap:6px">
+              <a href="https://claude.ai" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">Claude.ai ↗</a>
+              <button onclick="copyInstaPlanPrompt()" id="instaPlanCopyBtn" class="btn btn-ghost btn-sm" style="display:none">📋 복사</button>
+            </div>
+          </div>
+          <div id="instaPlanResult" style="background:#f9fafb;border-radius:8px;padding:14px;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;min-height:300px;font-family:inherit;color:var(--text3)">
+            왼쪽에서 옵션을 선택하고 <b>AI 기획안 프롬프트 생성</b> 버튼을 눌러주세요.
+
+            생성된 프롬프트를 Claude.ai에 붙여넣으면 다음 주 인스타 콘텐츠 기획안(릴스/피드/캐러셀 7일치)이 자동으로 만들어집니다.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-insta-persona">
+    <div class="page-top">
+      <div class="page-title">📷 브랜드 가이드</div>
+      <div class="page-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveInstaBrandGuide()">💾 저장</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div style="background:#fce7f3;border-left:3px solid #ec4899;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;line-height:1.6">
+        <b>인스타 콘텐츠 만들 때 AI가 참고할 브랜드 정보를 입력하세요.</b><br>
+        브랜드 톤·자주 쓰는 표현·하지 말아야 할 말 등을 정의하면 일관된 콘텐츠가 만들어져요.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <!-- 브랜드 정체성 -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">🏢 브랜드 정체성</div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">브랜드명</div>
+            <input type="text" id="instaBrandName" placeholder="ozkiz" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">브랜드 정의 (한줄)</div>
+            <input type="text" id="instaBrandTagline" placeholder="예: 워킹맘을 위한 실용적인 아동복" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">타깃 고객</div>
+            <textarea id="instaBrandTarget" rows="3" placeholder="예: 25-40대 워킹맘, 어린이집/유치원생 자녀 둔 엄마, 실용성+예쁨 둘 다 챙기는 사람" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+
+          <div style="margin-bottom:0">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">USP (차별점) — 우리만의 강점</div>
+            <textarea id="instaBrandUsp" rows="3" placeholder="예: 1. 워킹맘이 운영해서 진짜 입혀본 후기, 2. 합리적 가격대 (3-5만원), 3. 활동복+예복 둘 다 강점" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+        </div>
+
+        <!-- 톤 & 보이스 -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">💬 톤 & 보이스</div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">전체 톤</div>
+            <textarea id="instaBrandTone" rows="2" placeholder="예: 친근하고 솔직한 워킹맘 친구 톤. 정보 줄 땐 디테일하게, 공감 글엔 진짜 경험 녹임" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">자주 쓰는 표현 · 어휘</div>
+            <textarea id="instaBrandWords" rows="3" placeholder="예: 진짜 / 솔직히 / 입혀보니 / 후기 / 워킹맘템 / 실패하면 안 되는" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+
+          <div style="margin-bottom:0">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600;color:var(--red)">❌ 절대 쓰지 말 표현</div>
+            <textarea id="instaBrandAvoid" rows="3" placeholder="예: 광고같은 느낌의 표현 (인생템, 강추, 너무 좋아요, 후회 안할 거예요), 과한 이모지" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 콘텐츠 전략 -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">🎯 콘텐츠 전략</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">콘텐츠 믹스 (이상적 비율)</div>
+            <textarea id="instaBrandMix" rows="4" placeholder="예: 제품성 40% / 정보성 25% / 감성 20% / UGC 10% / 유머 5%" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">핵심 키워드 · 해시태그</div>
+            <textarea id="instaBrandKeywords" rows="4" placeholder="예: #ozkiz #아동복 #키즈룩 #워킹맘템 #코디제안" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">📈 성장 목표</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">현재 팔로워</div>
+            <input type="number" id="instaBrandCurFollowers" placeholder="72000" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">목표 팔로워</div>
+            <input type="number" id="instaBrandTargetFollowers" placeholder="100000" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">목표 달성 기한</div>
+            <input type="date" id="instaBrandTargetDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="page" id="page-insta-trend">
     <div class="page-top">
@@ -3769,6 +3994,12 @@ function goPage(name, btn) {
     renderInstaUpcomingKgEvents();
   }
   if (name === 'insta-trend') loadInstaRefs();
+  if (name === 'insta-feedback') {
+    if (!instaPosts || !instaPosts.length) loadInstaPosts().then(() => renderInstaFeedbackList());
+    else renderInstaFeedbackList();
+  }
+  if (name === 'insta-content') setupInstaContentPlanPage();
+  if (name === 'insta-persona') loadInstaBrandGuide();
 }
 
 // ── CHIPS
@@ -7227,6 +7458,471 @@ function showToast(msg) {
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target === document.getElementById('modal')) closeModal();
 });
+
+// ══════════════════════════════════════════════════════════════
+// 📷 INSTAGRAM 게시물 피드백 (AI 분석)
+// ══════════════════════════════════════════════════════════════
+
+let instaSelectedFeedbackId = null;
+
+function renderInstaFeedbackList() {
+  const list = document.getElementById('instaFeedbackList');
+  if (!list) return;
+  if (!instaPosts || !instaPosts.length) {
+    list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">발행한 게시물이 없어요</div>';
+    return;
+  }
+
+  const sortBy = document.getElementById('instaFeedbackSort')?.value || 'engagement';
+
+  // 본문 있는 글만 (조회수 0이어도 표시 — 발행 직후 글)
+  const posts = instaPosts
+    .filter(p => String(p.text || '').trim().length > 10)
+    .map(p => {
+      const eng = (p.reach || 0) > 0
+        ? ((p.likes||0)+(p.comments||0)+(p.saves||0)+(p.shares||0))/(p.reach||1) * 100
+        : 0;
+      return {
+        ...p,
+        engagement: eng,
+        hasStats: (p.reach||0) > 0 || (p.views||0) > 0
+      };
+    });
+
+  if (sortBy === 'views') {
+    posts.sort((a,b) => {
+      if (!a.hasStats && b.hasStats) return -1;
+      if (a.hasStats && !b.hasStats) return 1;
+      return (b.views||0) - (a.views||0);
+    });
+  } else if (sortBy === 'recent') {
+    posts.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  } else {
+    posts.sort((a,b) => {
+      if (!a.hasStats && b.hasStats) return -1;
+      if (a.hasStats && !b.hasStats) return 1;
+      return b.engagement - a.engagement;
+    });
+  }
+
+  const dash = '<span style="color:var(--text3)">—</span>';
+
+  list.innerHTML = posts.slice(0, 50).map(p => {
+    const engColor = p.engagement >= 10 ? '#16a34a' : p.engagement >= 5 ? '#3b82f6' : 'var(--text2)';
+    const noStatsBadge = !p.hasStats
+      ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;margin-left:6px">통계 미입력</span>'
+      : '';
+    const typeBadge = p.post_type
+      ? `<span style="background:#fce7f3;color:#9f1239;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;margin-left:4px">${p.post_type}</span>`
+      : '';
+    const text = String(p.text || '');
+    return `
+      <div onclick="selectInstaFeedback(${p.id})"
+        style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s${!p.hasStats?';background:#fffbeb':''}${instaSelectedFeedbackId === p.id?';background:#fce7f3':''}"
+        onmouseover="if (${p.id} !== instaSelectedFeedbackId) this.style.background='${!p.hasStats?'#fef3c7':'var(--surface2)'}'"
+        onmouseout="if (${p.id} !== instaSelectedFeedbackId) this.style.background='${!p.hasStats?'#fffbeb':''}'">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:4px">
+          <div style="font-size:11px;color:var(--text3)">${p.date ? p.date.slice(5).replace('-','/') : '—'}${typeBadge}${noStatsBadge}</div>
+          <div style="font-size:11px;font-weight:700;color:${engColor}">${p.hasStats ? p.engagement.toFixed(1)+'%' : dash}</div>
+        </div>
+        <div style="font-size:12px;line-height:1.5;color:var(--text);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${text}</div>
+        <div style="display:flex;gap:10px;font-size:10px;color:var(--text3)">
+          <span>👁️ ${p.hasStats ? (p.views||0).toLocaleString() : dash}</span>
+          <span>❤️ ${p.hasStats ? (p.likes||0).toLocaleString() : dash}</span>
+          <span>💾 ${p.hasStats ? (p.saves||0).toLocaleString() : dash}</span>
+          <span>↗️ ${p.hasStats ? (p.shares||0).toLocaleString() : dash}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function selectInstaFeedback(id) {
+  instaSelectedFeedbackId = id;
+  renderInstaFeedbackList();  // 선택 표시 갱신
+
+  const post = instaPosts.find(p => p.id === id);
+  if (!post) return;
+
+  const resultDiv = document.getElementById('instaFeedbackResult');
+  resultDiv.innerHTML = `
+    <div style="text-align:center;padding:60px 20px">
+      <div style="font-size:24px;margin-bottom:10px">⏳</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">AI가 게시물을 분석 중이에요...</div>
+      <div style="font-size:11px;color:var(--text3)">강점·약점·개선글 3개 생성 (10~20초 소요)</div>
+    </div>
+  `;
+
+  // API 키 확인
+  if (!apiKey) {
+    resultDiv.innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:32px;margin-bottom:10px">🔑</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">Gemini API 키를 먼저 설정해주세요</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px">좌측 하단 "API 키 설정" 또는 아래 버튼</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal()">API 키 설정</button>
+      </div>
+    `;
+    return;
+  }
+
+  // 게시물 정보 + 통계 정리
+  const eng = (post.reach||0) > 0 ? ((post.likes||0)+(post.comments||0)+(post.saves||0)+(post.shares||0))/(post.reach||1) * 100 : 0;
+  const statsText = post.reach > 0 ? `
+- 도달: ${(post.reach||0).toLocaleString()}
+- 조회수: ${(post.views||0).toLocaleString()}
+- 좋아요: ${(post.likes||0).toLocaleString()}
+- 댓글: ${(post.comments||0).toLocaleString()}
+- 저장: ${(post.saves||0).toLocaleString()}
+- 공유: ${(post.shares||0).toLocaleString()}
+- 참여율: ${eng.toFixed(2)}%` : '- 아직 통계 미입력';
+
+  // 평균 비교용
+  const avgViews = instaPosts.filter(p => p.views > 0).reduce((s,p) => s + p.views, 0) / Math.max(1, instaPosts.filter(p => p.views > 0).length);
+  const avgEng = instaPosts.filter(p => p.reach > 0).reduce((s,p) => {
+    return s + ((p.likes||0)+(p.comments||0)+(p.saves||0)+(p.shares||0))/(p.reach||1) * 100;
+  }, 0) / Math.max(1, instaPosts.filter(p => p.reach > 0).length);
+
+  const prompt = `당신은 인스타그램 콘텐츠 전략가입니다. 아래 게시물을 분석하고 마크다운 형식으로 답해주세요.
+
+# 분석 대상 게시물
+- 일자: ${post.date}
+- 타입: ${post.post_type || '-'}
+- 분류: ${post.category || '-'}
+
+## 본문
+${post.text || '(본문 없음)'}
+
+## 성과
+${statsText}
+
+## 계정 평균 비교
+- 평균 조회수: ${Math.round(avgViews).toLocaleString()}
+- 평균 참여율: ${avgEng.toFixed(2)}%
+
+# 분석 요청
+
+다음을 마크다운으로 작성해주세요:
+
+## ✅ 강점 (3가지)
+이 게시물의 잘된 부분을 구체적으로
+
+## ⚠️ 약점 (3가지)
+개선이 필요한 부분을 구체적으로
+
+## 💡 개선 글 3개
+원본의 방향성을 유지하면서 더 잘 될 수 있는 개선 글 3개를 작성해주세요. 각 개선글은 다음 형식:
+
+### 개선글 1: [한 줄 요약]
+**전략:** (어떤 점을 개선했는지)
+
+**본문:**
+(실제 인스타에 올릴 캡션. 줄바꿈 포함)
+
+(개선글 2, 3도 같은 형식)
+
+# 응답 규칙
+- 한국어로
+- 친근하고 구체적으로
+- 인스타그램 특성 (저장·공유 중심) 고려`;
+
+  try {
+    // Gemini API 호출 - 모델 동적 fetch
+    const modelListResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    if (!modelListResp.ok) throw new Error('API 키 또는 권한 오류');
+    const modelList = await modelListResp.json();
+    const candidates = (modelList.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => m.name.replace('models/', ''))
+      .filter(n => /gemini.*?(flash|pro)/.test(n))
+      .sort((a, b) => {
+        // 최신 (2.5 > 2.0 > 1.5) + flash 우선
+        const verA = parseFloat(a.match(/(\d+\.\d+)/)?.[1] || '0');
+        const verB = parseFloat(b.match(/(\d+\.\d+)/)?.[1] || '0');
+        if (verA !== verB) return verB - verA;
+        return a.includes('flash') ? -1 : 1;
+      });
+
+    const modelName = candidates[0] || 'gemini-2.0-flash';
+    console.log(`📡 Using Gemini model: ${modelName}`);
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Gemini API 오류 (${response.status}): ${errText.slice(0, 200)}`);
+    }
+
+    const result = await response.json();
+    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('AI 응답을 가져올 수 없어요');
+
+    // 마크다운을 간단한 HTML로 변환
+    const html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/^### (.+)$/gm, '<h3 style="font-size:13px;font-weight:700;margin:14px 0 6px;color:#9f1239">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 style="font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:4px">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 style="font-size:15px;font-weight:700;margin:18px 0 8px">$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/\n/g, '<br>');
+
+    resultDiv.innerHTML = `
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        📅 ${post.date} · ${post.post_type || '-'} · 참여율 ${eng.toFixed(1)}%
+      </div>
+      <div style="font-size:13px;line-height:1.7">${html}</div>
+    `;
+  } catch (e) {
+    console.error('selectInstaFeedback:', e);
+    resultDiv.innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:32px;margin-bottom:10px">⚠️</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--red)">AI 분석 실패</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.6">${e.message}</div>
+        <button class="btn btn-ghost btn-sm" onclick="selectInstaFeedback(${id})">다시 시도</button>
+      </div>
+    `;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📷 INSTAGRAM 콘텐츠 기획
+// ══════════════════════════════════════════════════════════════
+
+function pickInstaChip(el) {
+  const g = el.dataset.g;
+  document.querySelectorAll(`[data-g="${g}"]`).forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function getInstaChip(g) {
+  const el = document.querySelector(`[data-g="${g}"].on`);
+  return el ? el.textContent.trim() : '';
+}
+
+// 칩 클릭 핸들러 위임 (페이지 로드 후 동적으로)
+document.addEventListener('click', (e) => {
+  if (e.target.classList?.contains('chip') && (e.target.dataset.g?.startsWith('insta'))) {
+    pickInstaChip(e.target);
+  }
+});
+
+async function setupInstaContentPlanPage() {
+  // 다음 주 유치원 일정 로드
+  const kgDiv = document.getElementById('instaPlanKgEvents');
+  if (kgDiv) {
+    if (!window.__kgEventsCache) await fetchKgEventsForCache();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const nextMon = new Date(today);
+    const dow = today.getDay();
+    const daysToMon = dow === 0 ? 1 : (8 - dow);
+    nextMon.setDate(today.getDate() + daysToMon);
+    const nextSun = new Date(nextMon); nextSun.setDate(nextMon.getDate() + 6);
+
+    const upcoming = (window.__kgEventsCache || []).filter(ev => {
+      const d = new Date(ev.date);
+      return d >= nextMon && d <= nextSun;
+    });
+    if (upcoming.length) {
+      const kgEmoji = { '행사':'🎉','소풍':'🚌','체육':'⚽','학사':'📚','휴원':'🏠','기타':'📌' };
+      kgDiv.innerHTML = upcoming.map(ev => {
+        const d = new Date(ev.date);
+        const wd = ['일','월','화','수','목','금','토'][d.getDay()];
+        return `<div style="padding:3px 0">${kgEmoji[ev.category||'기타']||'📌'} <b>${ev.title}</b> · ${ev.date.slice(5).replace('-','/')} (${wd})${ev.note?' — '+ev.note:''}</div>`;
+      }).join('');
+    } else {
+      kgDiv.innerHTML = '<span style="color:var(--text3);font-size:11px">다음 주에 등록된 일정이 없어요. <a href="#" onclick="goPage(\'kindergarten\', document.querySelector(\'.nav-item[onclick*=kindergarten]\'));return false;" style="color:#3b82f6">유치원 일정 추가하기 ↗</a></span>';
+    }
+  }
+
+  // 레퍼런스 목록
+  const refDiv = document.getElementById('instaPlanRefList');
+  if (refDiv) {
+    if (!instaRefs.length) await loadInstaRefs();
+    if (!instaRefs.length) {
+      refDiv.innerHTML = '<span style="color:var(--text3);font-size:11px">등록된 레퍼런스가 없어요. <a href="#" onclick="goPage(\'insta-trend\', document.querySelector(\'.channel-menu[data-channel=instagram] .nav-item:nth-child(8)\'));return false;" style="color:#3b82f6">레퍼런스 추가하기 ↗</a></span>';
+    } else {
+      refDiv.innerHTML = instaRefs.slice(0, 30).map(r => `
+        <label style="display:flex;align-items:flex-start;gap:6px;padding:6px 4px;border-radius:4px;cursor:pointer" onmouseover="this.style.background='#fff'" onmouseout="this.style.background=''">
+          <input type="checkbox" value="${r.id}" onchange="updateInstaPlanRefCount()" style="margin-top:3px;cursor:pointer;flex-shrink:0"/>
+          <span style="flex:1;min-width:0">
+            <span style="font-weight:600;color:var(--text)">${r.brand || '—'}</span>
+            <span style="color:var(--text2);font-size:10px"> · ${r.post_type || '-'} · ${r.category || '-'}</span>
+            <div style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${(r.content || '').slice(0, 60)}</div>
+          </span>
+        </label>
+      `).join('');
+    }
+  }
+}
+
+function updateInstaPlanRefCount() {
+  const checked = document.querySelectorAll('#instaPlanRefList input:checked').length;
+  const el = document.getElementById('instaPlanRefCount');
+  if (el) el.textContent = `${checked}개 선택`;
+}
+
+async function generateInstaPlan() {
+  const btn = document.getElementById('instaPlanGenBtn');
+  const resultDiv = document.getElementById('instaPlanResult');
+  const copyBtn = document.getElementById('instaPlanCopyBtn');
+
+  // 입력 수집
+  const format = getInstaChip('instaFormat');
+  const season = getInstaChip('instaSeason');
+  const keywords = document.getElementById('instaPlanKeywords').value.trim();
+  const extra = document.getElementById('instaPlanExtra').value.trim();
+  const kgText = document.getElementById('instaPlanKgEvents').textContent.trim();
+
+  // 선택한 레퍼런스
+  const selectedIds = Array.from(document.querySelectorAll('#instaPlanRefList input:checked')).map(el => parseInt(el.value));
+  const selectedRefs = instaRefs.filter(r => selectedIds.includes(r.id));
+
+  // 브랜드 가이드 로드
+  const brand = JSON.parse(localStorage.getItem('oz_insta_brand') || '{}');
+
+  // 다음 주 월~일
+  const today = new Date();
+  const dow = today.getDay();
+  const daysToMon = dow === 0 ? 1 : (8 - dow);
+  const nextMon = new Date(today); nextMon.setDate(today.getDate() + daysToMon);
+  const nextSun = new Date(nextMon); nextSun.setDate(nextMon.getDate() + 6);
+  const weekRange = `${nextMon.getMonth()+1}/${nextMon.getDate()} ~ ${nextSun.getMonth()+1}/${nextSun.getDate()}`;
+
+  const refsBlock = selectedRefs.length
+    ? selectedRefs.map((r, i) => `
+[참고 ${i+1}] @${r.brand || '-'} · ${r.post_type || '-'} · ${r.category || '-'}
+후크/내용: ${r.content || ''}
+잘된 이유: ${r.point || ''}
+성과: 조회 ${(r.views||0).toLocaleString()} / 좋아요 ${(r.likes||0).toLocaleString()}
+${r.link ? '링크: ' + r.link : ''}
+`).join('\n')
+    : '(레퍼런스를 선택하지 않음 — 일반적인 인스타 베스트 프랙티스 적용)';
+
+  const brandBlock = (brand.name || brand.tagline || brand.target)
+    ? `
+# 브랜드 정보
+- 브랜드: ${brand.name || 'ozkiz'}
+- 정의: ${brand.tagline || ''}
+- 타깃: ${brand.target || ''}
+- USP: ${brand.usp || ''}
+- 톤: ${brand.tone || ''}
+- 자주 쓰는 표현: ${brand.words || ''}
+- 절대 안 쓰는 표현: ${brand.avoid || ''}
+- 콘텐츠 믹스: ${brand.mix || ''}
+- 핵심 키워드: ${brand.keywords || ''}
+- 성장 목표: ${brand.cur || ''} → ${brand.target_followers || ''}명`
+    : '';
+
+  const prompt = `당신은 인스타그램 콘텐츠 전략가입니다. 아래 정보로 다음 주(${weekRange}) 인스타 콘텐츠 7일치 기획안을 만들어주세요.
+${brandBlock}
+
+# 콘텐츠 포맷 요청
+${format || '자동 (AI 판단)'}
+
+# 시즌/테마
+${season || '자동 감지'}
+
+# 키워드
+${keywords || '(없음)'}
+
+# 다음 주 유치원 일정 (콘텐츠에 녹여낼 것)
+${kgText}
+
+# 참고 레퍼런스
+${refsBlock}
+
+# 추가 요구사항
+${extra || '(없음)'}
+
+---
+
+# 결과 형식 — 마크다운으로
+
+각 요일별 (월~일) 1개씩, 총 7개의 콘텐츠 기획안:
+
+## [월요일] [날짜] [타입: 릴스/피드/캐러셀]
+**분류:** (제품성/정보성/감성/유머/UGC 중 하나)
+**훅 (Hook):** (영상이라면 첫 3초 / 피드라면 첫 문장)
+**캡션:** (실제 인스타에 올릴 캡션, 한국어)
+**해시태그:** (5~10개)
+**저장/공유 유도 포인트:** (왜 저장하거나 공유할 가치가 있는지)
+**제작 가이드:** (촬영/편집 가이드)
+
+(나머지 요일도 같은 형식)
+
+---
+
+# 응답 규칙
+- 한국어로
+- 워킹맘이 진짜 좋아할만한 톤
+- 저장·공유 유도가 강한 콘텐츠 중심
+- 다음 주 유치원 일정을 자연스럽게 녹여낼 것
+- 릴스/피드/캐러셀 비율을 적절히 분배`;
+
+  resultDiv.style.color = 'var(--text)';
+  resultDiv.textContent = prompt;
+  copyBtn.style.display = 'inline-block';
+  showToast('✓ 프롬프트가 생성됐어요. Claude.ai에 붙여넣으세요!');
+}
+
+function copyInstaPlanPrompt() {
+  const text = document.getElementById('instaPlanResult').textContent;
+  if (!text || text.includes('왼쪽에서 옵션')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✓ 프롬프트가 클립보드에 복사됐어요');
+  }).catch(() => {
+    showToast('복사 실패 — 직접 선택해서 복사해주세요');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📷 INSTAGRAM 브랜드 가이드
+// ══════════════════════════════════════════════════════════════
+
+function loadInstaBrandGuide() {
+  const brand = JSON.parse(localStorage.getItem('oz_insta_brand') || '{}');
+  if (document.getElementById('instaBrandName')) document.getElementById('instaBrandName').value = brand.name || '';
+  if (document.getElementById('instaBrandTagline')) document.getElementById('instaBrandTagline').value = brand.tagline || '';
+  if (document.getElementById('instaBrandTarget')) document.getElementById('instaBrandTarget').value = brand.target || '';
+  if (document.getElementById('instaBrandUsp')) document.getElementById('instaBrandUsp').value = brand.usp || '';
+  if (document.getElementById('instaBrandTone')) document.getElementById('instaBrandTone').value = brand.tone || '';
+  if (document.getElementById('instaBrandWords')) document.getElementById('instaBrandWords').value = brand.words || '';
+  if (document.getElementById('instaBrandAvoid')) document.getElementById('instaBrandAvoid').value = brand.avoid || '';
+  if (document.getElementById('instaBrandMix')) document.getElementById('instaBrandMix').value = brand.mix || '';
+  if (document.getElementById('instaBrandKeywords')) document.getElementById('instaBrandKeywords').value = brand.keywords || '';
+  if (document.getElementById('instaBrandCurFollowers')) document.getElementById('instaBrandCurFollowers').value = brand.cur || '';
+  if (document.getElementById('instaBrandTargetFollowers')) document.getElementById('instaBrandTargetFollowers').value = brand.target_followers || '';
+  if (document.getElementById('instaBrandTargetDate')) document.getElementById('instaBrandTargetDate').value = brand.target_date || '';
+}
+
+function saveInstaBrandGuide() {
+  const brand = {
+    name: document.getElementById('instaBrandName')?.value.trim() || '',
+    tagline: document.getElementById('instaBrandTagline')?.value.trim() || '',
+    target: document.getElementById('instaBrandTarget')?.value.trim() || '',
+    usp: document.getElementById('instaBrandUsp')?.value.trim() || '',
+    tone: document.getElementById('instaBrandTone')?.value.trim() || '',
+    words: document.getElementById('instaBrandWords')?.value.trim() || '',
+    avoid: document.getElementById('instaBrandAvoid')?.value.trim() || '',
+    mix: document.getElementById('instaBrandMix')?.value.trim() || '',
+    keywords: document.getElementById('instaBrandKeywords')?.value.trim() || '',
+    cur: document.getElementById('instaBrandCurFollowers')?.value.trim() || '',
+    target_followers: document.getElementById('instaBrandTargetFollowers')?.value.trim() || '',
+    target_date: document.getElementById('instaBrandTargetDate')?.value.trim() || ''
+  };
+  localStorage.setItem('oz_insta_brand', JSON.stringify(brand));
+  showToast('✓ 브랜드 가이드 저장됨');
+}
 </script>
 </body>
 </html>

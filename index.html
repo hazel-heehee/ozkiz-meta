@@ -1090,7 +1090,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <div class="stat-change" id="insta-dash-follower-change">불러오는 중...</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label" id="insta-dash-views-label">평균 도달</div>
+          <div class="stat-label" id="insta-dash-views-label">평균 조회수</div>
           <div class="stat-val" id="insta-dash-views">—</div>
           <div class="stat-change" id="insta-dash-views-change">불러오는 중...</div>
         </div>
@@ -1116,16 +1116,33 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
         </div>
       </div>
 
-      <!-- 팔로워 추이 + TOP 3 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+      <!-- 팔로워 추이 + 조회수 추이 + TOP 3 (3분할) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px">
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
           <div style="font-size:13px;font-weight:700;margin-bottom:10px">팔로워 추이</div>
-          <canvas id="instaFollowerChart" height="180"></canvas>
+          <div style="position:relative;height:260px;width:100%">
+            <canvas id="instaFollowerChart"></canvas>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:700">조회수 추이</div>
+            <select id="instaViewsMetric" onchange="drawInstaViewsChart()" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;background:#fff">
+              <option value="views">조회수</option>
+              <option value="reach">도달</option>
+              <option value="likes">좋아요</option>
+              <option value="saves">저장</option>
+            </select>
+          </div>
+          <div style="position:relative;height:260px;width:100%">
+            <canvas id="instaViewsChart"></canvas>
+          </div>
         </div>
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="font-size:13px;font-weight:700">TOP 3</div>
             <select id="instaTopMetric" onchange="renderInstaTop3()" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;background:#fff">
+              <option value="views">조회수</option>
               <option value="reach">도달</option>
               <option value="likes">좋아요</option>
               <option value="saves">저장</option>
@@ -1133,7 +1150,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
               <option value="comments">댓글</option>
             </select>
           </div>
-          <div id="instaTop3" style="font-size:12px;color:var(--text2)">데이터 불러오는 중...</div>
+          <div id="instaTop3" style="font-size:12px;color:var(--text2);max-height:260px;overflow-y:auto">데이터 불러오는 중...</div>
         </div>
       </div>
 
@@ -2233,7 +2250,9 @@ window.addEventListener('load', async () => {
 let instaPosts = [];
 let instaFollowers = [];
 let instaFollowerChart = null;
+let instaViewsChart = null;
 let instaFilterStart = '', instaFilterEnd = '';
+let instaFilteredData = [];  // 필터된 현재 데이터 (차트용)
 
 // Supabase에서 인스타 게시물 + 팔로워 로드
 async function loadInstaPosts(force = false) {
@@ -2273,6 +2292,8 @@ async function loadInstaPosts(force = false) {
 }
 
 function renderInstaDashboard(data) {
+  instaFilteredData = data || [];  // 차트용 데이터 저장
+
   if (!data || !data.length) {
     document.getElementById('insta-dash-follower').textContent = '—';
     document.getElementById('insta-dash-follower-change').textContent = '데이터 없음';
@@ -2290,6 +2311,7 @@ function renderInstaDashboard(data) {
       <span style="font-size:11px;margin-top:4px">콘텐츠 캘린더에서 게시물을 추가하세요</span>
     </td></tr>`;
     drawInstaFollowerChart([]);
+    if (instaViewsChart) { instaViewsChart.destroy(); instaViewsChart = null; }
     document.getElementById('instaTop3').innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">데이터 없음</div>';
     return;
   }
@@ -2316,18 +2338,18 @@ function renderInstaDashboard(data) {
   fc.textContent = followerDiff >= 0 ? `↑ 기간 내 +${followerDiff.toLocaleString()}명` : `↓ ${Math.abs(followerDiff).toLocaleString()}명`;
   fc.className = 'stat-change ' + (followerDiff >= 0 ? 'up' : 'down');
 
-  // 평균 도달
-  const hasReach = data.filter(r => (r.reach || 0) > 0);
-  const avgReach = hasReach.length ? Math.round(hasReach.reduce((s,r) => s + (r.reach||0), 0) / hasReach.length) : 0;
-  document.getElementById('insta-dash-views').textContent = avgReach ? avgReach.toLocaleString() : '—';
+  // 평균 조회수 (조회수가 있는 게시물만)
+  const hasViews = data.filter(r => (r.views || 0) > 0);
+  const avgViews = hasViews.length ? Math.round(hasViews.reduce((s,r) => s + (r.views||0), 0) / hasViews.length) : 0;
+  document.getElementById('insta-dash-views').textContent = avgViews ? avgViews.toLocaleString() : '—';
 
   const startVal = document.getElementById('instaFilterStart')?.value;
   const endVal = document.getElementById('instaFilterEnd')?.value;
-  let subLabel = `게시물 ${hasReach.length}개 평균`;
+  let subLabel = `게시물 ${hasViews.length}개 평균`;
   if (startVal || endVal) {
-    if (startVal && endVal) subLabel = `${startVal.slice(5).replace('-','/')} ~ ${endVal.slice(5).replace('-','/')} · ${hasReach.length}개`;
-    else if (startVal) subLabel = `${startVal.slice(5).replace('-','/')}부터 · ${hasReach.length}개`;
-    else subLabel = `${endVal.slice(5).replace('-','/')}까지 · ${hasReach.length}개`;
+    if (startVal && endVal) subLabel = `${startVal.slice(5).replace('-','/')} ~ ${endVal.slice(5).replace('-','/')} · ${hasViews.length}개`;
+    else if (startVal) subLabel = `${startVal.slice(5).replace('-','/')}부터 · ${hasViews.length}개`;
+    else subLabel = `${endVal.slice(5).replace('-','/')}까지 · ${hasViews.length}개`;
   }
   document.getElementById('insta-dash-views-change').textContent = subLabel;
 
@@ -2360,6 +2382,7 @@ function renderInstaDashboard(data) {
 
   // 차트
   drawInstaFollowerChart(data);
+  drawInstaViewsChart();  // 조회수 추이
 
   // TOP 3
   renderInstaTop3();
@@ -2458,30 +2481,95 @@ function drawInstaFollowerChart(data) {
   });
 }
 
+function drawInstaViewsChart() {
+  const canvas = document.getElementById('instaViewsChart');
+  if (!canvas) return;
+  const metric = document.getElementById('instaViewsMetric')?.value || 'views';
+  const metricLabels = { views: '조회수', reach: '도달', likes: '좋아요', saves: '저장' };
+  const metricColors = {
+    views: { line: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+    reach: { line: '#ec4899', bg: 'rgba(236,72,153,0.1)' },
+    likes: { line: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+    saves: { line: '#f59e0b', bg: 'rgba(245,158,11,0.1)' }
+  };
+
+  // 날짜순 정렬 + 값 있는 것만
+  const data = (instaFilteredData || [])
+    .filter(r => r.date && (r[metric] || 0) > 0)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (!data.length) {
+    if (instaViewsChart) instaViewsChart.destroy();
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+
+  if (instaViewsChart) instaViewsChart.destroy();
+  const color = metricColors[metric] || metricColors.views;
+  instaViewsChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: data.map(r => r.date.slice(5).replace('-','/')),
+      datasets: [{
+        label: metricLabels[metric] || metric,
+        data: data.map(r => r[metric] || 0),
+        borderColor: color.line,
+        backgroundColor: color.bg,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+        pointHoverRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: (v) => v >= 1000 ? (v/1000).toFixed(0) + 'k' : v } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
+      }
+    }
+  });
+}
+
 function renderInstaTop3() {
-  const metric = document.getElementById('instaTopMetric')?.value || 'reach';
+  const metric = document.getElementById('instaTopMetric')?.value || 'views';
   const container = document.getElementById('instaTop3');
   if (!container) return;
 
-  const data = instaPosts.filter(r => (r[metric] || 0) > 0);
+  // 필터된 데이터에서 TOP 3
+  const data = (instaFilteredData || []).filter(r => (r[metric] || 0) > 0);
   if (!data.length) {
     container.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">데이터 없음</div>';
     return;
   }
   const top3 = data.slice().sort((a,b) => (b[metric]||0) - (a[metric]||0)).slice(0, 3);
-  const metricLabels = { reach: '도달', likes: '좋아요', saves: '저장', shares: '공유', comments: '댓글' };
+  const metricLabels = { views: '조회수', reach: '도달', likes: '좋아요', saves: '저장', shares: '공유', comments: '댓글' };
 
   container.innerHTML = top3.map((r, i) => {
-    const txt = String(r.text || '').slice(0, 40);
-    return `
-      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:${i<2?'1px solid var(--border)':'none'}">
-        <div style="font-size:14px;font-weight:700;color:#ec4899;width:18px;text-align:center">${i+1}</div>
+    const txt = String(r.text || '게시물').slice(0, 36);
+    const link = String(r.link || '').trim();
+    const linkUrl = link && !link.startsWith('http') ? 'https://' + link : link;
+    const typeBadge = r.post_type ? `<span style="font-size:9px;padding:1px 5px;background:#fce7f3;color:#9f1239;border-radius:3px;font-weight:600;margin-right:4px">${r.post_type}</span>` : '';
+    const inner = `
+      <div style="display:flex;gap:10px;padding:10px 8px;border-bottom:${i<2?'1px solid var(--border)':'none'};${linkUrl?'cursor:pointer;':''}border-radius:6px" ${linkUrl?'onmouseover="this.style.background=\'var(--surface2)\'" onmouseout="this.style.background=\'\'"':''}>
+        <div style="font-size:16px;font-weight:700;color:#ec4899;width:20px;text-align:center;flex-shrink:0">${i+1}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${txt}${r.text && r.text.length>40?'...':''}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">${r.date} · ${metricLabels[metric]} ${(r[metric]||0).toLocaleString()}</div>
+          <div style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${typeBadge}${txt}${r.text && r.text.length>36?'...':''}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">
+            ${r.date ? r.date.slice(5).replace('-','/') : ''} · <b style="color:#ec4899">${metricLabels[metric]} ${(r[metric]||0).toLocaleString()}</b>
+            ${linkUrl ? ' · 🔗' : ''}
+          </div>
         </div>
       </div>
     `;
+    return linkUrl
+      ? `<a href="${linkUrl}" target="_blank" style="text-decoration:none;color:inherit;display:block" title="클릭하면 인스타 게시물 열림">${inner}</a>`
+      : inner;
   }).join('');
 }
 

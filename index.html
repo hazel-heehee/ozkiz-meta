@@ -2618,38 +2618,49 @@ function toNum(v) {
 // 🖼️ 미디어 썸네일 셀 생성 헬퍼 (이미지 + 릴스 오버레이)
 // ══════════════════════════════════════════════════════════════
 // 사용법: buildMediaThumb(post, size)
-//   - post: { image_url, video_url, post_type } 또는 { image_url, video_url, type }
+//   - post: { image_url, video_url, post_type, link, id } 또는 { type }
 //   - size: 픽셀 크기 (기본 36)
+//
+// ⚠️ 인스타 CDN URL은 1~2시간 후 만료됨 → 이미지 로드 실패 시 폴백 박스 표시
 function buildMediaThumb(post, size) {
   size = size || 36;
   const imgUrl = String(post.image_url || '').trim();
   const vidUrl = String(post.video_url || '').trim();
+  const link = String(post.link || '').trim();
+  const linkUrl = link && !link.startsWith('http') ? 'https://' + link : link;
   const type = String(post.post_type || post.type || '').trim();
   const isReel = type === '릴스' || type === 'Video' || !!vidUrl;
   const isCarousel = type === '캐러셀' || type === 'Sidecar';
 
-  // 우선순위: 이미지 썸네일 > 영상 링크 > 플레이스홀더
+  // 타입별 배지 (우상단)
+  let badge = '';
+  if (isReel) {
+    badge = `<span style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);color:#fff;font-size:8px;padding:1px 3px;border-radius:2px;line-height:1;font-weight:600;pointer-events:none">▶</span>`;
+  } else if (isCarousel) {
+    badge = `<span style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);color:#fff;font-size:8px;padding:1px 3px;border-radius:2px;line-height:1;pointer-events:none">▦</span>`;
+  }
+
+  // 폴백 박스 (이미지 로드 실패 또는 url 없음 시)
+  // 인스타 링크가 있으면 그것을 폴백으로 사용
+  const clickUrl = linkUrl || vidUrl || imgUrl || '#';
+  const fallbackEmoji = isReel ? '🎬' : isCarousel ? '🖼️' : '📷';
+  const fallbackBg = isReel ? 'linear-gradient(135deg,#fce7f3,#fbcfe8)' : isCarousel ? 'linear-gradient(135deg,#e0e7ff,#c7d2fe)' : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)';
+
+  const fallbackHtml = `<a href="${clickUrl}" target="_blank" onclick="event.stopPropagation()" title="${isReel?'릴스':isCarousel?'캐러셀':'게시물'} 보기" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:${fallbackBg};border:1px solid var(--border);border-radius:4px;text-decoration:none;font-size:${Math.round(size*0.45)}px;position:relative;line-height:1">${fallbackEmoji}${badge}</a>`;
+
+  // 이미지 URL이 있으면 시도하고 실패하면 폴백 박스로 교체
   if (imgUrl) {
-    const clickUrl = vidUrl || imgUrl;
-    // 이미지 + 우상단 타입 배지 (릴스/캐러셀)
-    let badge = '';
-    if (isReel) {
-      badge = `<span style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);color:#fff;font-size:8px;padding:1px 3px;border-radius:2px;line-height:1;font-weight:600">▶</span>`;
-    } else if (isCarousel) {
-      badge = `<span style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);color:#fff;font-size:8px;padding:1px 3px;border-radius:2px;line-height:1">▦</span>`;
-    }
-    return `<a href="${clickUrl}" target="_blank" onclick="event.stopPropagation()" title="${isReel?'릴스':isCarousel?'캐러셀':'이미지'} 보기" style="display:inline-block;position:relative;line-height:0">
-      <img src="${imgUrl}" style="width:${size}px;height:${size}px;border-radius:4px;object-fit:cover;border:1px solid var(--border);display:block"
-        onerror="this.outerHTML='<span style=&quot;font-size:${Math.round(size*0.5)}px;display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:#f3f4f6;border-radius:4px;border:1px solid var(--border)&quot;>📷</span>'"/>
+    // ref(0) 대신 escaped fallback HTML로 onerror 교체
+    const escapedFallback = fallbackHtml.replace(/"/g, '&quot;');
+    return `<a href="${clickUrl}" target="_blank" onclick="event.stopPropagation()" title="${isReel?'릴스':isCarousel?'캐러셀':'이미지'} 보기" style="display:inline-block;position:relative;line-height:0;width:${size}px;height:${size}px">
+      <img src="${imgUrl}" referrerpolicy="no-referrer" style="width:${size}px;height:${size}px;border-radius:4px;object-fit:cover;border:1px solid var(--border);display:block"
+        onerror="this.parentElement.outerHTML='${escapedFallback}'"/>
       ${badge}
     </a>`;
   }
 
-  if (vidUrl) {
-    return `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" title="영상 보기" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:linear-gradient(135deg,#fce7f3,#e0e7ff);border:1px solid var(--border);border-radius:4px;text-decoration:none;font-size:${Math.round(size*0.45)}px">🎬</a>`;
-  }
-
-  return `<span title="텍스트만" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:#f9fafb;border:1px dashed var(--border);border-radius:4px;font-size:${Math.round(size*0.4)}px;color:var(--text3)">📝</span>`;
+  // 이미지 없으면 바로 폴백
+  return fallbackHtml;
 }
 
 // ── RENDER DASHBOARD
@@ -3657,14 +3668,21 @@ function drawInstaViewsChart() {
     saves: { line: '#f59e0b', bg: 'rgba(245,158,11,0.1)' }
   };
 
-  // 날짜순 정렬 + 값 있는 것만 (기간 필터는 instaFilteredData에 이미 적용됨)
-  const data = (instaFilteredData || [])
-    .filter(r => r.date && (r[metric] || 0) > 0)
-    .slice()
-    .sort((a, b) => a.date.localeCompare(b.date));
+  // 현재 기간 필터 가져오기
+  const fStart = document.getElementById('instaFilterStart')?.value || '';
+  const fEnd = document.getElementById('instaFilterEnd')?.value || '';
 
-  // 데이터 없으면 안내 메시지 표시
-  if (!data.length) {
+  // 값 있는 게시물만 (날짜별로 합산)
+  const valueByDate = {};
+  (instaFilteredData || []).forEach(r => {
+    if (!r.date) return;
+    const val = r[metric] || 0;
+    if (val <= 0) return;
+    // 같은 날짜에 여러 게시물이면 합산
+    valueByDate[r.date] = (valueByDate[r.date] || 0) + val;
+  });
+
+  if (Object.keys(valueByDate).length === 0) {
     if (instaViewsChart) { instaViewsChart.destroy(); instaViewsChart = null; }
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -3672,12 +3690,24 @@ function drawInstaViewsChart() {
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const msg = `선택한 기간에 ${metricLabels[metric] || metric} 데이터가 없어요`;
-    ctx.fillText(msg, canvas.width/2, canvas.height/2 - 8);
+    ctx.fillText(`선택한 기간에 ${metricLabels[metric] || metric} 데이터가 없어요`, canvas.width/2, canvas.height/2 - 8);
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '11px sans-serif';
     ctx.fillText('게시물 통계를 입력하면 차트가 표시됩니다', canvas.width/2, canvas.height/2 + 14);
     return;
+  }
+
+  // 기간 시작~끝 모든 날짜 생성 (균등 간격용)
+  const dates = Object.keys(valueByDate).sort();
+  let startDate = fStart || dates[0];
+  let endDate = fEnd || dates[dates.length - 1];
+
+  const allDates = [];
+  const dStart = new Date(startDate);
+  const dEnd = new Date(endDate);
+  for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    allDates.push(k);
   }
 
   if (instaViewsChart) instaViewsChart.destroy();
@@ -3685,17 +3715,18 @@ function drawInstaViewsChart() {
   instaViewsChart = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: data.map(r => r.date.slice(5).replace('-','/')),
+      labels: allDates.map(d => d.slice(5).replace('-','/')),
       datasets: [{
         label: metricLabels[metric] || metric,
-        data: data.map(r => r[metric] || 0),
+        data: allDates.map(d => valueByDate[d] || null),  // 값 없는 날은 null
         borderColor: color.line,
         backgroundColor: color.bg,
         borderWidth: 2,
         fill: true,
         tension: 0.3,
-        pointRadius: 2,
-        pointHoverRadius: 5
+        pointRadius: (ctx) => ctx.raw == null ? 0 : 4,
+        pointHoverRadius: 6,
+        spanGaps: true  // null 값 연결
       }]
     },
     options: {
@@ -3704,7 +3735,7 @@ function drawInstaViewsChart() {
       plugins: { legend: { display: false } },
       scales: {
         y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: (v) => v.toLocaleString() } },
-        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
       }
     }
   });
@@ -4212,6 +4243,14 @@ async function renderInstaCalListView() {
   if (!body) return;
 
   body.innerHTML = `<tr><td colspan="20" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>`;
+
+  // 데이터 없으면 강제 로드
+  if (!instaPosts || instaPosts.length === 0) {
+    console.log('🔄 instaPosts가 비어있어요. 로드 시도...');
+    await loadInstaPosts();
+  }
+
+  console.log(`📋 표 뷰 렌더 — instaPosts: ${instaPosts?.length || 0}개, 현재 월: ${instaCalYear}년 ${instaCalMonth+1}월`);
 
   // 그 달의 인스타 팔로워 데이터
   const monthStart = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-01`;
@@ -4833,11 +4872,22 @@ async function saveApifyPostsToSupabase(items) {
       const shortCode = item.shortCode || item.id || '';
       if (!shortCode) { skipped++; continue; }
 
-      // 게시 타입 변환
+      // 게시 타입 변환 (childPosts 2개 이상이면 캐러셀)
       let post_type = '피드';
-      if (item.type === 'Video') post_type = '릴스';
-      else if (item.type === 'Sidecar') post_type = '캐러셀';
-      else if (item.type === 'Image') post_type = '피드';
+      const childCount = Array.isArray(item.childPosts) ? item.childPosts.length : 0;
+
+      if (item.type === 'Video') {
+        // Video인데 슬라이드면 캐러셀 (드물지만 가능)
+        post_type = childCount >= 2 ? '캐러셀' : '릴스';
+      } else if (item.type === 'Sidecar' || childCount >= 2) {
+        // Sidecar이거나 자식 게시물 2개 이상이면 캐러셀
+        post_type = '캐러셀';
+      } else if (item.type === 'Image') {
+        post_type = '피드';
+      } else {
+        // type 불명확하면 childCount로 판단
+        post_type = childCount >= 2 ? '캐러셀' : '피드';
+      }
 
       // 날짜 (UTC → KST 안전한 변환)
       const ts = item.timestamp || item.takenAtTimestamp;
@@ -4868,15 +4918,17 @@ async function saveApifyPostsToSupabase(items) {
 
       const existing = existingByShortcode[shortCode];
       if (existing) {
-        // 기존 게시물: 공개 통계만 업데이트 (사용자가 수동 입력한 도달/저장/공유는 유지)
+        // 기존 게시물: 공개 통계 업데이트 + 이미지 URL은 항상 새것으로 (인스타 CDN 만료 대응)
         const updateData = {
           views: postData.views,
           likes: postData.likes,
-          comments: postData.comments
+          comments: postData.comments,
+          post_type: postData.post_type  // 타입도 다시 분류
         };
-        // image_url이 비어있으면 채워주기
-        if (!existing.image_url && postData.image_url) updateData.image_url = postData.image_url;
-        if (!existing.video_url && postData.video_url) updateData.video_url = postData.video_url;
+        // image_url은 항상 새것으로 갱신 (인스타 CDN URL은 1~2시간 후 만료됨)
+        if (postData.image_url) updateData.image_url = postData.image_url;
+        if (postData.video_url) updateData.video_url = postData.video_url;
+        // 캡션은 사용자가 비웠을 경우만 채움
         if (!existing.text && postData.text) updateData.text = postData.text;
 
         await sb.from('insta_posts').update(updateData).eq('id', existing.id);
@@ -5436,23 +5488,23 @@ function goPage(name, btn) {
   if (name === 'insta-calendar') {
     // 캘린더 진입 시 게시물 + 예약글 둘 다 로드 (비동기)
     (async () => {
-      // 마지막 사용 뷰 복원 (먼저)
-      const savedView = localStorage.getItem('oz_insta_cal_view') || 'cal';
-      switchInstaCalView(savedView);
-
-      // 유치원 일정 캐시 없으면 가져오기
-      if (!window.__kgEventsCache) await fetchKgEventsForCache();
-
-      // 데이터 로드 (먼저 끝낸 후 렌더)
+      // 데이터 로드 먼저 (캘린더 그리려면 데이터 필요!)
       if (!instaPosts || !instaPosts.length) {
         await loadInstaPosts();
       }
       await loadInstaScheduledPosts();
 
-      // 모두 끝난 후 렌더
+      // 유치원 일정 캐시 없으면 가져오기
+      if (!window.__kgEventsCache) await fetchKgEventsForCache();
+
+      // 마지막 사용 뷰 복원 + 렌더
+      const savedView = localStorage.getItem('oz_insta_cal_view') || 'cal';
+      switchInstaCalView(savedView);
+
+      // 모두 끝난 후 렌더 (둘 다 렌더해서 뷰 전환 시 즉시 보이게)
       renderInstaCalendar();
       renderInstaUpcomingKgEvents();
-      if (instaCalViewMode === 'list') renderInstaCalListView();
+      renderInstaCalListView();  // 표 뷰도 같이 렌더
     })();
   }
   if (name === 'insta-trend') loadInstaRefs();

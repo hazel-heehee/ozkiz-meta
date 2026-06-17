@@ -355,10 +355,6 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   <div class="sidebar-divider"></div>
   <div class="sidebar-section">공통</div>
 
-  <button class="nav-item" onclick="goPage('history',this)">
-    <span class="nav-icon">≡</span> 저장 기록
-  </button>
-
   <button class="nav-item" onclick="goPage('kindergarten',this)">
     <span class="nav-icon">📚</span> 유치원 일정
   </button>
@@ -428,15 +424,28 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
         </div>
       </div>
 
-      <div class="dash-grid">
+      <div class="dash-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
         <!-- 팔로워 추이 차트 -->
         <div class="card">
           <div class="card-title">팔로워 추이</div>
-          <div style="position:relative;height:200px;margin-top:8px">
-            <svg id="sparklineSvg" width="100%" height="200" viewBox="0 0 500 200" preserveAspectRatio="none" style="overflow:visible">
-              <text x="250" y="100" text-anchor="middle" fill="#a1a1aa" font-size="11">데이터 불러오는 중...</text>
-            </svg>
-            <div id="chartTooltip" style="position:absolute;display:none;background:#111;color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;pointer-events:none;white-space:nowrap;z-index:10;transform:translate(-50%,-100%)"></div>
+          <div style="position:relative;height:260px;width:100%;margin-top:8px">
+            <canvas id="threadFollowerChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 조회수 추이 차트 (신규) -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="card-title" style="margin-bottom:0">조회수 추이</div>
+            <select id="threadViewsMetric" onchange="drawThreadViewsChart()" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;background:#fff">
+              <option value="views">조회수</option>
+              <option value="likes">좋아요</option>
+              <option value="comments">댓글</option>
+              <option value="reposts">리포스트</option>
+            </select>
+          </div>
+          <div style="position:relative;height:260px;width:100%">
+            <canvas id="threadViewsChart"></canvas>
           </div>
         </div>
 
@@ -454,18 +463,29 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
               <option value="follows">팔로우</option>
             </select>
           </div>
-          <div id="topPosts">
+          <div id="topPosts" style="max-height:260px;overflow-y:auto">
             <div style="font-size:12px;color:var(--text3);padding:12px 0">데이터 불러오는 중...</div>
           </div>
         </div>
 
         <!-- 최근 게시물 목록 -->
         <div class="card" style="grid-column:1/-1">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <div class="card-title" style="margin-bottom:0">최근 게시물</div>
-            <span style="font-size:11px;color:var(--text3)" id="sheetLastUpdate"></span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="card-title" style="margin-bottom:0">최근 게시물</div>
+              <span id="recentPostsCount" style="font-size:11px;color:var(--text3)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;color:var(--text3)" id="sheetLastUpdate"></span>
+              <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px;margin-left:6px">
+                <button id="recentViewTable" onclick="switchRecentView('table')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">📋 표</button>
+                <button id="recentViewCal" onclick="switchRecentView('cal')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📅 캘린더</button>
+              </div>
+            </div>
           </div>
-          <div style="overflow-x:auto">
+
+          <!-- 표 뷰 -->
+          <div id="recentTableView" style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:13px" id="recentTable">
               <thead>
                 <tr style="border-bottom:1px solid var(--border)">
@@ -486,6 +506,19 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
                 <tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">데이터 불러오는 중...</td></tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- 캘린더 뷰 -->
+          <div id="recentCalView" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span id="recentCalTitle" style="font-size:15px;font-weight:700"></span>
+              <div style="display:flex;gap:2px">
+                <button onclick="changeRecentMonth(-1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit">←</button>
+                <button onclick="goToRecentToday()" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">오늘</button>
+                <button onclick="changeRecentMonth(1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit">→</button>
+              </div>
+            </div>
+            <div class="cal-grid" id="recentCalGrid"></div>
           </div>
         </div>
       </div>
@@ -1609,15 +1642,41 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <textarea id="instaRefFormPoint" rows="2" placeholder="왜 이 글이 잘 됐을까?" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🖼️ 이미지 URL</div>
-        <input type="url" id="instaRefFormImageUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    <!-- 이미지 업로드 영역 -->
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:11px;color:var(--text2);font-weight:600">🖼️ 이미지 <span style="color:var(--text3);font-weight:400">(스크린샷·드래그·URL 모두 가능)</span></div>
+        <a href="https://snapinsta.app" target="_blank" style="font-size:10px;color:#3b82f6;text-decoration:none;background:#eff6ff;padding:3px 8px;border-radius:4px;border:1px solid #dbeafe">📥 snapinsta.app ↗</a>
       </div>
-      <div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎬 영상 URL</div>
-        <input type="url" id="instaRefFormVideoUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+
+      <div id="instaRefImageDropZone"
+        ondragover="event.preventDefault();this.style.background='#fce7f3';this.style.borderColor='#ec4899'"
+        ondragleave="this.style.background='';this.style.borderColor='var(--border)'"
+        ondrop="handleInstaImageDrop(event, 'ref')"
+        onclick="document.getElementById('instaRefImageFile').click()"
+        style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:#fafafa">
+        <div id="instaRefImagePreview" style="display:none;margin-bottom:6px"></div>
+        <div id="instaRefImagePrompt" style="font-size:12px;color:var(--text2);line-height:1.6">
+          <div style="font-size:24px;margin-bottom:4px">📎</div>
+          <b>이미지 추가 방법 (가장 빠른 순)</b>
+          <div style="text-align:left;max-width:380px;margin:8px auto 0;background:#fff;border-radius:6px;padding:8px 12px;font-size:11px;line-height:1.7;border:1px solid #e5e7eb">
+            <div>💡 <b style="color:#16a34a">스크린샷</b> — Win <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">⊞ Shift S</kbd> / Mac <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">⌘ Shift 4</kbd> → 여기 <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">Ctrl V</kbd></div>
+            <div>📁 <b>이 영역 클릭</b> → 이미지 파일 선택</div>
+            <div>🖱️ <b>이미지 드래그</b> → 여기로 끌어다 놓기</div>
+            <div>🔗 <b>snapinsta.app</b> ↗ → 인스타 URL 붙여넣고 다운 → 드래그</div>
+          </div>
+        </div>
+        <input type="file" id="instaRefImageFile" accept="image/*" style="display:none" onchange="uploadInstaImage(this.files[0], 'ref')"/>
       </div>
+
+      <div style="margin-top:6px">
+        <input type="url" id="instaRefFormImageUrl" placeholder="또는 이미지 URL 직접 입력 (Postimages·외부 URL 등)" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit" oninput="previewInstaImageUrl('ref', this.value)"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎬 영상 URL</div>
+      <input type="url" id="instaRefFormVideoUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
     </div>
 
     <div style="margin-bottom:14px">
@@ -1704,15 +1763,43 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <textarea id="instaPostFormText" rows="4" placeholder="인스타 게시물 캡션..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical"></textarea>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🖼️ 이미지 URL</div>
-        <input type="url" id="instaPostFormImageUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+    <!-- 이미지 업로드 영역 -->
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:11px;color:var(--text2);font-weight:600">🖼️ 이미지 <span style="color:var(--text3);font-weight:400">(스크린샷·드래그·URL 모두 가능)</span></div>
+        <a href="https://snapinsta.app" target="_blank" style="font-size:10px;color:#3b82f6;text-decoration:none;background:#eff6ff;padding:3px 8px;border-radius:4px;border:1px solid #dbeafe">📥 snapinsta.app ↗</a>
       </div>
-      <div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎬 영상 URL</div>
-        <input type="url" id="instaPostFormVideoUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+
+      <!-- 드래그 앤 드롭 영역 -->
+      <div id="instaPostImageDropZone"
+        ondragover="event.preventDefault();this.style.background='#fce7f3';this.style.borderColor='#ec4899'"
+        ondragleave="this.style.background='';this.style.borderColor='var(--border)'"
+        ondrop="handleInstaImageDrop(event, 'post')"
+        onclick="document.getElementById('instaPostImageFile').click()"
+        style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:#fafafa">
+        <div id="instaPostImagePreview" style="display:none;margin-bottom:6px"></div>
+        <div id="instaPostImagePrompt" style="font-size:12px;color:var(--text2);line-height:1.6">
+          <div style="font-size:24px;margin-bottom:4px">📎</div>
+          <b>이미지 추가 방법 (가장 빠른 순)</b>
+          <div style="text-align:left;max-width:380px;margin:8px auto 0;background:#fff;border-radius:6px;padding:8px 12px;font-size:11px;line-height:1.7;border:1px solid #e5e7eb">
+            <div>💡 <b style="color:#16a34a">스크린샷</b> — Win <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">⊞ Shift S</kbd> / Mac <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">⌘ Shift 4</kbd> → 여기 <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">Ctrl V</kbd></div>
+            <div>📁 <b>이 영역 클릭</b> → 이미지 파일 선택</div>
+            <div>🖱️ <b>이미지 드래그</b> → 여기로 끌어다 놓기</div>
+            <div>🔗 <b>snapinsta.app</b> ↗ → 인스타 URL 붙여넣고 다운 → 드래그</div>
+          </div>
+        </div>
+        <input type="file" id="instaPostImageFile" accept="image/*" style="display:none" onchange="uploadInstaImage(this.files[0], 'post')"/>
       </div>
+
+      <!-- URL 입력 (대안) -->
+      <div style="margin-top:6px">
+        <input type="url" id="instaPostFormImageUrl" placeholder="또는 이미지 URL 직접 입력 (Postimages·외부 URL 등)" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit" oninput="previewInstaImageUrl('post', this.value)"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">🎬 영상 URL</div>
+      <input type="url" id="instaPostFormVideoUrl" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
     </div>
 
     <div style="margin-bottom:14px">
@@ -2279,7 +2366,14 @@ async function loadSheetData(force = false) {
     sheetData = data.slice().reverse();
     console.log(`✓ posts 로드: ${data.length}개 (${Math.round(performance.now()-t0)}ms)`);
 
-    renderDashboard(sheetData);
+    // 첫 로드 시 자동으로 7일 필터 적용 (없으면)
+    const fStart = document.getElementById('filterStart');
+    const fEnd = document.getElementById('filterEnd');
+    if (fStart && fEnd && !fStart.value && !fEnd.value) {
+      setQuick(7);  // 7일 기본
+    } else {
+      renderDashboard(sheetData);
+    }
     renderCalendar();
 
     document.getElementById('sheetLastUpdate').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
@@ -2393,123 +2487,342 @@ function renderDashboard(data) {
   document.getElementById('dash-posts').textContent = hasPosts.length;
   document.getElementById('dash-posts-change').textContent = `마지막: ${fmtDate(latestRow[COL.date])}`;
 
-  // 팔로워 추이 차트 (축 + 툴팁) - 전체 시트 데이터 사용 (기간 필터 영향 받지 않음)
-  const chartSource = sheetData.length ? sheetData : data;
-  const chartPoints = chartSource.map(r => ({
-    follower: toNum(r[COL.follower]),
-    date: r[COL.date],
-    dateObj: toDateObj(r[COL.date]),
-    dateStr: fmtDate(r[COL.date])
-  })).filter(p => p.follower > 0 && p.dateObj);
-
-  if (chartPoints.length >= 2) {
-    const W = 500, H = 200, PL = 50, PR = 15, PT = 15, PB = 30;
-    const innerW = W - PL - PR, innerH = H - PT - PB;
-
-    // Y축 고정 0 ~ 30000
-    const yMin = 0, yMax = 30000;
-    const yRange = yMax - yMin;
-
-    // X축 범위 - 데이터 첫 날짜부터 12/31까지
-    const firstYear = chartPoints[0].dateObj.getFullYear();
-    const xStart = chartPoints[0].dateObj.getTime();
-    const xEnd = new Date(firstYear, 11, 31).getTime(); // 12/31
-    const xRange = xEnd - xStart;
-
-    // Y축 눈금 6개 (0, 5K, 10K, 15K, 20K, 25K, 30K)
-    const ySteps = 6;
-    let yLabels = '', yGrid = '';
-    for (let i = 0; i <= ySteps; i++) {
-      const v = yMin + (yRange * i / ySteps);
-      const y = PT + innerH - (innerH * i / ySteps);
-      const lbl = v >= 1000 ? `${v/1000}K` : v;
-      yLabels += `<text x="${PL-8}" y="${y+4}" text-anchor="end" fill="#9ca3af" font-size="10">${lbl}</text>`;
-      yGrid += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
-    }
-
-    // X축 라벨 - 월별 (1/1, 3/1, 5/1, 7/1, 9/1, 11/1, 12/31)
-    const xTicks = [
-      new Date(firstYear, 0, 1),
-      new Date(firstYear, 2, 1),
-      new Date(firstYear, 4, 1),
-      new Date(firstYear, 6, 1),
-      new Date(firstYear, 8, 1),
-      new Date(firstYear, 10, 1),
-      new Date(firstYear, 11, 31),
-    ];
-    let xLabels = '';
-    xTicks.forEach(d => {
-      const ratio = (d.getTime() - xStart) / xRange;
-      if (ratio < 0 || ratio > 1) return;
-      const x = PL + innerW * ratio;
-      xLabels += `<text x="${x}" y="${H-10}" text-anchor="middle" fill="#9ca3af" font-size="10">${d.getMonth()+1}/${d.getDate()}</text>`;
-    });
-
-    // 데이터 포인트 - 시간 비율 기반 X 좌표
-    const pts = chartPoints.map(p => {
-      const x = PL + innerW * ((p.dateObj.getTime() - xStart) / xRange);
-      const y = PT + innerH - ((p.follower - yMin) / yRange) * innerH;
-      return { x, y, ...p };
-    });
-
-    const linePath = 'M' + pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L');
-    const areaPath = linePath + ` L${pts[pts.length-1].x},${PT+innerH} L${pts[0].x},${PT+innerH}Z`;
-
-    // 호버 영역 + 점
-    const zoneW = innerW / pts.length;
-    const hoverDots = pts.map((p, i) => `
-      <circle cx="${p.x}" cy="${p.y}" r="3" fill="#111" opacity="0" class="chart-dot" data-idx="${i}" />
-      <rect x="${p.x - zoneW/2}" y="${PT}" width="${zoneW}" height="${innerH}" fill="transparent" class="chart-hover-zone" data-idx="${i}" style="cursor:crosshair"/>
-    `).join('');
-
-    document.getElementById('sparklineSvg').innerHTML = `
-      <defs>
-        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#111" stop-opacity=".15"/>
-          <stop offset="100%" stop-color="#111" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      ${yGrid}
-      ${yLabels}
-      ${xLabels}
-      <path d="${areaPath}" fill="url(#sg)"/>
-      <path d="${linePath}" fill="none" stroke="#111" stroke-width="1.5"/>
-      ${hoverDots}
-    `;
-
-    // 툴팁 이벤트 바인딩
-    const tooltip = document.getElementById('chartTooltip');
-    const svgEl = document.getElementById('sparklineSvg');
-    svgEl.querySelectorAll('.chart-hover-zone').forEach(zone => {
-      zone.addEventListener('mouseenter', (e) => {
-        const idx = +zone.dataset.idx;
-        const p = pts[idx];
-        const dot = svgEl.querySelector(`.chart-dot[data-idx="${idx}"]`);
-        dot.setAttribute('opacity', '1');
-        const rect = svgEl.getBoundingClientRect();
-        const xRatio = p.x / W, yRatio = p.y / H;
-        tooltip.style.left = (xRatio * rect.width) + 'px';
-        tooltip.style.top = (yRatio * rect.height - 8) + 'px';
-        tooltip.innerHTML = `<b>${p.dateStr}</b><br>팔로워 ${p.follower.toLocaleString()}명`;
-        tooltip.style.display = 'block';
-      });
-      zone.addEventListener('mouseleave', () => {
-        const idx = +zone.dataset.idx;
-        const dot = svgEl.querySelector(`.chart-dot[data-idx="${idx}"]`);
-        dot.setAttribute('opacity', '0');
-        tooltip.style.display = 'none';
-      });
-    });
-  }
+  // 팔로워 추이 차트 + 조회수 차트 (Chart.js 기반)
+  threadFilteredData = data;  // 조회수 차트가 참조할 데이터
+  drawThreadFollowerChart(data);
+  drawThreadViewsChart();
 
   // TOP 3 (현재 필터된 데이터로 렌더)
   topPostsData = data;
   renderTopPosts();
 
-  // 테이블 (최신 30개)
-  const recent30 = data.slice(-30).reverse();
-  document.getElementById('recentTableBody').innerHTML = recent30.map(r => buildPostRow(r)).join('');
+  // 테이블 (필터된 데이터 전체, 최신 순)
+  const sorted = data.slice().sort((a,b) => {
+    const da = toDateObj(a[COL.date]);
+    const db = toDateObj(b[COL.date]);
+    return (db?.getTime() || 0) - (da?.getTime() || 0);
+  });
+  const recent = sorted.slice(0, 100);  // 최대 100개
+  document.getElementById('recentTableBody').innerHTML = recent.length
+    ? recent.map(r => buildPostRow(r)).join('')
+    : `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);font-size:13px">해당 기간에 게시물이 없어요</td></tr>`;
+
+  // 개수 표시
+  const countEl = document.getElementById('recentPostsCount');
+  if (countEl) countEl.textContent = data.length > 0 ? `${data.length}개 표시 중` : '';
+
+  // 캘린더 뷰가 활성화돼 있으면 같이 갱신
+  if (currentRecentView === 'cal') renderRecentCal();
 }
+
+// ── 스레드 팔로워 추이 차트 (Chart.js)
+let threadFollowerChart = null;
+let threadViewsChart = null;
+let threadFilteredData = [];
+
+// ── 최근 게시물 뷰 전환 (표 ↔ 캘린더)
+let currentRecentView = 'table';
+let recentCalYear = new Date().getFullYear();
+let recentCalMonth = new Date().getMonth();
+
+function switchRecentView(mode) {
+  currentRecentView = mode;
+  const tableView = document.getElementById('recentTableView');
+  const calView = document.getElementById('recentCalView');
+  const tableBtn = document.getElementById('recentViewTable');
+  const calBtn = document.getElementById('recentViewCal');
+  if (!tableView || !calView) return;
+
+  if (mode === 'cal') {
+    tableView.style.display = 'none';
+    calView.style.display = 'block';
+    if (calBtn) {
+      calBtn.style.background = '#fff'; calBtn.style.fontWeight = '600'; calBtn.style.color = 'var(--text)'; calBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+      tableBtn.style.background = 'transparent'; tableBtn.style.fontWeight = '500'; tableBtn.style.color = 'var(--text2)'; tableBtn.style.boxShadow = 'none';
+    }
+    renderRecentCal();
+  } else {
+    tableView.style.display = 'block';
+    calView.style.display = 'none';
+    if (tableBtn) {
+      tableBtn.style.background = '#fff'; tableBtn.style.fontWeight = '600'; tableBtn.style.color = 'var(--text)'; tableBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+      calBtn.style.background = 'transparent'; calBtn.style.fontWeight = '500'; calBtn.style.color = 'var(--text2)'; calBtn.style.boxShadow = 'none';
+    }
+  }
+  localStorage.setItem('oz_recent_view', mode);
+}
+
+function changeRecentMonth(delta) {
+  recentCalMonth += delta;
+  if (recentCalMonth < 0) { recentCalMonth = 11; recentCalYear--; }
+  if (recentCalMonth > 11) { recentCalMonth = 0; recentCalYear++; }
+  renderRecentCal();
+}
+
+function goToRecentToday() {
+  const t = new Date();
+  recentCalYear = t.getFullYear();
+  recentCalMonth = t.getMonth();
+  renderRecentCal();
+}
+
+function renderRecentCal() {
+  const grid = document.getElementById('recentCalGrid');
+  const title = document.getElementById('recentCalTitle');
+  if (!grid || !title) return;
+
+  title.textContent = `${recentCalYear}년 ${recentCalMonth+1}월`;
+
+  const data = threadFilteredData || sheetData;
+  const today = new Date();
+  const firstDay = new Date(recentCalYear, recentCalMonth, 1);
+  const lastDay = new Date(recentCalYear, recentCalMonth+1, 0);
+  const first = firstDay.getDay();
+  const total = lastDay.getDate();
+
+  // 그 달의 발행 게시물
+  const postsByDay = {};
+  (data || []).forEach(r => {
+    const d = toDateObj(r[COL.date]);
+    if (!d) return;
+    if (d.getFullYear() === recentCalYear && d.getMonth() === recentCalMonth) {
+      const day = d.getDate();
+      const txt = cleanText(r[COL.text]).slice(0, 14);
+      if (!txt) return;
+      if (!postsByDay[day]) postsByDay[day] = [];
+      postsByDay[day].push({
+        text: txt + (cleanText(r[COL.text]).length > 14 ? '...' : ''),
+        link: String(r[COL.link] || '').trim(),
+        category: r[COL.category] || '',
+        views: toNum(r[COL.views]),
+        eng: calcEngagement(r)
+      });
+    }
+  });
+
+  // 유치원 일정
+  const kgByDay = {};
+  (window.__kgEventsCache || []).forEach(ev => {
+    const d = new Date(ev.date);
+    if (d.getFullYear() === recentCalYear && d.getMonth() === recentCalMonth) {
+      const day = d.getDate();
+      if (!kgByDay[day]) kgByDay[day] = [];
+      kgByDay[day].push(ev);
+    }
+  });
+
+  const catColors = {
+    '홍보': '#fef3c7',
+    '소통&공감': '#fce7f3',
+    '정보': '#dbeafe',
+    '전문가': '#e0e7ff',
+    'etc': '#f3f4f6'
+  };
+  const catLabels = {
+    '홍보': '홍보',
+    '소통&공감': '소통',
+    '정보': '정보',
+    '전문가': '전문가',
+    'etc': 'etc'
+  };
+  const kgEmoji = { '행사':'🎉','소풍':'🚌','체육':'⚽','학사':'📚','휴원':'🏠','기타':'📌' };
+
+  let html = '';
+  for (let i = 0; i < first; i++) html += `<div class="cal-day empty"></div>`;
+  for (let d = 1; d <= total; d++) {
+    const isToday = today.getFullYear()===recentCalYear && today.getMonth()===recentCalMonth && today.getDate()===d;
+    const posts = postsByDay[d] || [];
+    const kgs = kgByDay[d] || [];
+
+    const kgHtml = kgs.length > 0
+      ? `<div style="margin-bottom:3px">${kgs.slice(0,2).map(ev => {
+          const emoji = kgEmoji[ev.category||'기타'] || '📌';
+          const t = ev.title.length > 8 ? ev.title.slice(0,8)+'…' : ev.title;
+          return `<div style="background:#fffbeb;color:#92400e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;margin-bottom:1px;border:1px solid #fde68a" title="${ev.title.replace(/"/g,'&quot;')}">${emoji} ${t}</div>`;
+        }).join('')}</div>`
+      : '';
+
+    const postHtml = posts.slice(0, 3).map(p => {
+      const catBadge = p.category && catLabels[p.category]
+        ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
+        : '';
+      return p.link
+        ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${catBadge}${p.text}</a>`
+        : `<div class="cal-post-dot published">${catBadge}${p.text}</div>`;
+    }).join('');
+
+    const moreHtml = posts.length > 3 ? `<div class="cal-more">+${posts.length-3}개</div>` : '';
+    const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
+    html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${moreHtml}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function drawThreadFollowerChart(data) {
+  const canvas = document.getElementById('threadFollowerChart');
+  if (!canvas) return;
+
+  // 팔로워 데이터 추출 (전체 시트에서)
+  const chartSource = sheetData.length ? sheetData : data;
+  const points = chartSource.map(r => ({
+    follower: toNum(r[COL.follower]),
+    date: r[COL.date],
+    dateObj: toDateObj(r[COL.date])
+  })).filter(p => p.follower > 0 && p.dateObj).sort((a,b) => a.dateObj - b.dateObj);
+
+  if (!points.length) {
+    if (threadFollowerChart) threadFollowerChart.destroy();
+    return;
+  }
+
+  // 날짜별 평균 (같은 날 여러 데이터면 평균)
+  const byDate = {};
+  points.forEach(p => {
+    const key = p.date;
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(p.follower);
+  });
+  const aggregated = Object.keys(byDate).sort().map(k => ({
+    date: k,
+    follower: Math.round(byDate[k].reduce((s,v) => s+v, 0) / byDate[k].length)
+  }));
+
+  if (threadFollowerChart) threadFollowerChart.destroy();
+  threadFollowerChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: aggregated.map(p => p.date.slice(5).replace('-','/')),
+      datasets: [{
+        label: '팔로워',
+        data: aggregated.map(p => p.follower),
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#3b82f6',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111',
+          padding: 10,
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 11 },
+          callbacks: {
+            label: (ctx) => `팔로워 ${ctx.parsed.y.toLocaleString()}명`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          ticks: {
+            font: { size: 10 },
+            callback: (v) => v >= 1000 ? (v/1000).toFixed(1) + 'k' : v
+          },
+          grid: { color: 'rgba(0,0,0,0.04)' }
+        },
+        x: {
+          ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function drawThreadViewsChart() {
+  const canvas = document.getElementById('threadViewsChart');
+  if (!canvas) return;
+  const metric = document.getElementById('threadViewsMetric')?.value || 'views';
+  const metricLabels = { views: '조회수', likes: '좋아요', comments: '댓글', reposts: '리포스트' };
+  const metricColors = {
+    views: { line: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+    likes: { line: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+    comments: { line: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+    reposts: { line: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' }
+  };
+  const metricCols = { views: COL.views, likes: COL.likes, comments: COL.comments, reposts: COL.reposts };
+  const col = metricCols[metric];
+
+  // 현재 필터된 데이터에서, 본문 + 값 > 0
+  const data = (threadFilteredData || [])
+    .filter(r => cleanText(r[COL.text]).trim() && toNum(r[col]) > 0)
+    .map(r => ({ date: r[COL.date], val: toNum(r[col]), dateObj: toDateObj(r[COL.date]) }))
+    .filter(r => r.dateObj)
+    .sort((a,b) => a.dateObj - b.dateObj);
+
+  if (!data.length) {
+    if (threadViewsChart) threadViewsChart.destroy();
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+
+  if (threadViewsChart) threadViewsChart.destroy();
+  const color = metricColors[metric] || metricColors.views;
+  threadViewsChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: data.map(d => d.date.slice(5).replace('-','/')),
+      datasets: [{
+        label: metricLabels[metric] || metric,
+        data: data.map(d => d.val),
+        borderColor: color.line,
+        backgroundColor: color.bg,
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: color.line,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111',
+          padding: 10,
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 11 },
+          callbacks: {
+            label: (ctx) => `${metricLabels[metric]} ${ctx.parsed.y.toLocaleString()}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            font: { size: 10 },
+            callback: (v) => v >= 1000 ? (v/1000).toFixed(0) + 'k' : v
+          },
+          grid: { color: 'rgba(0,0,0,0.04)' }
+        },
+        x: {
+          ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
 
 // ── DATE FILTER
 function applyFilter() {
@@ -2667,6 +2980,12 @@ window.addEventListener('load', async () => {
   await migrateScheduledPostsToSupabase();
   loadScheduledPosts();
   document.getElementById('updatedDate').textContent = '업데이트 ' + new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+
+  // 최근 게시물 뷰 모드 복원 (기본: 표)
+  const savedRecentView = localStorage.getItem('oz_recent_view') || 'table';
+  if (savedRecentView === 'cal') {
+    setTimeout(() => switchRecentView('cal'), 200);  // 데이터 로드 후 전환
+  }
 
   // 마지막 사용 채널 복원 — 기본은 인스타 (HTML에서 이미 인스타가 active 상태)
   // 마지막 채널이 스레드일 때만 스레드 모드로 전환
@@ -3103,6 +3422,7 @@ function openInstaPostNew() {
   document.getElementById('instaPostFormFollows').value = '';
   document.getElementById('instaPostFormDeleteBtn').style.display = 'none';
   document.getElementById('instaPostFormModal').classList.add('open');
+  previewInstaImageUrl('post', '');  // 미리보기 초기화
   setTimeout(() => document.getElementById('instaPostFormText').focus(), 100);
 }
 
@@ -3128,6 +3448,7 @@ function openInstaPostEdit(id) {
   document.getElementById('instaPostFormFollows').value = post.follows || '';
   document.getElementById('instaPostFormDeleteBtn').style.display = 'inline-block';
   document.getElementById('instaPostFormModal').classList.add('open');
+  previewInstaImageUrl('post', post.image_url || '');  // 미리보기 표시
 }
 
 function closeInstaPostFormModal() {
@@ -3827,6 +4148,7 @@ function openInstaRefAddModal() {
   document.getElementById('instaRefFormShares').value = '';
   document.getElementById('instaRefFormDeleteBtn').style.display = 'none';
   document.getElementById('instaRefFormModal').classList.add('open');
+  previewInstaImageUrl('ref', '');
 }
 
 function openInstaRefEditModal(id) {
@@ -3850,6 +4172,7 @@ function openInstaRefEditModal(id) {
   document.getElementById('instaRefFormShares').value = ref.shares || '';
   document.getElementById('instaRefFormDeleteBtn').style.display = 'inline-block';
   document.getElementById('instaRefFormModal').classList.add('open');
+  previewInstaImageUrl('ref', ref.image_url || '');
 }
 
 function closeInstaRefFormModal() {
@@ -8003,6 +8326,152 @@ function copyInstaPlanPrompt() {
 // ══════════════════════════════════════════════════════════════
 // 📷 INSTAGRAM 브랜드 가이드
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// 📷 INSTAGRAM 이미지 업로드 (Supabase Storage)
+// ══════════════════════════════════════════════════════════════
+
+// 드래그 앤 드롭 핸들러
+function handleInstaImageDrop(e, kind) {
+  e.preventDefault();
+  e.currentTarget.style.background = '';
+  e.currentTarget.style.borderColor = 'var(--border)';
+  const files = e.dataTransfer.files;
+  if (!files || !files.length) return;
+  const file = files[0];
+  if (!file.type.startsWith('image/')) {
+    showToast('이미지 파일만 업로드 가능해요');
+    return;
+  }
+  uploadInstaImage(file, kind);
+}
+
+// Supabase Storage에 업로드
+async function uploadInstaImage(file, kind) {
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('10MB 이하 파일만 가능해요');
+    return;
+  }
+
+  const promptEl = document.getElementById(`insta${kind === 'post' ? 'Post' : 'Ref'}ImagePrompt`);
+  const previewEl = document.getElementById(`insta${kind === 'post' ? 'Post' : 'Ref'}ImagePreview`);
+  const urlInputId = kind === 'post' ? 'instaPostFormImageUrl' : 'instaRefFormImageUrl';
+
+  // 로딩 표시
+  if (promptEl) {
+    promptEl.innerHTML = `
+      <div style="font-size:24px;margin-bottom:4px">⏳</div>
+      <b>업로드 중...</b><br>
+      <span style="font-size:10px;color:var(--text3)">${file.name} (${Math.round(file.size/1024)}KB)</span>
+    `;
+  }
+
+  try {
+    // 파일명: timestamp + random + 원본 확장자
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filePath = `${kind}/${fileName}`;
+
+    // Supabase Storage에 업로드
+    const { data, error } = await sb.storage
+      .from('insta-media')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    // 공개 URL 얻기
+    const { data: urlData } = sb.storage.from('insta-media').getPublicUrl(filePath);
+    const publicUrl = urlData.publicUrl;
+
+    // URL 입력란에 설정
+    document.getElementById(urlInputId).value = publicUrl;
+    previewInstaImageUrl(kind, publicUrl);
+
+    showToast('✓ 이미지 업로드 완료');
+  } catch (e) {
+    console.error('uploadInstaImage:', e);
+    let errMsg = e.message;
+    if (errMsg.includes('not found') || errMsg.includes('bucket')) {
+      errMsg = 'Storage 버킷 "insta-media"가 없어요. Supabase에 만들어주세요.';
+    }
+    showToast('업로드 실패: ' + errMsg);
+
+    if (promptEl) {
+      promptEl.innerHTML = `
+        <div style="color:var(--red);font-size:12px">⚠️ ${errMsg}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">다시 시도하거나 URL 직접 입력</div>
+      `;
+    }
+  }
+}
+
+// URL 입력/업로드 시 미리보기
+function previewInstaImageUrl(kind, url) {
+  const previewEl = document.getElementById(`insta${kind === 'post' ? 'Post' : 'Ref'}ImagePreview`);
+  const promptEl = document.getElementById(`insta${kind === 'post' ? 'Post' : 'Ref'}ImagePrompt`);
+  if (!previewEl || !promptEl) return;
+
+  if (!url || !url.trim()) {
+    previewEl.style.display = 'none';
+    previewEl.innerHTML = '';
+    promptEl.style.display = 'block';
+    promptEl.innerHTML = `
+      <div style="font-size:24px;margin-bottom:4px">📎</div>
+      <b>이미지 추가 방법 (가장 빠른 순)</b>
+      <div style="text-align:left;max-width:380px;margin:8px auto 0;background:#fff;border-radius:6px;padding:8px 12px;font-size:11px;line-height:1.7;border:1px solid #e5e7eb">
+        <div>💡 <b style="color:#16a34a">스크린샷</b> — Win <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">⊞ Shift S</kbd> / Mac <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">⌘ Shift 4</kbd> → 여기 <kbd style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">Ctrl V</kbd></div>
+        <div>📁 <b>이 영역 클릭</b> → 이미지 파일 선택</div>
+        <div>🖱️ <b>이미지 드래그</b> → 여기로 끌어다 놓기</div>
+        <div>🔗 <b>snapinsta.app</b> ↗ → 인스타 URL 붙여넣고 다운 → 드래그</div>
+      </div>
+    `;
+    return;
+  }
+
+  previewEl.style.display = 'block';
+  previewEl.innerHTML = `
+    <img src="${url}" style="max-width:160px;max-height:160px;border-radius:6px;border:1px solid var(--border)" onerror="this.outerHTML='<div style=\\'color:var(--red);font-size:11px\\'>⚠️ 이미지 로드 실패</div>'"/>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px;word-break:break-all;max-width:200px;margin-left:auto;margin-right:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url.length > 50 ? url.slice(0, 50) + '...' : url}</div>
+  `;
+  promptEl.style.display = 'block';
+  promptEl.innerHTML = `
+    <button onclick="event.stopPropagation();clearInstaImage('${kind}')" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer">🗑️ 제거</button>
+    <span style="font-size:10px;color:var(--text3);margin-left:8px">✓ 이미지 등록됨</span>
+  `;
+}
+
+function clearInstaImage(kind) {
+  const urlInputId = kind === 'post' ? 'instaPostFormImageUrl' : 'instaRefFormImageUrl';
+  document.getElementById(urlInputId).value = '';
+  previewInstaImageUrl(kind, '');
+}
+
+// 클립보드 붙여넣기 — 인스타 이미지 우클릭 → 이미지 복사 → 모달에서 Ctrl+V
+document.addEventListener('paste', (e) => {
+  // 모달이 열려있는지 확인
+  const postModalOpen = document.getElementById('instaPostFormModal')?.classList.contains('open');
+  const refModalOpen = document.getElementById('instaRefFormModal')?.classList.contains('open');
+  if (!postModalOpen && !refModalOpen) return;
+
+  const kind = postModalOpen ? 'post' : 'ref';
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.startsWith('image/')) {
+      const file = items[i].getAsFile();
+      if (file) {
+        e.preventDefault();
+        showToast('📋 클립보드 이미지 업로드 중...');
+        uploadInstaImage(file, kind);
+        return;
+      }
+    }
+  }
+});
 
 function loadInstaBrandGuide() {
   const brand = JSON.parse(localStorage.getItem('oz_insta_brand') || '{}');

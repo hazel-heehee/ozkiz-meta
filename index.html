@@ -1254,6 +1254,9 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             <button id="instaViewModeList" onclick="switchInstaCalView('list')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📋 표</button>
           </div>
           <button class="btn btn-primary btn-sm" onclick="openInstaPostNew()">+ 게시물 추가</button>
+          <button id="instaSyncBtn" onclick="syncInstaPostsFromApify()" class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#3b82f6);color:#fff;border:none" title="Apify로 최신 인스타 게시물 자동 수집">
+            📥 인스타 동기화
+          </button>
           <button id="instaWeeklyPlanBtn" onclick="openInstaWeeklyPlanModal()" class="btn btn-sm" style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:#fff;border:none" title="AI가 다음 주 7일치 인스타 콘텐츠를 자동 기획">
             🤖 주간 자동 기획
           </button>
@@ -1986,9 +1989,10 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <div class="modal-desc">Gemini와 Claude 둘 다 사용 가능해요. 키는 브라우저에만 저장되며 외부로 전송되지 않아요.</div>
 
     <!-- 제공자 선택 -->
-    <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--surface3);border-radius:8px;padding:3px">
-      <button id="apiProviderGemini" onclick="switchApiProvider('gemini')" style="flex:1;padding:8px 12px;font-size:13px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">⚡ Gemini</button>
-      <button id="apiProviderClaude" onclick="switchApiProvider('claude')" style="flex:1;padding:8px 12px;font-size:13px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">🟣 Claude</button>
+    <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--surface3);border-radius:8px;padding:3px;flex-wrap:wrap">
+      <button id="apiProviderGemini" onclick="switchApiProvider('gemini')" style="flex:1;min-width:80px;padding:8px 10px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">⚡ Gemini</button>
+      <button id="apiProviderClaude" onclick="switchApiProvider('claude')" style="flex:1;min-width:80px;padding:8px 10px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">🟣 Claude</button>
+      <button id="apiProviderApify" onclick="switchApiProvider('apify')" style="flex:1;min-width:80px;padding:8px 10px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📥 Apify</button>
     </div>
 
     <!-- Gemini 안내 -->
@@ -2012,6 +2016,18 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
         <br>💡 ⚠️ <b>CORS 우회 필요</b>: 브라우저에서 직접 호출하면 CORS 차단 — 첫 사용 시 안내 표시
       </div>
       <input type="password" id="claudeKeyInput" placeholder="sk-ant-..." />
+    </div>
+
+    <!-- Apify 안내 -->
+    <div id="apifyInstructions" style="display:none">
+      <div class="modal-step"><span class="step-num">1</span><span><a href="https://console.apify.com/settings/integrations" target="_blank">Apify 콘솔 → Settings → Integrations</a> 접속</span></div>
+      <div class="modal-step"><span class="step-num">2</span><span><b>Personal API tokens</b> 섹션에서 <b>Copy</b> 클릭</span></div>
+      <div class="modal-step"><span class="step-num">3</span><span>토큰 (<code>apify_api_...</code>) 아래에 붙여넣기</span></div>
+      <div style="font-size:11px;color:var(--text3);background:#f0fdf4;border-radius:6px;padding:8px 10px;margin:8px 0;line-height:1.6">
+        📥 <b>1-Click 동기화</b>: 인스타 콘텐츠 캘린더의 <b>📥 인스타 동기화</b> 버튼으로 자동 수집!<br>
+        💰 <b>비용</b>: 30개 게시물 ≈ $0.05 (무료 $5 크레딧으로 100번 가능)
+      </div>
+      <input type="password" id="apifyKeyInput" placeholder="apify_api_..." />
     </div>
 
     <div class="modal-btns">
@@ -2366,6 +2382,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 // ── STATE
 let apiKey = localStorage.getItem('oz_key') || '';
 let claudeApiKey = localStorage.getItem('oz_claude_key') || '';
+let apifyApiKey = localStorage.getItem('oz_apify_key') || '';
 let currentApiProvider = localStorage.getItem('oz_api_provider') || 'gemini';
 let history = JSON.parse(localStorage.getItem('oz_hist') || '[]');
 let generating = false;
@@ -4590,6 +4607,193 @@ function openInstaWeeklyPlanModal() {
   showToast('🚧 인스타 주간 자동 기획은 다음 단계에서 추가됩니다');
 }
 
+// ══════════════════════════════════════════════════════════════
+// 📥 APIFY 동기화 (1-Click)
+// ══════════════════════════════════════════════════════════════
+
+const APIFY_INSTA_ACTOR = 'apify~instagram-scraper';  // apify/instagram-scraper (URL 형식)
+const INSTA_USERNAME = 'ozkiz_official';
+const INSTA_RESULTS_LIMIT = 30;  // 최근 30개 게시물
+
+async function syncInstaPostsFromApify() {
+  // API 키 확인
+  if (!apifyApiKey) {
+    showToast('먼저 Apify API 토큰을 설정해주세요');
+    openModal();
+    setTimeout(() => switchApiProvider('apify'), 100);
+    return;
+  }
+
+  // 사용자 확인
+  if (!confirm(`📥 Apify로 인스타 최신 ${INSTA_RESULTS_LIMIT}개 게시물을 동기화할까요?\n\n💰 비용: 약 $0.05 (75원)\n⏱️ 소요: 1-2분`)) return;
+
+  const btn = document.getElementById('instaSyncBtn');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ 수집 중...';
+
+  // 진행 알림 모달 (간단하게 toast로)
+  showToast('📥 Apify에서 게시물 수집 중... (1-2분 소요)');
+
+  try {
+    // 1단계: Apify Actor 실행
+    console.log('🚀 Apify Actor 실행 중...');
+    const runResp = await fetch(`https://api.apify.com/v2/acts/${APIFY_INSTA_ACTOR}/runs?token=${apifyApiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        directUrls: [`https://www.instagram.com/${INSTA_USERNAME}/`],
+        resultsType: 'posts',
+        resultsLimit: INSTA_RESULTS_LIMIT,
+        addParentData: false
+      })
+    });
+
+    if (!runResp.ok) {
+      const errText = await runResp.text();
+      throw new Error(`Actor 실행 실패: ${errText.slice(0, 200)}`);
+    }
+
+    const runData = await runResp.json();
+    const runId = runData.data.id;
+    const datasetId = runData.data.defaultDatasetId;
+    console.log(`✓ Run 시작: ${runId}`);
+
+    // 2단계: 완료 대기 (polling)
+    btn.innerHTML = '⏳ Apify 실행 중... (1-2분)';
+    let status = runData.data.status;
+    let pollCount = 0;
+    const MAX_POLL = 60;  // 60초 × 5초 = 5분 최대
+
+    while (status === 'READY' || status === 'RUNNING') {
+      await new Promise(r => setTimeout(r, 5000));  // 5초 대기
+      pollCount++;
+      if (pollCount > MAX_POLL) throw new Error('타임아웃 (5분 초과)');
+
+      const statusResp = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apifyApiKey}`);
+      const statusData = await statusResp.json();
+      status = statusData.data.status;
+      console.log(`📊 Run 상태: ${status} (${pollCount * 5}초)`);
+      btn.innerHTML = `⏳ 수집 중 (${pollCount * 5}초)...`;
+    }
+
+    if (status !== 'SUCCEEDED') {
+      throw new Error(`Actor 실패: ${status}`);
+    }
+
+    // 3단계: 데이터셋 가져오기
+    btn.innerHTML = '📦 데이터 가져오는 중...';
+    const itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyApiKey}&clean=true&format=json`);
+    if (!itemsResp.ok) throw new Error('데이터셋 로드 실패');
+    const items = await itemsResp.json();
+    console.log(`✓ ${items.length}개 게시물 받음`);
+
+    // 4단계: Supabase에 저장
+    btn.innerHTML = '💾 Supabase에 저장 중...';
+    const result = await saveApifyPostsToSupabase(items);
+
+    // 5단계: 결과 표시
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+
+    const msg = `✓ 동기화 완료!\n\n📥 수집: ${items.length}개\n✨ 신규 추가: ${result.added}개\n🔄 업데이트: ${result.updated}개\n⏭️ 건너뜀(중복): ${result.skipped}개`;
+    alert(msg);
+
+    // 데이터 갱신
+    await loadInstaPosts(true);
+    if (document.getElementById('page-insta-calendar')?.classList.contains('active')) {
+      renderInstaCalendar();
+      if (instaCalViewMode === 'list') renderInstaCalListView();
+    }
+
+  } catch (e) {
+    console.error('syncInstaPostsFromApify:', e);
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    alert(`❌ 동기화 실패\n\n${e.message}\n\n다시 시도하거나 Apify 토큰을 확인해주세요.`);
+  }
+}
+
+async function saveApifyPostsToSupabase(items) {
+  let added = 0, updated = 0, skipped = 0;
+
+  // 기존 게시물 (shortCode 기준 매칭)
+  const existingByShortcode = {};
+  (instaPosts || []).forEach(p => {
+    if (p.link) {
+      // 링크에서 shortCode 추출 (예: https://www.instagram.com/p/ABC123/ → ABC123)
+      const match = String(p.link).match(/\/(p|reel|reels)\/([^/?]+)/);
+      if (match) existingByShortcode[match[2]] = p;
+    }
+  });
+
+  for (const item of items) {
+    try {
+      const shortCode = item.shortCode || item.id || '';
+      if (!shortCode) { skipped++; continue; }
+
+      // 게시 타입 변환
+      let post_type = '피드';
+      if (item.type === 'Video') post_type = '릴스';
+      else if (item.type === 'Sidecar') post_type = '캐러셀';
+      else if (item.type === 'Image') post_type = '피드';
+
+      // 날짜 (UTC → KST 안전한 변환)
+      const ts = item.timestamp || item.takenAtTimestamp;
+      let dateStr = '';
+      if (ts) {
+        const d = new Date(ts);
+        // KST로 변환 (+9시간)
+        const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+        dateStr = kst.toISOString().slice(0, 10);
+      }
+
+      // URL 정리
+      const url = item.url || `https://www.instagram.com/p/${shortCode}/`;
+      const caption = item.caption || '';
+
+      const postData = {
+        date: dateStr,
+        post_type,
+        link: url,
+        text: caption,
+        image_url: item.displayUrl || '',
+        video_url: item.videoUrl || '',
+        views: parseInt(item.videoViewCount || item.videoPlayCount || 0) || 0,
+        likes: parseInt(item.likesCount || 0) || 0,
+        comments: parseInt(item.commentsCount || 0) || 0
+        // 도달, 저장, 공유, 프로필방문, 외부링크는 수동 입력 (Apify 못 가져옴)
+      };
+
+      const existing = existingByShortcode[shortCode];
+      if (existing) {
+        // 기존 게시물: 공개 통계만 업데이트 (사용자가 수동 입력한 도달/저장/공유는 유지)
+        const updateData = {
+          views: postData.views,
+          likes: postData.likes,
+          comments: postData.comments
+        };
+        // image_url이 비어있으면 채워주기
+        if (!existing.image_url && postData.image_url) updateData.image_url = postData.image_url;
+        if (!existing.video_url && postData.video_url) updateData.video_url = postData.video_url;
+        if (!existing.text && postData.text) updateData.text = postData.text;
+
+        await sb.from('insta_posts').update(updateData).eq('id', existing.id);
+        updated++;
+      } else {
+        // 신규 게시물 추가
+        await sb.from('insta_posts').insert(postData);
+        added++;
+      }
+    } catch (e) {
+      console.error('게시물 저장 실패:', item.shortCode, e);
+      skipped++;
+    }
+  }
+
+  return { added, updated, skipped };
+}
+
 // ── 채널 전환 (인스타그램 ↔ 스레드)
 let currentChannel = localStorage.getItem('oz_current_channel') || 'instagram';
 
@@ -6586,6 +6790,8 @@ function openModal() {
   switchApiProvider(provider);
   document.getElementById('apiKeyInput').value = localStorage.getItem('oz_key') || '';
   document.getElementById('claudeKeyInput').value = localStorage.getItem('oz_claude_key') || '';
+  const apifyInput = document.getElementById('apifyKeyInput');
+  if (apifyInput) apifyInput.value = localStorage.getItem('oz_apify_key') || '';
   document.getElementById('modal').classList.add('open');
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
@@ -6593,28 +6799,41 @@ function closeModal() { document.getElementById('modal').classList.remove('open'
 function switchApiProvider(provider) {
   currentApiProvider = provider;
   localStorage.setItem('oz_api_provider', provider);
-  const geminiBtn = document.getElementById('apiProviderGemini');
-  const claudeBtn = document.getElementById('apiProviderClaude');
-  const geminiInst = document.getElementById('geminiInstructions');
-  const claudeInst = document.getElementById('claudeInstructions');
+  const btns = {
+    gemini: document.getElementById('apiProviderGemini'),
+    claude: document.getElementById('apiProviderClaude'),
+    apify:  document.getElementById('apiProviderApify')
+  };
+  const insts = {
+    gemini: document.getElementById('geminiInstructions'),
+    claude: document.getElementById('claudeInstructions'),
+    apify:  document.getElementById('apifyInstructions')
+  };
 
-  if (provider === 'gemini') {
-    geminiBtn.style.background = '#fff'; geminiBtn.style.fontWeight = '600'; geminiBtn.style.color = 'var(--text)'; geminiBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
-    claudeBtn.style.background = 'transparent'; claudeBtn.style.fontWeight = '500'; claudeBtn.style.color = 'var(--text2)'; claudeBtn.style.boxShadow = 'none';
-    geminiInst.style.display = 'block';
-    claudeInst.style.display = 'none';
-  } else {
-    claudeBtn.style.background = '#fff'; claudeBtn.style.fontWeight = '600'; claudeBtn.style.color = 'var(--text)'; claudeBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
-    geminiBtn.style.background = 'transparent'; geminiBtn.style.fontWeight = '500'; geminiBtn.style.color = 'var(--text2)'; geminiBtn.style.boxShadow = 'none';
-    claudeInst.style.display = 'block';
-    geminiInst.style.display = 'none';
+  // 모든 버튼 비활성화 모양으로
+  ['gemini','claude','apify'].forEach(p => {
+    if (!btns[p]) return;
+    btns[p].style.background = 'transparent';
+    btns[p].style.fontWeight = '500';
+    btns[p].style.color = 'var(--text2)';
+    btns[p].style.boxShadow = 'none';
+    if (insts[p]) insts[p].style.display = 'none';
+  });
+  // 선택된 것 활성화
+  if (btns[provider]) {
+    btns[provider].style.background = '#fff';
+    btns[provider].style.fontWeight = '600';
+    btns[provider].style.color = 'var(--text)';
+    btns[provider].style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
   }
+  if (insts[provider]) insts[provider].style.display = 'block';
 }
 
 function saveKey() {
-  // 둘 다 저장 가능
+  // 셋 다 저장 가능
   const geminiK = document.getElementById('apiKeyInput').value.trim();
   const claudeK = document.getElementById('claudeKeyInput').value.trim();
+  const apifyK  = document.getElementById('apifyKeyInput')?.value.trim() || '';
   let saved = [];
 
   if (geminiK && geminiK.length >= 10) {
@@ -6627,6 +6846,11 @@ function saveKey() {
     localStorage.setItem('oz_claude_key', claudeK);
     saved.push('Claude');
   }
+  if (apifyK && apifyK.length >= 10) {
+    apifyApiKey = apifyK;
+    localStorage.setItem('oz_apify_key', apifyK);
+    saved.push('Apify');
+  }
 
   if (!saved.length) { showToast('올바른 API 키를 입력해주세요'); return; }
 
@@ -6638,14 +6862,16 @@ function saveKey() {
 function setConnected(on) {
   const hasGemini = !!apiKey;
   const hasClaude = !!claudeApiKey;
-  const anyConnected = hasGemini || hasClaude;
+  const hasApify  = !!apifyApiKey;
+  const anyConnected = hasGemini || hasClaude || hasApify;
 
   document.getElementById('sidebarDot').classList.toggle('on', anyConnected);
-  let label = 'API 키 설정';
-  if (hasGemini && hasClaude) label = 'Gemini + Claude 연결됨';
-  else if (hasGemini) label = 'Gemini 연결됨';
-  else if (hasClaude) label = 'Claude 연결됨';
-  document.getElementById('sidebarStatus').textContent = label;
+
+  const connected = [];
+  if (hasGemini) connected.push('Gemini');
+  if (hasClaude) connected.push('Claude');
+  if (hasApify) connected.push('Apify');
+  document.getElementById('sidebarStatus').textContent = anyConnected ? connected.join(' + ') + ' 연결' : 'API 키 설정';
 }
 
 // ── GEMINI API

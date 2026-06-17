@@ -1232,6 +1232,9 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <div class="page-actions"></div>
     </div>
     <div class="content-area">
+      <!-- 데이터 상태 안내 -->
+      <div id="instaCalDataInfo" style="display:none;background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6"></div>
+
       <!-- 다가오는 유치원 일정 (콘텐츠 미리 준비 유도) -->
       <div id="instaUpcomingKgEvents" style="display:none;background:linear-gradient(135deg,#eff6ff 0%,#f5f3ff 100%);border:1px solid #c7d2fe;border-radius:10px;padding:10px 14px;margin-bottom:14px"></div>
 
@@ -2832,7 +2835,7 @@ function drawThreadFollowerChart(data) {
           beginAtZero: false,
           ticks: {
             font: { size: 10 },
-            callback: (v) => v >= 1000 ? (v/1000).toFixed(1) + 'k' : v
+            callback: (v) => v.toLocaleString()
           },
           grid: { color: 'rgba(0,0,0,0.04)' }
         },
@@ -2914,7 +2917,7 @@ function drawThreadViewsChart() {
           beginAtZero: true,
           ticks: {
             font: { size: 10 },
-            callback: (v) => v >= 1000 ? (v/1000).toFixed(0) + 'k' : v
+            callback: (v) => v.toLocaleString()
           },
           grid: { color: 'rgba(0,0,0,0.04)' }
         },
@@ -3284,6 +3287,19 @@ async function loadInstaPosts(force = false) {
     instaPosts = (posts || []).slice().reverse();  // 오름차순
     console.log(`✓ insta_posts 로드: ${instaPosts.length}개 (${Math.round(performance.now()-t0)}ms)`);
 
+    // 디버그: 월별 분포 확인
+    if (instaPosts.length > 0) {
+      const byMonth = {};
+      instaPosts.forEach(p => {
+        if (p.date) {
+          const m = p.date.slice(0, 7);
+          byMonth[m] = (byMonth[m] || 0) + 1;
+        }
+      });
+      console.log('📊 월별 분포:', byMonth);
+      console.log('🗓️ 첫 게시물 날짜:', instaPosts[0].date, '| 마지막:', instaPosts[instaPosts.length-1].date);
+    }
+
     // 팔로워 추이
     const { data: followers, error: fe } = await sb
       .from('insta_followers')
@@ -3565,7 +3581,7 @@ function drawInstaViewsChart() {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: (v) => v >= 1000 ? (v/1000).toFixed(0) + 'k' : v } },
+        y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: (v) => v.toLocaleString() } },
         x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
       }
     }
@@ -3887,6 +3903,13 @@ function goToInstaToday() {
   renderInstaCalendar();
 }
 
+function goToInstaMonth(year, month) {
+  instaCalYear = parseInt(year);
+  instaCalMonth = parseInt(month);
+  renderInstaCalendar();
+  if (instaCalViewMode === 'list') renderInstaCalListView();
+}
+
 function switchInstaCalView(mode) {
   instaCalViewMode = mode;
   document.getElementById('instaCalGridView').style.display = mode === 'cal' ? 'block' : 'none';
@@ -3913,19 +3936,53 @@ function renderInstaCalendar() {
   const title = document.getElementById('instaCalTitle');
   title.textContent = `${instaCalYear}년 ${instaCalMonth+1}월`;
 
+  // 데이터 상태 안내 박스
+  const infoEl = document.getElementById('instaCalDataInfo');
+  if (infoEl && instaPosts && instaPosts.length > 0) {
+    const byMonth = {};
+    instaPosts.forEach(p => {
+      if (p.date) {
+        const m = p.date.slice(0, 7);
+        byMonth[m] = (byMonth[m] || 0) + 1;
+      }
+    });
+    const sortedMonths = Object.keys(byMonth).sort();
+    const monthsHtml = sortedMonths.map(m => {
+      const [y, mn] = m.split('-');
+      const isThisMonth = parseInt(y) === instaCalYear && parseInt(mn)-1 === instaCalMonth;
+      return `<button onclick="goToInstaMonth(${y},${parseInt(mn)-1})" style="display:inline-block;padding:3px 8px;margin:2px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid ${isThisMonth?'#3b82f6':'#dbeafe'};background:${isThisMonth?'#3b82f6':'#fff'};color:${isThisMonth?'#fff':'#1e40af'};font-weight:${isThisMonth?'600':'400'};font-family:inherit">${parseInt(mn)}월 ${byMonth[m]}개</button>`;
+    }).join('');
+    infoEl.innerHTML = `📊 <b>총 ${instaPosts.length}개 게시물</b> 로드됨 — 월별 분포 (클릭해서 이동):<br><div style="margin-top:6px">${monthsHtml}</div>`;
+    infoEl.style.display = 'block';
+  }
+
   const today = new Date();
   const firstDay = new Date(instaCalYear, instaCalMonth, 1);
   const lastDay = new Date(instaCalYear, instaCalMonth+1, 0);
   const first = firstDay.getDay();
   const total = lastDay.getDate();
 
+  // 디버그: 인스타 데이터 로드 상태 확인
+  console.log(`🗓️ [renderInstaCalendar] ${instaCalYear}년 ${instaCalMonth+1}월`);
+  console.log(`📊 instaPosts 총 ${instaPosts?.length || 0}개`);
+
   // 발행 게시물 (insta_posts에서 그 달)
   const publishedPosts = {};
+  let matchedCount = 0;
   (instaPosts || []).forEach(r => {
     if (!r.date) return;
-    const d = new Date(r.date);
-    if (d.getFullYear() === instaCalYear && d.getMonth() === instaCalMonth) {
-      const key = d.getDate();
+    // YYYY-MM-DD 형식이라고 가정 — UTC 안전한 파싱
+    const dateStr = String(r.date).trim();
+    const parts = dateStr.slice(0, 10).split('-');
+    if (parts.length !== 3) return;
+    const y = parseInt(parts[0]);
+    const m = parseInt(parts[1]) - 1;  // 0-indexed
+    const day = parseInt(parts[2]);
+    if (isNaN(y) || isNaN(m) || isNaN(day)) return;
+
+    if (y === instaCalYear && m === instaCalMonth) {
+      matchedCount++;
+      const key = day;
       const txt = String(r.text || '').slice(0, 14);
       if (!txt) return;
       if (!publishedPosts[key]) publishedPosts[key] = [];
@@ -3938,6 +3995,7 @@ function renderInstaCalendar() {
       });
     }
   });
+  console.log(`✓ ${instaCalYear}년 ${instaCalMonth+1}월에 매칭된 게시물: ${matchedCount}개`);
 
   // 예약 글
   const scheduled = {};
@@ -4040,13 +4098,20 @@ async function renderInstaCalListView() {
     if (data) data.forEach(f => { followersByDate[f.date] = f; });
   } catch(e){}
 
-  // 그 달의 게시물
+  // 그 달의 게시물 (UTC 안전한 파싱)
   const postsByDate = {};
   (instaPosts || []).forEach(r => {
     if (!r.date) return;
-    const d = new Date(r.date);
-    if (d.getFullYear() === instaCalYear && d.getMonth() === instaCalMonth) {
-      const key = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const dateStr = String(r.date).trim();
+    const parts = dateStr.slice(0, 10).split('-');
+    if (parts.length !== 3) return;
+    const y = parseInt(parts[0]);
+    const m = parseInt(parts[1]) - 1;
+    const day = parseInt(parts[2]);
+    if (isNaN(y) || isNaN(m) || isNaN(day)) return;
+
+    if (y === instaCalYear && m === instaCalMonth) {
+      const key = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       if (!postsByDate[key]) postsByDate[key] = [];
       postsByDate[key].push(r);
     }
@@ -4593,16 +4658,26 @@ function goPage(name, btn) {
   // 인스타 페이지
   if (name === 'insta-dashboard') loadInstaPosts();
   if (name === 'insta-calendar') {
-    // 캘린더 진입 시 게시물 + 예약글 둘 다 로드
-    if (!instaPosts || !instaPosts.length) loadInstaPosts();
-    loadInstaScheduledPosts();
-    // 유치원 일정 캐시 없으면 가져오기
-    if (!window.__kgEventsCache) fetchKgEventsForCache();
-    // 마지막 사용 뷰 복원
-    const savedView = localStorage.getItem('oz_insta_cal_view') || 'cal';
-    switchInstaCalView(savedView);
-    renderInstaCalendar();
-    renderInstaUpcomingKgEvents();
+    // 캘린더 진입 시 게시물 + 예약글 둘 다 로드 (비동기)
+    (async () => {
+      // 마지막 사용 뷰 복원 (먼저)
+      const savedView = localStorage.getItem('oz_insta_cal_view') || 'cal';
+      switchInstaCalView(savedView);
+
+      // 유치원 일정 캐시 없으면 가져오기
+      if (!window.__kgEventsCache) await fetchKgEventsForCache();
+
+      // 데이터 로드 (먼저 끝낸 후 렌더)
+      if (!instaPosts || !instaPosts.length) {
+        await loadInstaPosts();
+      }
+      await loadInstaScheduledPosts();
+
+      // 모두 끝난 후 렌더
+      renderInstaCalendar();
+      renderInstaUpcomingKgEvents();
+      if (instaCalViewMode === 'list') renderInstaCalListView();
+    })();
   }
   if (name === 'insta-trend') loadInstaRefs();
   if (name === 'insta-feedback') {

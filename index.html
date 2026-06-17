@@ -1603,7 +1603,60 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     </div>
   </div>
 
-  <div class="page" id="page-insta-competitors"><div class="page-top"><div class="page-title">📷 경쟁사 추적</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
+  <div class="page" id="page-insta-competitors">
+    <div class="page-top">
+      <div class="page-title">📷 경쟁사 추적</div>
+      <div class="page-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openCompetitorManageModal()" title="경쟁사 추가/삭제">⚙️ 경쟁사 관리</button>
+        <button class="btn btn-ghost btn-sm" onclick="addCompetitorRow()" title="오늘 행 추가">+ 오늘 행</button>
+        <button class="btn btn-primary btn-sm" onclick="loadInstaCompetitors()" title="새로고침">🔄 갱신</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <!-- 안내 -->
+      <div style="background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6">
+        💡 <b>사용법</b>: 셀 클릭 → 숫자 입력 → 자동 저장. Tab/Enter로 다음 셀 이동. 증감은 어제 데이터와 비교해 자동 계산돼요.
+      </div>
+
+      <!-- 통계 요약 -->
+      <div id="competitorSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+
+      <!-- 메인 표 -->
+      <div style="overflow:auto;max-height:70vh;border:1px solid var(--border);border-radius:8px;background:#fff">
+        <table id="competitorTable" style="width:100%;border-collapse:collapse;font-size:11px;min-width:1800px">
+          <thead id="competitorTableHead" style="position:sticky;top:0;background:#f8fafc;z-index:10"></thead>
+          <tbody id="competitorTableBody"></tbody>
+        </table>
+      </div>
+
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6">
+        🎨 색상 코드: <span style="background:#dcfce7;padding:1px 6px;border-radius:3px">▲ 증가</span> <span style="background:#fee2e2;padding:1px 6px;border-radius:3px">▼ 감소</span> <span style="background:#f3f4f6;padding:1px 6px;border-radius:3px">— 변화 없음</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경쟁사 관리 모달 -->
+  <div class="modal-overlay" id="competitorManageModal">
+    <div class="modal" style="max-width:520px">
+      <div class="modal-title">⚙️ 경쟁사 관리</div>
+      <div class="modal-desc">추적할 경쟁사를 추가하거나 삭제할 수 있어요.</div>
+
+      <div id="competitorListInModal" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin:12px 0"></div>
+
+      <div style="padding-top:12px;border-top:1px dashed var(--border)">
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px;color:var(--text2)">➕ 새 경쟁사 추가</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <input type="text" id="newCompetitorUsername" placeholder="username (예: brand_name)" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+          <input type="text" id="newCompetitorDisplay" placeholder="표시 이름 (선택)" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"/>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addCompetitor()" style="width:100%">+ 추가</button>
+      </div>
+
+      <div class="modal-btns" style="margin-top:12px">
+        <button class="btn btn-ghost btn-sm" onclick="closeCompetitorManageModal()">닫기</button>
+      </div>
+    </div>
+  </div>
 
   <div class="page" id="page-insta-checklist"><div class="page-top"><div class="page-title">📷 주간 체크리스트</div></div><div class="content-area"><div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">준비 중</div></div></div>
 
@@ -2561,6 +2614,44 @@ function toNum(v) {
   return parseInt(s.replace(/[^0-9-]/g,'')) || 0;
 }
 
+// ══════════════════════════════════════════════════════════════
+// 🖼️ 미디어 썸네일 셀 생성 헬퍼 (이미지 + 릴스 오버레이)
+// ══════════════════════════════════════════════════════════════
+// 사용법: buildMediaThumb(post, size)
+//   - post: { image_url, video_url, post_type } 또는 { image_url, video_url, type }
+//   - size: 픽셀 크기 (기본 36)
+function buildMediaThumb(post, size) {
+  size = size || 36;
+  const imgUrl = String(post.image_url || '').trim();
+  const vidUrl = String(post.video_url || '').trim();
+  const type = String(post.post_type || post.type || '').trim();
+  const isReel = type === '릴스' || type === 'Video' || !!vidUrl;
+  const isCarousel = type === '캐러셀' || type === 'Sidecar';
+
+  // 우선순위: 이미지 썸네일 > 영상 링크 > 플레이스홀더
+  if (imgUrl) {
+    const clickUrl = vidUrl || imgUrl;
+    // 이미지 + 우상단 타입 배지 (릴스/캐러셀)
+    let badge = '';
+    if (isReel) {
+      badge = `<span style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);color:#fff;font-size:8px;padding:1px 3px;border-radius:2px;line-height:1;font-weight:600">▶</span>`;
+    } else if (isCarousel) {
+      badge = `<span style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);color:#fff;font-size:8px;padding:1px 3px;border-radius:2px;line-height:1">▦</span>`;
+    }
+    return `<a href="${clickUrl}" target="_blank" onclick="event.stopPropagation()" title="${isReel?'릴스':isCarousel?'캐러셀':'이미지'} 보기" style="display:inline-block;position:relative;line-height:0">
+      <img src="${imgUrl}" style="width:${size}px;height:${size}px;border-radius:4px;object-fit:cover;border:1px solid var(--border);display:block"
+        onerror="this.outerHTML='<span style=&quot;font-size:${Math.round(size*0.5)}px;display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:#f3f4f6;border-radius:4px;border:1px solid var(--border)&quot;>📷</span>'"/>
+      ${badge}
+    </a>`;
+  }
+
+  if (vidUrl) {
+    return `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" title="영상 보기" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:linear-gradient(135deg,#fce7f3,#e0e7ff);border:1px solid var(--border);border-radius:4px;text-decoration:none;font-size:${Math.round(size*0.45)}px">🎬</a>`;
+  }
+
+  return `<span title="텍스트만" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:#f9fafb;border:1px dashed var(--border);border-radius:4px;font-size:${Math.round(size*0.4)}px;color:var(--text3)">📝</span>`;
+}
+
 // ── RENDER DASHBOARD
 function renderDashboard(data) {
   if (!data || !data.length) return;
@@ -2770,9 +2861,11 @@ function renderRecentCal() {
       const catBadge = p.category && catLabels[p.category]
         ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
         : '';
+      const thumbHtml = (p.image_url || p.video_url) ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>` : '';
+      const content = `${thumbHtml}${catBadge}<span style="vertical-align:middle">${p.text}</span>`;
       return p.link
-        ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${catBadge}${p.text}</a>`
-        : `<div class="cal-post-dot published">${catBadge}${p.text}</div>`;
+        ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
+        : `<div class="cal-post-dot published">${content}</div>`;
     }).join('');
 
     const moreHtml = posts.length > 3 ? `<div class="cal-more">+${posts.length-3}개</div>` : '';
@@ -3054,18 +3147,8 @@ function buildPostRow(r) {
   const engagement = calcEngagement(r);
   const engColor = engagement >= 10 ? '#16a34a' : engagement >= 5 ? '#3b82f6' : 'var(--text2)';
 
-  // 미디어 셀
-  const imgUrl = String(r.image_url || '').trim();
-  const vidUrl = String(r.video_url || '').trim();
-  let mediaCell;
-  if (imgUrl) {
-    mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()" title="이미지 보기"><img src="${imgUrl}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;border:1px solid var(--border);vertical-align:middle" onerror="this.outerHTML='<span style=&quot;font-size:14px&quot;>📷</span>'"/></a>`;
-    if (vidUrl) mediaCell += ` <a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" title="영상 보기" style="text-decoration:none;font-size:14px">🎬</a>`;
-  } else if (vidUrl) {
-    mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" title="영상 보기" style="text-decoration:none;font-size:18px">🎬</a>`;
-  } else {
-    mediaCell = '<span style="color:var(--text3)" title="텍스트만">📝</span>';
-  }
+  // 미디어 셀 (이미지 우선, 릴스/캐러셀 배지)
+  const mediaCell = buildMediaThumb(r, 40);
 
   // 숫자 셀 (0이면 — 표시)
   const dash = '<span style="color:var(--text3)">—</span>';
@@ -3278,9 +3361,11 @@ function renderInstaRecentCal() {
         ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
         : '';
       const linkUrl = p.link && !p.link.startsWith('http') ? 'https://' + p.link : p.link;
+      const thumbHtml = (p.image_url || p.video_url) ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>` : '';
+      const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${p.text}</span>`;
       return linkUrl
-        ? `<a href="${linkUrl}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${typeBadge}${p.text}</a>`
-        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${typeBadge}${p.text}</div>`;
+        ? `<a href="${linkUrl}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
+        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${content}</div>`;
     }).join('');
 
     const moreHtml = posts.length > 3 ? `<div class="cal-more">+${posts.length-3}개</div>` : '';
@@ -3465,18 +3550,8 @@ function buildInstaPostRow(r) {
   const link = String(r.link || '').trim();
   const txtCell = link ? `<a href="${link}" target="_blank" style="color:var(--text);text-decoration:none" onclick="event.stopPropagation()">${txt}${r.text && r.text.length>50?'...':''} 🔗</a>` : `${txt}${r.text && r.text.length>50?'...':''}`;
 
-  // 미디어
-  const imgUrl = String(r.image_url || '').trim();
-  const vidUrl = String(r.video_url || '').trim();
-  let mediaCell;
-  if (imgUrl) {
-    mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()"><img src="${imgUrl}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;border:1px solid var(--border)" onerror="this.outerHTML='📷'"/></a>`;
-    if (vidUrl) mediaCell += ` <a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none">🎬</a>`;
-  } else if (vidUrl) {
-    mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:18px">🎬</a>`;
-  } else {
-    mediaCell = '<span style="color:var(--text3)">📝</span>';
-  }
+  // 미디어 (이미지 우선, 릴스 ▶ 배지)
+  const mediaCell = buildMediaThumb(r, 40);
 
   const eng = (r.reach||0) > 0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.reach||1) * 100 : 0;
   const engColor = eng >= 10 ? '#16a34a' : eng >= 5 ? '#3b82f6' : 'var(--text2)';
@@ -3508,16 +3583,36 @@ function drawInstaFollowerChart(data) {
   const canvas = document.getElementById('instaFollowerChart');
   if (!canvas) return;
 
+  // 현재 기간 필터 확인
+  const fStart = document.getElementById('instaFilterStart')?.value || '';
+  const fEnd = document.getElementById('instaFilterEnd')?.value || '';
+
   // 데이터: insta_followers + insta_posts의 follower 합치기 (날짜별 최신 값)
   const map = {};
-  (instaFollowers || []).forEach(f => { if (f.date && f.count) map[f.date] = f.count; });
+  (instaFollowers || []).forEach(f => {
+    if (!f.date || !f.count) return;
+    // 기간 필터 적용
+    if (fStart && f.date < fStart) return;
+    if (fEnd && f.date > fEnd) return;
+    map[f.date] = f.count;
+  });
   (data || []).forEach(r => {
-    if (r.date && r.follower && !map[r.date]) map[r.date] = r.follower;
+    if (!r.date || !r.follower) return;
+    // 필터 적용 (data는 이미 필터된 상태지만 안전하게)
+    if (fStart && r.date < fStart) return;
+    if (fEnd && r.date > fEnd) return;
+    if (!map[r.date]) map[r.date] = r.follower;
   });
   const points = Object.keys(map).sort().map(d => ({ date: d, count: map[d] }));
 
   if (!points.length) {
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    if (instaFollowerChart) { instaFollowerChart.destroy(); instaFollowerChart = null; }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('선택한 기간에 데이터가 없어요', canvas.width/2, canvas.height/2);
     return;
   }
 
@@ -3543,7 +3638,7 @@ function drawInstaFollowerChart(data) {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: { beginAtZero: false, ticks: { font: { size: 10 } } },
+        y: { beginAtZero: false, ticks: { font: { size: 10 }, callback: (v) => v.toLocaleString() } },
         x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
       }
     }
@@ -3562,16 +3657,26 @@ function drawInstaViewsChart() {
     saves: { line: '#f59e0b', bg: 'rgba(245,158,11,0.1)' }
   };
 
-  // 날짜순 정렬 + 값 있는 것만
+  // 날짜순 정렬 + 값 있는 것만 (기간 필터는 instaFilteredData에 이미 적용됨)
   const data = (instaFilteredData || [])
     .filter(r => r.date && (r[metric] || 0) > 0)
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  // 데이터 없으면 안내 메시지 표시
   if (!data.length) {
-    if (instaViewsChart) instaViewsChart.destroy();
+    if (instaViewsChart) { instaViewsChart.destroy(); instaViewsChart = null; }
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const msg = `선택한 기간에 ${metricLabels[metric] || metric} 데이터가 없어요`;
+    ctx.fillText(msg, canvas.width/2, canvas.height/2 - 8);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('게시물 통계를 입력하면 차트가 표시됩니다', canvas.width/2, canvas.height/2 + 14);
     return;
   }
 
@@ -4008,7 +4113,9 @@ function renderInstaCalendar() {
         text: txt + (r.text && r.text.length > 14 ? '...' : ''),
         link: String(r.link || '').trim(),
         post_type: r.post_type || '',
-        category: r.category || ''
+        category: r.category || '',
+        image_url: String(r.image_url || '').trim(),
+        video_url: String(r.video_url || '').trim()
       });
     }
   });
@@ -4067,14 +4174,16 @@ function renderInstaCalendar() {
         }).join('')}</div>`
       : '';
 
-    // 발행글 (녹색)
+    // 발행글 (녹색) — 썸네일 + 텍스트
     const pubHtml = pubs.slice(0,2).map(p => {
       const typeBadge = p.post_type && typeColors[p.post_type]
         ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
         : '';
+      const thumbHtml = (p.image_url || p.video_url) ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>` : '';
+      const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${p.text}</span>`;
       return p.link
-        ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${typeBadge}${p.text}</a>`
-        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${typeBadge}${p.text}</div>`;
+        ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
+        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${content}</div>`;
     }).join('');
 
     // 예약글 (회색)
@@ -4208,14 +4317,7 @@ async function renderInstaCalListView() {
         const eng = (r.reach||0) > 0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.reach||1) * 100 : 0;
         const engColor = eng >= 10 ? '#16a34a' : eng >= 5 ? '#3b82f6' : 'var(--text2)';
 
-        let mediaCell;
-        if (imgUrl) {
-          mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()"><img src="${imgUrl}" style="width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border)" onerror="this.outerHTML='📷'"/></a>`;
-        } else if (vidUrl) {
-          mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:14px">🎬</a>`;
-        } else {
-          mediaCell = '<span style="color:var(--text3);font-size:11px">📝</span>';
-        }
+        const mediaCell = buildMediaThumb(r, 32);
 
         const type = r.post_type || '';
         const typeCell = type && typeColors[type]
@@ -4453,13 +4555,12 @@ function renderInstaRefs() {
     const vidUrl = String(r.video_url||'').trim();
     const link = String(r.link||'').trim();
     const linkUrl = link && !link.startsWith('http') ? 'https://' + link : link;
+    // 이미지 우선, 릴스 ▶ 배지
     let mediaCell;
-    if (imgUrl) {
-      mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()"><img src="${imgUrl}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border)" onerror="this.outerHTML='📷'"/></a>`;
-    } else if (vidUrl) {
-      mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:16px">🎬</a>`;
+    if (r.image_url || r.video_url) {
+      mediaCell = buildMediaThumb(r, 36);
     } else if (linkUrl) {
-      mediaCell = `<a href="${linkUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:14px">🔗</a>`;
+      mediaCell = `<a href="${linkUrl}" target="_blank" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#f3f4f6;border:1px solid var(--border);border-radius:4px;text-decoration:none;font-size:14px">🔗</a>`;
     } else {
       mediaCell = '<span style="color:var(--text3)">—</span>';
     }
@@ -4794,6 +4895,467 @@ async function saveApifyPostsToSupabase(items) {
   return { added, updated, skipped };
 }
 
+// ══════════════════════════════════════════════════════════════
+// 📊 경쟁사 추적
+// ══════════════════════════════════════════════════════════════
+
+let competitorsList = [];      // 경쟁사 목록
+let competitorHistory = {};    // { 'YYYY-MM-DD': { 'username': {...} } }
+let competitorDates = [];      // 최근 30일 + 미래 14일
+
+async function loadInstaCompetitors() {
+  try {
+    // 1. 경쟁사 목록 로드
+    const { data: comps, error: ce } = await sb
+      .from('insta_competitors')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (ce) throw ce;
+    competitorsList = comps || [];
+
+    if (competitorsList.length === 0) {
+      document.getElementById('competitorTableBody').innerHTML = `
+        <tr><td colspan="20" style="padding:40px;text-align:center;color:var(--text3)">
+          경쟁사가 없어요. <a href="#" onclick="openCompetitorManageModal();return false;" style="color:#3b82f6">⚙️ 경쟁사 관리</a>에서 추가하세요!
+        </td></tr>`;
+      return;
+    }
+
+    // 2. 날짜 범위 생성 (최근 30일 + 향후 14일)
+    const today = new Date();
+    competitorDates = [];
+    for (let i = -30; i <= 14; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      competitorDates.push(key);
+    }
+
+    // 3. 히스토리 데이터 로드
+    const startDate = competitorDates[0];
+    const endDate = competitorDates[competitorDates.length - 1];
+    const { data: history, error: he } = await sb
+      .from('insta_competitor_history')
+      .select('*')
+      .gte('date', startDate)
+      .lte('date', endDate);
+    if (he) throw he;
+
+    competitorHistory = {};
+    (history || []).forEach(h => {
+      if (!competitorHistory[h.date]) competitorHistory[h.date] = {};
+      competitorHistory[h.date][h.username] = h;
+    });
+
+    // 4. 렌더
+    renderInstaCompetitorTable();
+    renderCompetitorSummary();
+
+  } catch (e) {
+    console.error('loadInstaCompetitors:', e);
+    document.getElementById('competitorTableBody').innerHTML = `
+      <tr><td colspan="20" style="padding:40px;text-align:center;color:var(--red);font-size:12px">
+        ⚠️ 데이터 로드 실패: ${e.message}<br>
+        <span style="color:var(--text3);font-size:11px">Supabase에 insta_competitors / insta_competitor_history 테이블이 만들어졌는지 확인하세요</span>
+      </td></tr>`;
+  }
+}
+
+function renderInstaCompetitorTable() {
+  const head = document.getElementById('competitorTableHead');
+  const body = document.getElementById('competitorTableBody');
+
+  // 헤더: 메모 + 각 경쟁사별 4컬럼
+  let headHtml = `
+    <tr style="border-bottom:2px solid var(--border)">
+      <th rowspan="2" style="padding:8px 6px;text-align:center;background:#f3f4f6;border-right:2px solid var(--border);min-width:60px;font-size:10px;color:var(--text2);position:sticky;left:0;z-index:11;background:#f3f4f6">날짜</th>
+      <th rowspan="2" style="padding:8px 6px;text-align:left;background:#fef3c7;border-right:2px solid var(--border);min-width:80px;font-size:10px;color:#92400e;position:sticky;left:60px;z-index:11">메모</th>
+  `;
+  competitorsList.forEach((c, idx) => {
+    const bgColor = c.username === 'ozkiz_official' ? '#dbeafe' : '#fff';
+    const textColor = c.username === 'ozkiz_official' ? '#1e40af' : 'var(--text)';
+    headHtml += `
+      <th colspan="4" style="padding:6px;text-align:center;background:${bgColor};color:${textColor};border-right:2px solid var(--border);font-size:11px;font-weight:700">
+        <a href="https://www.instagram.com/${c.username}/" target="_blank" style="color:${textColor};text-decoration:none">@${c.display_name || c.username}</a>
+      </th>
+    `;
+  });
+  headHtml += `</tr><tr style="border-bottom:1px solid var(--border)">`;
+  competitorsList.forEach(c => {
+    headHtml += `
+      <th style="padding:5px 4px;text-align:center;background:#f9fafb;font-size:9px;color:var(--text2);font-weight:600">팔로워</th>
+      <th style="padding:5px 4px;text-align:center;background:#f9fafb;font-size:9px;color:var(--text2);font-weight:600">증감</th>
+      <th style="padding:5px 4px;text-align:center;background:#f9fafb;font-size:9px;color:var(--text2);font-weight:600">참여율</th>
+      <th style="padding:5px 4px;text-align:center;background:#f9fafb;font-size:9px;color:var(--text2);font-weight:600;border-right:2px solid var(--border)">게시물</th>
+    `;
+  });
+  headHtml += `</tr>`;
+  head.innerHTML = headHtml;
+
+  // 바디: 날짜별 행 (최신 날짜가 위로 — 오늘부터 미래는 위쪽에)
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // 최신 날짜가 위로 (descending)
+  const sortedDates = [...competitorDates].sort().reverse();
+
+  let bodyHtml = '';
+  sortedDates.forEach(dateKey => {
+    const isToday = dateKey === todayKey;
+    const isFuture = dateKey > todayKey;
+    const isPast = dateKey < todayKey;
+
+    const dt = new Date(dateKey);
+    const m = dt.getMonth() + 1;
+    const d = dt.getDate();
+    const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
+    const dayColor = dt.getDay() === 0 ? '#dc2626' : dt.getDay() === 6 ? '#2563eb' : 'var(--text2)';
+
+    const rowBg = isToday ? '#fef3c7' : isFuture ? '#fafafa' : '#fff';
+    const dateBg = isToday ? '#f59e0b' : isFuture ? '#f3f4f6' : '#f8fafc';
+
+    // 메모 (날짜 단위로 1개)
+    const firstComp = competitorsList[0];
+    const memoHistory = competitorHistory[dateKey]?.[firstComp.username];
+    const memo = memoHistory?.memo || '';
+
+    bodyHtml += `
+      <tr style="border-bottom:1px solid var(--border);background:${rowBg}">
+        <td style="padding:6px 4px;text-align:center;font-size:10px;background:${dateBg};border-right:2px solid var(--border);position:sticky;left:0;z-index:5;white-space:nowrap;color:${isToday?'#fff':'var(--text2)'};font-weight:${isToday?'700':'400'}">
+          ${m}/${d}<br><span style="color:${isToday?'#fff':dayColor};font-size:9px">${wd}${isToday?' ★':''}</span>
+        </td>
+        <td style="padding:4px;background:#fffbeb;border-right:2px solid var(--border);position:sticky;left:60px;z-index:5">
+          <input type="text" value="${memo.replace(/"/g,'&quot;')}" placeholder=""
+            onchange="saveCompetitorMemo('${dateKey}', this.value, this)"
+            style="width:100%;padding:3px 5px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;background:transparent;outline:none;color:#92400e"
+            onfocus="this.style.borderColor='#f59e0b';this.style.background='#fff'"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent'"/>
+        </td>
+    `;
+
+    competitorsList.forEach((c, idx) => {
+      const h = competitorHistory[dateKey]?.[c.username] || {};
+      const followers = h.followers || 0;
+      const engagement = h.engagement || 0;
+      const postsCount = h.posts_count || 0;
+
+      // 증감 자동 계산 (어제 데이터와 비교)
+      const yesterdayDate = new Date(dt);
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yKey = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth()+1).padStart(2,'0')}-${String(yesterdayDate.getDate()).padStart(2,'0')}`;
+      const yesterdayFollowers = competitorHistory[yKey]?.[c.username]?.followers || 0;
+      const change = (followers > 0 && yesterdayFollowers > 0) ? (followers - yesterdayFollowers) : 0;
+
+      const changeColor = change > 0 ? '#16a34a' : change < 0 ? '#dc2626' : 'var(--text3)';
+      const changeBg = change > 0 ? '#dcfce7' : change < 0 ? '#fee2e2' : 'transparent';
+      const changeSign = change > 0 ? '▲ ' : change < 0 ? '▼ ' : '';
+
+      const isOzkiz = c.username === 'ozkiz_official';
+      const cellBg = isOzkiz ? '#eff6ff' : '#fff';
+
+      bodyHtml += `
+        <td style="padding:2px;text-align:center;background:${cellBg}">
+          <input type="number" value="${followers || ''}" placeholder=""
+            onchange="saveCompetitorCell('${dateKey}', '${c.username}', 'followers', this.value, this)"
+            onkeydown="competitorTabNav(event, this)"
+            style="width:60px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"
+            onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent'"/>
+        </td>
+        <td style="padding:2px;text-align:center;background:${cellBg};color:${changeColor};font-size:10px;font-weight:600">
+          ${change !== 0 ? `<span style="background:${changeBg};padding:1px 4px;border-radius:3px">${changeSign}${Math.abs(change).toLocaleString()}</span>` : '<span style="color:var(--text3)">—</span>'}
+        </td>
+        <td style="padding:2px;text-align:center;background:${cellBg}">
+          <input type="number" step="0.01" value="${engagement || ''}" placeholder=""
+            onchange="saveCompetitorCell('${dateKey}', '${c.username}', 'engagement', this.value, this)"
+            onkeydown="competitorTabNav(event, this)"
+            style="width:50px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"
+            onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent'"/><span style="font-size:9px;color:var(--text3)">%</span>
+        </td>
+        <td style="padding:2px;text-align:center;background:${cellBg};border-right:2px solid var(--border)">
+          <input type="number" value="${postsCount || ''}" placeholder=""
+            onchange="saveCompetitorCell('${dateKey}', '${c.username}', 'posts_count', this.value, this)"
+            onkeydown="competitorTabNav(event, this)"
+            style="width:55px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"
+            onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent'"/>
+        </td>
+      `;
+    });
+    bodyHtml += '</tr>';
+  });
+
+  body.innerHTML = bodyHtml;
+}
+
+// 셀 값 저장 (upsert)
+async function saveCompetitorCell(dateKey, username, field, val, inputEl) {
+  if (inputEl) inputEl.style.borderColor = '#f59e0b';
+
+  // 숫자 변환
+  let numVal;
+  if (field === 'engagement') {
+    numVal = parseFloat(val) || 0;
+  } else {
+    numVal = parseInt(val) || 0;
+  }
+
+  try {
+    const existing = competitorHistory[dateKey]?.[username];
+
+    if (existing) {
+      const { error } = await sb.from('insta_competitor_history')
+        .update({ [field]: numVal })
+        .eq('date', dateKey)
+        .eq('username', username);
+      if (error) throw error;
+      existing[field] = numVal;
+    } else {
+      const newRow = {
+        date: dateKey,
+        username,
+        [field]: numVal
+      };
+      const { data, error } = await sb.from('insta_competitor_history')
+        .insert(newRow)
+        .select()
+        .single();
+      if (error) throw error;
+      if (!competitorHistory[dateKey]) competitorHistory[dateKey] = {};
+      competitorHistory[dateKey][username] = data;
+    }
+
+    if (inputEl) {
+      inputEl.style.borderColor = '#16a34a';
+      setTimeout(() => { if (inputEl) inputEl.style.borderColor = 'transparent'; }, 800);
+    }
+
+    // 팔로워가 바뀌면 증감 다시 계산 필요 → 표 갱신
+    if (field === 'followers') {
+      renderInstaCompetitorTable();
+      renderCompetitorSummary();
+    }
+  } catch (e) {
+    console.error('saveCompetitorCell:', e);
+    if (inputEl) inputEl.style.borderColor = '#dc2626';
+    showToast(`저장 실패: ${e.message}`);
+  }
+}
+
+// 메모 저장 (전체 경쟁사 통합 메모 — 첫 번째 경쟁사 row에 저장)
+async function saveCompetitorMemo(dateKey, memo, inputEl) {
+  if (inputEl) inputEl.style.borderColor = '#f59e0b';
+
+  const firstComp = competitorsList[0];
+  if (!firstComp) return;
+
+  try {
+    const existing = competitorHistory[dateKey]?.[firstComp.username];
+
+    if (existing) {
+      const { error } = await sb.from('insta_competitor_history')
+        .update({ memo })
+        .eq('date', dateKey)
+        .eq('username', firstComp.username);
+      if (error) throw error;
+      existing.memo = memo;
+    } else {
+      const newRow = { date: dateKey, username: firstComp.username, memo };
+      const { data, error } = await sb.from('insta_competitor_history')
+        .insert(newRow)
+        .select()
+        .single();
+      if (error) throw error;
+      if (!competitorHistory[dateKey]) competitorHistory[dateKey] = {};
+      competitorHistory[dateKey][firstComp.username] = data;
+    }
+
+    if (inputEl) {
+      inputEl.style.borderColor = '#16a34a';
+      setTimeout(() => { if (inputEl) inputEl.style.borderColor = 'transparent'; }, 800);
+    }
+  } catch (e) {
+    console.error('saveCompetitorMemo:', e);
+    if (inputEl) inputEl.style.borderColor = '#dc2626';
+  }
+}
+
+// Tab/Enter 네비게이션
+function competitorTabNav(event, currentInput) {
+  if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault();
+    const inputs = Array.from(document.querySelectorAll('#competitorTableBody input[type="number"]'));
+    const idx = inputs.indexOf(currentInput);
+    if (idx === -1) return;
+    const nextIdx = event.shiftKey ? idx - 1 : idx + 1;
+    if (nextIdx >= 0 && nextIdx < inputs.length) {
+      inputs[nextIdx].focus();
+      inputs[nextIdx].select();
+    }
+  }
+}
+
+// 통계 요약 카드
+function renderCompetitorSummary() {
+  const container = document.getElementById('competitorSummary');
+  if (!container) return;
+
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // ozkiz 오늘 vs 어제
+  const ozkizToday = competitorHistory[todayKey]?.['ozkiz_official'];
+  const ozkizFollowers = ozkizToday?.followers || 0;
+
+  // 최근 7일 평균 증감 (ozkiz)
+  let weekChangeOzkiz = 0;
+  let weekCount = 0;
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const d1 = new Date(d);
+    d1.setDate(d.getDate() - 1);
+    const d1Key = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+
+    const f = competitorHistory[dKey]?.['ozkiz_official']?.followers || 0;
+    const fPrev = competitorHistory[d1Key]?.['ozkiz_official']?.followers || 0;
+    if (f > 0 && fPrev > 0) {
+      weekChangeOzkiz += (f - fPrev);
+      weekCount++;
+    }
+  }
+  const avgWeekChange = weekCount > 0 ? Math.round(weekChangeOzkiz / weekCount) : 0;
+
+  // 경쟁사 평균 팔로워 (오늘)
+  const todayData = competitorHistory[todayKey] || {};
+  const competitorFollowers = competitorsList
+    .filter(c => c.username !== 'ozkiz_official')
+    .map(c => todayData[c.username]?.followers || 0)
+    .filter(f => f > 0);
+  const avgCompetitor = competitorFollowers.length > 0
+    ? Math.round(competitorFollowers.reduce((a,b) => a+b, 0) / competitorFollowers.length)
+    : 0;
+
+  // 1위 경쟁사
+  let topCompetitor = null;
+  let topFollowers = 0;
+  competitorsList.forEach(c => {
+    const f = todayData[c.username]?.followers || 0;
+    if (f > topFollowers) {
+      topFollowers = f;
+      topCompetitor = c;
+    }
+  });
+
+  container.innerHTML = `
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📷 ozkiz 팔로워</div>
+      <div style="font-size:18px;font-weight:700;color:#1e40af">${ozkizFollowers.toLocaleString()}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${todayKey.slice(5).replace('-','/')} 기준</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 ozkiz 주간 평균 증감</div>
+      <div style="font-size:18px;font-weight:700;color:${avgWeekChange > 0 ? '#16a34a' : avgWeekChange < 0 ? '#dc2626' : 'var(--text2)'}">${avgWeekChange > 0 ? '+' : ''}${avgWeekChange.toLocaleString()}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">최근 7일 일평균</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📊 경쟁사 평균 팔로워</div>
+      <div style="font-size:18px;font-weight:700">${avgCompetitor.toLocaleString()}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${competitorFollowers.length}개 경쟁사 평균</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">🏆 오늘 1위</div>
+      <div style="font-size:14px;font-weight:700">@${topCompetitor?.display_name || topCompetitor?.username || '-'}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${topFollowers.toLocaleString()}명</div>
+    </div>
+  `;
+}
+
+// 오늘 행 빨리 추가 (모든 경쟁사 초기화)
+async function addCompetitorRow() {
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // 첫 셀로 포커스
+  setTimeout(() => {
+    const firstInput = document.querySelector(`#competitorTableBody input[type="number"]`);
+    if (firstInput) {
+      firstInput.focus();
+      firstInput.select();
+    }
+  }, 100);
+
+  showToast(`📌 ${todayKey} 행에 입력 가능합니다`);
+}
+
+// 경쟁사 관리 모달
+function openCompetitorManageModal() {
+  renderCompetitorListInModal();
+  document.getElementById('competitorManageModal').classList.add('open');
+}
+
+function closeCompetitorManageModal() {
+  document.getElementById('competitorManageModal').classList.remove('open');
+}
+
+function renderCompetitorListInModal() {
+  const container = document.getElementById('competitorListInModal');
+  if (competitorsList.length === 0) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">등록된 경쟁사가 없어요</div>';
+    return;
+  }
+  container.innerHTML = competitorsList.map((c, idx) => `
+    <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:8px">
+      <span style="font-size:11px;color:var(--text3);width:20px">${idx + 1}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">@${c.username}</div>
+        ${c.display_name && c.display_name !== c.username ? `<div style="font-size:11px;color:var(--text3)">${c.display_name}</div>` : ''}
+      </div>
+      <a href="https://www.instagram.com/${c.username}/" target="_blank" style="color:#3b82f6;font-size:11px;text-decoration:none">↗</a>
+      <button onclick="deleteCompetitor(${c.id}, '${c.username}')" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:3px 6px;font-size:10px;cursor:pointer">삭제</button>
+    </div>
+  `).join('');
+}
+
+async function addCompetitor() {
+  const username = document.getElementById('newCompetitorUsername').value.trim().replace('@', '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '');
+  const displayName = document.getElementById('newCompetitorDisplay').value.trim() || username;
+
+  if (!username) { showToast('username을 입력해주세요'); return; }
+
+  try {
+    const maxOrder = Math.max(0, ...competitorsList.map(c => c.sort_order || 0));
+    const { error } = await sb.from('insta_competitors').insert({
+      username,
+      display_name: displayName,
+      sort_order: maxOrder + 1
+    });
+    if (error) throw error;
+    showToast(`✓ @${username} 추가됨`);
+    document.getElementById('newCompetitorUsername').value = '';
+    document.getElementById('newCompetitorDisplay').value = '';
+    await loadInstaCompetitors();
+    renderCompetitorListInModal();
+  } catch (e) {
+    showToast('추가 실패: ' + e.message);
+  }
+}
+
+async function deleteCompetitor(id, username) {
+  if (!confirm(`@${username} 을(를) 삭제할까요?\n(과거 데이터는 보존됩니다)`)) return;
+  try {
+    const { error } = await sb.from('insta_competitors').delete().eq('id', id);
+    if (error) throw error;
+    showToast(`✓ @${username} 삭제됨`);
+    await loadInstaCompetitors();
+    renderCompetitorListInModal();
+  } catch (e) {
+    showToast('삭제 실패: ' + e.message);
+  }
+}
+
 // ── 채널 전환 (인스타그램 ↔ 스레드)
 let currentChannel = localStorage.getItem('oz_current_channel') || 'instagram';
 
@@ -4860,7 +5422,17 @@ function goPage(name, btn) {
   if (name === 'content') { updateFormatChips(); suggestMissingMix(); }
   if (name === 'kindergarten') loadKindergartenEvents();
   // 인스타 페이지
-  if (name === 'insta-dashboard') loadInstaPosts();
+  if (name === 'insta-dashboard') {
+    // 인사이트 진입 시 항상 7일 필터로 시작
+    (async () => {
+      if (!instaPosts || !instaPosts.length) {
+        await loadInstaPosts();
+      } else {
+        // 이미 데이터 있으면 7일 필터 다시 적용
+        setInstaQuick(7);
+      }
+    })();
+  }
   if (name === 'insta-calendar') {
     // 캘린더 진입 시 게시물 + 예약글 둘 다 로드 (비동기)
     (async () => {
@@ -4884,6 +5456,7 @@ function goPage(name, btn) {
     })();
   }
   if (name === 'insta-trend') loadInstaRefs();
+  if (name === 'insta-competitors') loadInstaCompetitors();
   if (name === 'insta-feedback') {
     if (!instaPosts || !instaPosts.length) loadInstaPosts().then(() => renderInstaFeedbackList());
     else renderInstaFeedbackList();
@@ -6096,21 +6669,11 @@ async function renderCalListView() {
         const isFirstOfDay = idx === 0;
         const txt = cleanText(r[COL.text]);
         const link = String(r[COL.link]||'').trim();
-        const imgUrl = String(r.image_url||'').trim();
-        const vidUrl = String(r.video_url||'').trim();
         const engagement = calcEngagement(r);
         const engColor = engagement >= 10 ? '#16a34a' : engagement >= 5 ? '#3b82f6' : 'var(--text2)';
 
-        // 미디어
-        let mediaCell;
-        if (imgUrl) {
-          mediaCell = `<a href="${imgUrl}" target="_blank" onclick="event.stopPropagation()" title="이미지"><img src="${imgUrl}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border);vertical-align:middle" onerror="this.outerHTML='<span style=&quot;font-size:14px&quot;>📷</span>'"/></a>`;
-          if (vidUrl) mediaCell += ` <a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:13px">🎬</a>`;
-        } else if (vidUrl) {
-          mediaCell = `<a href="${vidUrl}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none;font-size:16px">🎬</a>`;
-        } else {
-          mediaCell = '<span style="color:var(--text3)" title="텍스트만">📝</span>';
-        }
+        // 미디어 (이미지 우선, 릴스/캐러셀 배지)
+        const mediaCell = buildMediaThumb(r, 36);
 
         // 분류 배지
         const cat = r.category || '';
@@ -6226,7 +6789,10 @@ function renderCalendar() {
           text: txt.slice(0, 14) + (txt.length > 14 ? '...' : ''),
           link: String(r[COL.link] || '').trim(),
           category: r.category || '',
-          type: r[COL.type] || ''
+          type: r[COL.type] || '',
+          image_url: String(r.image_url || '').trim(),
+          video_url: String(r.video_url || '').trim(),
+          post_type: r[COL.type] || ''
         });
       }
     });

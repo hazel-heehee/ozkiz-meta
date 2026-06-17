@@ -1149,8 +1149,8 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
         </div>
       </div>
 
-      <!-- 팔로워 추이 + 조회수 추이 + TOP 3 (3분할) -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px">
+      <!-- 팔로워 추이 + 조회수 추이 (2분할) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
           <div style="font-size:13px;font-weight:700;margin-bottom:10px">팔로워 추이</div>
           <div style="position:relative;height:260px;width:100%">
@@ -1171,26 +1171,23 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             <canvas id="instaViewsChart"></canvas>
           </div>
         </div>
-        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div style="font-size:13px;font-weight:700">TOP 3</div>
-            <select id="instaTopMetric" onchange="renderInstaTop3()" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;background:#fff">
-              <option value="views">조회수</option>
-              <option value="reach">도달</option>
-              <option value="likes">좋아요</option>
-              <option value="saves">저장</option>
-              <option value="shares">공유</option>
-              <option value="comments">댓글</option>
-            </select>
-          </div>
-          <div id="instaTop3" style="font-size:12px;color:var(--text2);max-height:260px;overflow-y:auto">데이터 불러오는 중...</div>
-        </div>
       </div>
 
       <!-- 최근 게시물 -->
       <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:10px">최근 게시물</div>
-        <div style="overflow-x:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-size:13px;font-weight:700">최근 게시물</div>
+            <span id="instaRecentCount" style="font-size:11px;color:var(--text3)"></span>
+          </div>
+          <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px">
+            <button id="instaRecentViewTable" onclick="switchInstaRecentView('table')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">📋 표</button>
+            <button id="instaRecentViewCal" onclick="switchInstaRecentView('cal')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">📅 캘린더</button>
+          </div>
+        </div>
+
+        <!-- 표 뷰 -->
+        <div id="instaRecentTableView" style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px">
             <thead style="background:#f8fafc">
               <tr style="border-bottom:1px solid var(--border)">
@@ -1199,6 +1196,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
                 <th style="text-align:center;padding:8px 6px;font-size:11px;color:var(--text3);font-weight:600;width:60px">미디어</th>
                 <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">글</th>
                 <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">팔로워</th>
+                <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">조회수</th>
                 <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">도달</th>
                 <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">좋아요</th>
                 <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">저장</th>
@@ -1207,9 +1205,22 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
               </tr>
             </thead>
             <tbody id="instaRecentBody">
-              <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">데이터 불러오는 중...</td></tr>
+              <tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">데이터 불러오는 중...</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- 캘린더 뷰 -->
+        <div id="instaRecentCalView" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span id="instaRecentCalTitle" style="font-size:15px;font-weight:700"></span>
+            <div style="display:flex;gap:2px">
+              <button onclick="changeInstaRecentMonth(-1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit">←</button>
+              <button onclick="goToInstaRecentToday()" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">오늘</button>
+              <button onclick="changeInstaRecentMonth(1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit">→</button>
+            </div>
+          </div>
+          <div class="cal-grid" id="instaRecentCalGrid"></div>
         </div>
       </div>
     </div>
@@ -2986,6 +2997,11 @@ window.addEventListener('load', async () => {
   if (savedRecentView === 'cal') {
     setTimeout(() => switchRecentView('cal'), 200);  // 데이터 로드 후 전환
   }
+  // 인스타 최근 게시물 뷰 모드 복원
+  const savedInstaRecentView = localStorage.getItem('oz_insta_recent_view') || 'table';
+  if (savedInstaRecentView === 'cal') {
+    setTimeout(() => switchInstaRecentView('cal'), 300);
+  }
 
   // 마지막 사용 채널 복원 — 기본은 인스타 (HTML에서 이미 인스타가 active 상태)
   // 마지막 채널이 스레드일 때만 스레드 모드로 전환
@@ -3031,6 +3047,136 @@ let instaViewsChart = null;
 let instaFilterStart = '', instaFilterEnd = '';
 let instaFilteredData = [];  // 필터된 현재 데이터 (차트용)
 
+// 최근 게시물 뷰 모드
+let currentInstaRecentView = 'table';
+let instaRecentCalYear = new Date().getFullYear();
+let instaRecentCalMonth = new Date().getMonth();
+
+function switchInstaRecentView(mode) {
+  currentInstaRecentView = mode;
+  const tableView = document.getElementById('instaRecentTableView');
+  const calView = document.getElementById('instaRecentCalView');
+  const tableBtn = document.getElementById('instaRecentViewTable');
+  const calBtn = document.getElementById('instaRecentViewCal');
+  if (!tableView || !calView) return;
+
+  if (mode === 'cal') {
+    tableView.style.display = 'none';
+    calView.style.display = 'block';
+    if (calBtn) {
+      calBtn.style.background = '#fff'; calBtn.style.fontWeight = '600'; calBtn.style.color = 'var(--text)'; calBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+      tableBtn.style.background = 'transparent'; tableBtn.style.fontWeight = '500'; tableBtn.style.color = 'var(--text2)'; tableBtn.style.boxShadow = 'none';
+    }
+    renderInstaRecentCal();
+  } else {
+    tableView.style.display = 'block';
+    calView.style.display = 'none';
+    if (tableBtn) {
+      tableBtn.style.background = '#fff'; tableBtn.style.fontWeight = '600'; tableBtn.style.color = 'var(--text)'; tableBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,.06)';
+      calBtn.style.background = 'transparent'; calBtn.style.fontWeight = '500'; calBtn.style.color = 'var(--text2)'; calBtn.style.boxShadow = 'none';
+    }
+  }
+  localStorage.setItem('oz_insta_recent_view', mode);
+}
+
+function changeInstaRecentMonth(delta) {
+  instaRecentCalMonth += delta;
+  if (instaRecentCalMonth < 0) { instaRecentCalMonth = 11; instaRecentCalYear--; }
+  if (instaRecentCalMonth > 11) { instaRecentCalMonth = 0; instaRecentCalYear++; }
+  renderInstaRecentCal();
+}
+
+function goToInstaRecentToday() {
+  const t = new Date();
+  instaRecentCalYear = t.getFullYear();
+  instaRecentCalMonth = t.getMonth();
+  renderInstaRecentCal();
+}
+
+function renderInstaRecentCal() {
+  const grid = document.getElementById('instaRecentCalGrid');
+  const title = document.getElementById('instaRecentCalTitle');
+  if (!grid || !title) return;
+
+  title.textContent = `${instaRecentCalYear}년 ${instaRecentCalMonth+1}월`;
+
+  const data = instaFilteredData.length ? instaFilteredData : instaPosts;
+  const today = new Date();
+  const firstDay = new Date(instaRecentCalYear, instaRecentCalMonth, 1);
+  const lastDay = new Date(instaRecentCalYear, instaRecentCalMonth+1, 0);
+  const first = firstDay.getDay();
+  const total = lastDay.getDate();
+
+  // 그 달의 발행 게시물
+  const postsByDay = {};
+  (data || []).forEach(r => {
+    if (!r.date) return;
+    const d = new Date(r.date);
+    if (d.getFullYear() === instaRecentCalYear && d.getMonth() === instaRecentCalMonth) {
+      const day = d.getDate();
+      const txt = String(r.text || '').slice(0, 14);
+      if (!txt) return;
+      if (!postsByDay[day]) postsByDay[day] = [];
+      postsByDay[day].push({
+        id: r.id,
+        text: txt + (r.text && r.text.length > 14 ? '...' : ''),
+        link: String(r.link || '').trim(),
+        post_type: r.post_type || ''
+      });
+    }
+  });
+
+  // 유치원 일정
+  const kgByDay = {};
+  (window.__kgEventsCache || []).forEach(ev => {
+    const d = new Date(ev.date);
+    if (d.getFullYear() === instaRecentCalYear && d.getMonth() === instaRecentCalMonth) {
+      const day = d.getDate();
+      if (!kgByDay[day]) kgByDay[day] = [];
+      kgByDay[day].push(ev);
+    }
+  });
+
+  const typeColors = {
+    '릴스':   '#fce7f3',
+    '피드':   '#dbeafe',
+    '캐러셀': '#e0e7ff',
+    '스토리': '#fed7aa'
+  };
+  const kgEmoji = { '행사':'🎉','소풍':'🚌','체육':'⚽','학사':'📚','휴원':'🏠','기타':'📌' };
+
+  let html = '';
+  for (let i = 0; i < first; i++) html += `<div class="cal-day empty"></div>`;
+  for (let d = 1; d <= total; d++) {
+    const isToday = today.getFullYear()===instaRecentCalYear && today.getMonth()===instaRecentCalMonth && today.getDate()===d;
+    const posts = postsByDay[d] || [];
+    const kgs = kgByDay[d] || [];
+
+    const kgHtml = kgs.length > 0
+      ? `<div style="margin-bottom:3px">${kgs.slice(0,2).map(ev => {
+          const emoji = kgEmoji[ev.category||'기타'] || '📌';
+          const t = ev.title.length > 8 ? ev.title.slice(0,8)+'…' : ev.title;
+          return `<div style="background:#fffbeb;color:#92400e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;margin-bottom:1px;border:1px solid #fde68a" title="${ev.title.replace(/"/g,'&quot;')}">${emoji} ${t}</div>`;
+        }).join('')}</div>`
+      : '';
+
+    const postHtml = posts.slice(0, 3).map(p => {
+      const typeBadge = p.post_type && typeColors[p.post_type]
+        ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
+        : '';
+      const linkUrl = p.link && !p.link.startsWith('http') ? 'https://' + p.link : p.link;
+      return linkUrl
+        ? `<a href="${linkUrl}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${typeBadge}${p.text}</a>`
+        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${typeBadge}${p.text}</div>`;
+    }).join('');
+
+    const moreHtml = posts.length > 3 ? `<div class="cal-more">+${posts.length-3}개</div>` : '';
+    const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
+    html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${moreHtml}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
 // Supabase에서 인스타 게시물 + 팔로워 로드
 async function loadInstaPosts(force = false) {
   try {
@@ -3053,7 +3199,14 @@ async function loadInstaPosts(force = false) {
     if (fe) throw fe;
     instaFollowers = followers || [];
 
-    renderInstaDashboard(instaPosts);
+    // 첫 로드 시 자동으로 7일 필터 적용 (없으면)
+    const fStart = document.getElementById('instaFilterStart');
+    const fEnd = document.getElementById('instaFilterEnd');
+    if (fStart && fEnd && !fStart.value && !fEnd.value) {
+      setInstaQuick(7);  // 7일 기본
+    } else {
+      renderInstaDashboard(instaPosts);
+    }
 
     // 인스타 캘린더가 활성화돼 있으면 같이 갱신
     if (document.getElementById('page-insta-calendar')?.classList.contains('active')) {
@@ -3063,7 +3216,7 @@ async function loadInstaPosts(force = false) {
   } catch (e) {
     console.error('loadInstaPosts:', e);
     document.getElementById('instaRecentBody').innerHTML = `
-      <tr><td colspan="10" style="text-align:center;padding:40px 24px;font-size:13px">
+      <tr><td colspan="11" style="text-align:center;padding:40px 24px;font-size:13px">
         <div style="font-size:32px;margin-bottom:8px">⚠️</div>
         <div style="font-weight:600;color:var(--text);margin-bottom:6px">인스타 데이터를 불러올 수 없어요</div>
         <div style="color:var(--text3);font-size:12px;line-height:1.6">
@@ -3088,14 +3241,13 @@ function renderInstaDashboard(data) {
     document.getElementById('insta-dash-count-change').textContent = '게시물 없음';
     document.getElementById('insta-dash-saves').textContent = '—';
     document.getElementById('insta-dash-shares').textContent = '—';
-    document.getElementById('instaRecentBody').innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text3);font-size:13px">
+    document.getElementById('instaRecentBody').innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);font-size:13px">
       <div style="font-size:32px;margin-bottom:8px">📭</div>
       아직 등록된 게시물이 없어요<br>
       <span style="font-size:11px;margin-top:4px">콘텐츠 캘린더에서 게시물을 추가하세요</span>
     </td></tr>`;
     drawInstaFollowerChart([]);
     if (instaViewsChart) { instaViewsChart.destroy(); instaViewsChart = null; }
-    document.getElementById('instaTop3').innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">데이터 없음</div>';
     return;
   }
 
@@ -3167,12 +3319,19 @@ function renderInstaDashboard(data) {
   drawInstaFollowerChart(data);
   drawInstaViewsChart();  // 조회수 추이
 
-  // TOP 3
-  renderInstaTop3();
+  // 최근 게시물 테이블 (필터된 데이터 전체, 최신 순)
+  const sorted = data.slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+  const recent = sorted.slice(0, 100);  // 최대 100개
+  document.getElementById('instaRecentBody').innerHTML = recent.length
+    ? recent.map(r => buildInstaPostRow(r)).join('')
+    : `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);font-size:13px">해당 기간에 게시물이 없어요</td></tr>`;
 
-  // 최근 게시물 테이블
-  const recent = data.slice(-30).reverse();
-  document.getElementById('instaRecentBody').innerHTML = recent.map(r => buildInstaPostRow(r)).join('');
+  // 개수 표시
+  const countEl = document.getElementById('instaRecentCount');
+  if (countEl) countEl.textContent = data.length > 0 ? `${data.length}개 표시 중` : '';
+
+  // 캘린더 뷰가 활성화돼 있으면 같이 갱신
+  if (currentInstaRecentView === 'cal') renderInstaRecentCal();
 }
 
 function buildInstaPostRow(r) {
@@ -3210,7 +3369,8 @@ function buildInstaPostRow(r) {
       <td style="padding:6px;text-align:center">${mediaCell}</td>
       <td style="padding:9px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${txtCell}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--text2)">${nVal(r.follower)}</td>
-      <td style="padding:9px 10px;text-align:right;font-size:13px;font-weight:600">${nVal(r.reach)}</td>
+      <td style="padding:9px 10px;text-align:right;font-size:13px;font-weight:600">${nVal(r.views)}</td>
+      <td style="padding:9px 10px;text-align:right;font-size:13px">${nVal(r.reach)}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px;color:var(--red)">${nVal(r.likes)}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px">${nVal(r.saves)}</td>
       <td style="padding:9px 10px;text-align:right;font-size:13px">${nVal(r.shares)}</td>

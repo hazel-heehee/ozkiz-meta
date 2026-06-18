@@ -6584,9 +6584,26 @@ function renderInstaCompetitorTable() {
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
+  // 데이터 없는 과거 날짜는 숨김
+  // - 오늘 또는 미래 → 항상 표시 (입력 가능)
+  // - 과거 → 적어도 1개 경쟁사에 데이터(followers > 0)가 있어야 표시
+  const hasDataOnDate = (dateKey) => {
+    const dayData = competitorHistory[dateKey];
+    if (!dayData) return false;
+    return competitorsList.some(c => {
+      const h = dayData[c.username];
+      return h && ((h.followers || 0) > 0 || (h.engagement || 0) > 0 || (h.posts_count || 0) > 0 || (h.memo && h.memo.trim()));
+    });
+  };
+
   // 최신 날짜가 위로 (descending)
   // 정렬 방향 적용
-  const sortedDates = [...competitorDates].sort();
+  const allSortedDates = [...competitorDates].sort();
+  const filteredDates = allSortedDates.filter(dateKey => {
+    if (dateKey >= todayKey) return true;  // 오늘/미래는 항상 표시
+    return hasDataOnDate(dateKey);          // 과거는 데이터 있는 것만
+  });
+  const sortedDates = filteredDates;
   if (competitorSortDir === 'desc') sortedDates.reverse();
 
   let bodyHtml = '';
@@ -6685,6 +6702,19 @@ function renderInstaCompetitorTable() {
   });
 
   body.innerHTML = bodyHtml;
+
+  // 필터 정보 업데이트 (표시 행 수)
+  const filterInfoEl = document.getElementById('competitorFilterInfo');
+  if (filterInfoEl) {
+    const totalDates = allSortedDates.length;
+    const visibleDates = filteredDates.length;
+    const hiddenPast = totalDates - visibleDates;
+    if (hiddenPast > 0) {
+      filterInfoEl.innerHTML = `${visibleDates}일 표시 <span style="color:#3b82f6">(데이터 없는 과거 ${hiddenPast}일 숨김)</span>`;
+    } else {
+      filterInfoEl.textContent = `${visibleDates}일 표시`;
+    }
+  }
 
   // 리사이저 자동 적용
   setTimeout(applyResizersToAllTables, 50);
@@ -7297,6 +7327,11 @@ function goPage(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
 
+  // 모든 표에 리사이저 자동 적용 (약간의 딜레이로 렌더 후 호출)
+  setTimeout(() => {
+    if (typeof applyResizersToAllTables === 'function') applyResizersToAllTables();
+  }, 100);
+
   // 페이지별 진입 시 처리
   if (name === 'persona') renderBrandGuide();
   if (name === 'feedback') renderFeedbackList();
@@ -7693,6 +7728,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (savedView === 'list') switchCalView('list');
     // 목요일 배지 표시
     updateThursdayBadge();
+    // 모든 표에 리사이저 자동 적용
+    if (typeof applyResizersToAllTables === 'function') applyResizersToAllTables();
   }, 100);
 });
 
@@ -10980,10 +11017,13 @@ function initResize(e) {
 
 // 페이지 진입 시 + 표 렌더 시마다 호출
 function applyResizersToAllTables() {
-  // 모든 주요 표에 'resizable' 클래스 자동 부여
-  ['hashtagTable', 'competitorTable'].forEach(id => {
-    const t = document.getElementById(id);
-    if (t && !t.classList.contains('resizable')) {
+  // 모든 <table> 요소에 자동으로 'resizable' 클래스 부여
+  document.querySelectorAll('table').forEach(t => {
+    // 헤더 행이 있는 표만
+    if (!t.querySelector('th')) return;
+    // 사이드바나 모달 안의 표는 제외
+    if (t.closest('.sidebar') || t.closest('.modal-overlay')) return;
+    if (!t.classList.contains('resizable')) {
       t.classList.add('resizable');
     }
   });

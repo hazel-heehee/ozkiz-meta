@@ -296,18 +296,6 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <button class="nav-item" onclick="goPage('insta-calendar',this)">
       <span class="nav-icon">▦</span> 콘텐츠 캘린더
     </button>
-    <button class="nav-item" onclick="goPage('insta-feedback',this)">
-      <span class="nav-icon">✎</span> 게시물 피드백
-    </button>
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section">AI 도구</div>
-    <button class="nav-item" onclick="goPage('insta-content',this)">
-      <span class="nav-icon">✦</span> 콘텐츠 기획
-    </button>
-    <button class="nav-item" onclick="goPage('insta-persona',this)">
-      <span class="nav-icon">◉</span> 브랜드 가이드
-    </button>
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">탐색</div>
@@ -317,8 +305,17 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <button class="nav-item" onclick="goPage('insta-competitors',this)">
       <span class="nav-icon">◈</span> 경쟁사 추적
     </button>
-    <button class="nav-item" onclick="goPage('insta-checklist',this)">
-      <span class="nav-icon">◉</span> 주간 체크리스트
+    <button class="nav-item" onclick="goPage('insta-hashtags',this)">
+      <span class="nav-icon">#</span> 해시태그 노출
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">AI 도구</div>
+    <button class="nav-item" onclick="goPage('insta-content',this)">
+      <span class="nav-icon">✦</span> 콘텐츠 기획
+    </button>
+    <button class="nav-item" onclick="goPage('insta-persona',this)">
+      <span class="nav-icon">◉</span> 브랜드 가이드
     </button>
   </div>
 
@@ -1827,6 +1824,140 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
           <button class="btn btn-ghost btn-sm" onclick="closeCompetitorMemoModal()">닫기</button>
           <button class="btn btn-primary btn-sm" onclick="saveCompetitorMemoFromModal()">💾 저장</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📷 해시태그 노출 현황 -->
+  <div class="page" id="page-insta-hashtags">
+    <div class="page-top">
+      <div class="page-title">📷 해시태그 노출 현황</div>
+      <div class="page-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openAddHashtagDateModal()" title="새 측정 날짜 추가">+ 측정 날짜</button>
+        <button class="btn btn-ghost btn-sm" onclick="openAddHashtagModal()" title="새 해시태그 추가">+ 해시태그</button>
+        <button class="btn btn-primary btn-sm" onclick="loadInstaHashtags()">↻ 새로고침</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <!-- 안내 -->
+      <div style="background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6">
+        💡 <b>사용법</b>: 검색량/노출 셀 클릭 → 입력 → 자동 저장. Tab으로 다음 셀 이동. 매주 데이터 측정 후 입력하세요.
+      </div>
+
+      <!-- 통계 카드 -->
+      <div id="hashtagSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+
+      <!-- 필터 -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">🔍 필터:</span>
+        <select id="hashtagFilterSeason" onchange="renderInstaHashtags()" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit">
+          <option value="">전체 계절</option>
+          <option value="사계절">사계절</option>
+          <option value="여름-네이버메인">여름-네이버메인</option>
+          <option value="추가">추가</option>
+        </select>
+        <select id="hashtagFilterSize" onchange="renderInstaHashtags()" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit">
+          <option value="">전체 규모</option>
+          <option value="천만">천만</option>
+          <option value="백만">백만</option>
+          <option value="십만">십만</option>
+          <option value="5만">5만</option>
+          <option value="만">만</option>
+          <option value="천">천</option>
+        </select>
+        <select id="hashtagFilterType" onchange="renderInstaHashtags()" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit">
+          <option value="">전체 구분</option>
+          <option value="제품,브랜드">제품, 브랜드</option>
+          <option value="커뮤니티">커뮤니티</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+          <input type="checkbox" id="hashtagShowEnded" onchange="renderInstaHashtags()"/> 관리종료 포함
+        </label>
+        <input type="text" id="hashtagSearch" placeholder="키워드 검색..." oninput="renderInstaHashtags()" style="padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit;width:140px"/>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="hashtagResultCount"></span>
+      </div>
+
+      <!-- 메인 표 -->
+      <div style="overflow:auto;max-height:65vh;border:1px solid var(--border);border-radius:8px;background:#fff">
+        <table id="hashtagTable" style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead id="hashtagTableHead" style="position:sticky;top:0;background:#f8fafc;z-index:10"></thead>
+          <tbody id="hashtagTableBody"></tbody>
+        </table>
+      </div>
+
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6">
+        💡 <b>키워드규모</b>: 해시태그 게시물 개수 (천만/백만/십만/5만/만/천) · <b>검색량</b>: 인스타 검색 결과 수 · <b>노출</b>: 해당 주에 우리 게시물이 노출된 횟수
+      </div>
+    </div>
+  </div>
+
+  <!-- 해시태그 추가 모달 -->
+  <div class="modal-overlay" id="addHashtagModal">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-title">+ 해시태그 추가</div>
+      <div class="modal-desc">새 해시태그를 등록합니다.</div>
+
+      <div style="display:grid;gap:10px;margin:14px 0">
+        <div>
+          <label style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px;display:block">키워드 *</label>
+          <input type="text" id="newHashtagKeyword" placeholder="예: 여름신상" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div>
+            <label style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px;display:block">계절</label>
+            <select id="newHashtagSeason" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit">
+              <option value="사계절">사계절</option>
+              <option value="여름-네이버메인">여름-네이버메인</option>
+              <option value="추가">추가</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px;display:block">규모</label>
+            <select id="newHashtagSize" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit">
+              <option value="천만">천만</option>
+              <option value="백만">백만</option>
+              <option value="십만" selected>십만</option>
+              <option value="5만">5만</option>
+              <option value="만">만</option>
+              <option value="천">천</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px;display:block">구분</label>
+            <select id="newHashtagType" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit">
+              <option value="제품,브랜드">제품, 브랜드</option>
+              <option value="커뮤니티">커뮤니티</option>
+              <option value="">미분류</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-btns">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddHashtagModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="saveNewHashtag()">+ 추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 측정 날짜 추가 모달 -->
+  <div class="modal-overlay" id="addHashtagDateModal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-title">+ 새 측정 날짜 추가</div>
+      <div class="modal-desc">매주 데이터를 측정한 날짜를 선택하세요.</div>
+
+      <div style="margin:14px 0">
+        <label style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px;display:block">측정 날짜</label>
+        <input type="date" id="newHashtagDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit"/>
+      </div>
+
+      <div style="background:#fef3c7;border-radius:6px;padding:8px 12px;font-size:11px;color:#92400e;margin-bottom:12px">
+        💡 이 날짜로 새 컬럼이 추가됩니다. 셀에 검색량과 노출을 입력하면 자동 저장됩니다.
+      </div>
+
+      <div class="modal-btns">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddHashtagDateModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="addNewHashtagDate()">+ 추가</button>
       </div>
     </div>
   </div>
@@ -5658,6 +5789,383 @@ ${analysisGuide}
 }
 
 // ══════════════════════════════════════════════════════════════
+// 🏷️ 해시태그 노출 현황
+// ══════════════════════════════════════════════════════════════
+
+let hashtagsList = [];      // 해시태그 마스터
+let hashtagHistory = {};    // { hashtag_id: { 'YYYY-MM-DD': { search_count, exposure_count } } }
+let hashtagDates = [];      // 모든 측정 날짜 (정렬됨)
+
+async function loadInstaHashtags() {
+  try {
+    // 1. 마스터 로드
+    const { data: hashtags, error: e1 } = await sb
+      .from('insta_hashtags')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('id', { ascending: true });
+    if (e1) throw e1;
+    hashtagsList = hashtags || [];
+
+    if (!hashtagsList.length) {
+      document.getElementById('hashtagTableBody').innerHTML = `
+        <tr><td colspan="20" style="padding:40px;text-align:center;color:var(--text3)">
+          등록된 해시태그가 없어요. <a href="#" onclick="openAddHashtagModal();return false;" style="color:#3b82f6">+ 해시태그</a> 버튼으로 추가하세요!<br>
+          <span style="font-size:11px;color:var(--text3);margin-top:8px;display:inline-block">또는 SQL 파일로 일괄 임포트 가능</span>
+        </td></tr>`;
+      document.getElementById('hashtagSummary').innerHTML = '';
+      return;
+    }
+
+    // 2. 히스토리 전체 로드
+    const ids = hashtagsList.map(h => h.id);
+    const { data: history, error: e2 } = await sb
+      .from('insta_hashtag_history')
+      .select('*')
+      .in('hashtag_id', ids);
+    if (e2) throw e2;
+
+    // 3. 정리
+    hashtagHistory = {};
+    const dateSet = new Set();
+    (history || []).forEach(h => {
+      if (!hashtagHistory[h.hashtag_id]) hashtagHistory[h.hashtag_id] = {};
+      hashtagHistory[h.hashtag_id][h.date] = {
+        search_count: h.search_count,
+        exposure_count: h.exposure_count
+      };
+      dateSet.add(h.date);
+    });
+    hashtagDates = Array.from(dateSet).sort();  // 오래된 순
+
+    renderInstaHashtags();
+    renderHashtagSummary();
+  } catch (e) {
+    console.error('loadInstaHashtags:', e);
+    document.getElementById('hashtagTableBody').innerHTML = `
+      <tr><td colspan="20" style="padding:40px;text-align:center;color:var(--red);font-size:12px">
+        ⚠️ 로드 실패: ${e.message}<br>
+        <span style="color:var(--text3);font-size:11px">Supabase에 insta_hashtags / insta_hashtag_history 테이블이 만들어졌는지 확인하세요</span>
+      </td></tr>`;
+  }
+}
+
+function renderInstaHashtags() {
+  const head = document.getElementById('hashtagTableHead');
+  const body = document.getElementById('hashtagTableBody');
+
+  // 필터 적용
+  const fSeason = document.getElementById('hashtagFilterSeason')?.value || '';
+  const fSize = document.getElementById('hashtagFilterSize')?.value || '';
+  const fType = document.getElementById('hashtagFilterType')?.value || '';
+  const fSearch = (document.getElementById('hashtagSearch')?.value || '').trim().toLowerCase();
+  const showEnded = document.getElementById('hashtagShowEnded')?.checked || false;
+
+  const filtered = hashtagsList.filter(h => {
+    if (!showEnded && h.ended) return false;
+    if (fSeason && h.season !== fSeason) return false;
+    if (fSize && h.size_category !== fSize) return false;
+    if (fType && h.type !== fType) return false;
+    if (fSearch && !(h.keyword || '').toLowerCase().includes(fSearch)) return false;
+    return true;
+  });
+
+  document.getElementById('hashtagResultCount').textContent = `${filtered.length} / ${hashtagsList.length}개 표시`;
+
+  // 헤더 — 고정 컬럼 + 날짜별 (검색량, 노출) 2열
+  const dateLabels = hashtagDates.map(d => {
+    const dt = new Date(d);
+    return `${dt.getMonth()+1}/${dt.getDate()}`;
+  });
+
+  let headHtml = `<tr style="border-bottom:2px solid var(--border)">
+    <th rowspan="2" style="padding:6px 8px;background:#fef3c7;text-align:center;font-size:10px;border-right:1px solid var(--border);min-width:80px">계절</th>
+    <th rowspan="2" style="padding:6px 8px;background:#fce7f3;text-align:center;font-size:10px;border-right:1px solid var(--border);min-width:55px">규모</th>
+    <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:left;font-size:10px;border-right:2px solid var(--border);min-width:100px;position:sticky;left:0;z-index:5">키워드</th>
+    <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:center;font-size:10px;border-right:1px solid var(--border);min-width:90px">구분</th>
+    <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:center;font-size:10px;border-right:2px solid var(--border);min-width:50px">종료</th>`;
+
+  hashtagDates.forEach(d => {
+    const dt = new Date(d);
+    const label = `${dt.getMonth()+1}/${dt.getDate()}`;
+    headHtml += `<th colspan="2" style="padding:6px 8px;background:#dbeafe;text-align:center;font-size:11px;border-right:2px solid var(--border);font-weight:700">${label}</th>`;
+  });
+  headHtml += `<th rowspan="2" style="padding:6px 4px;background:#f9fafb;font-size:10px;width:30px"></th></tr>`;
+
+  headHtml += `<tr style="border-bottom:1px solid var(--border)">`;
+  hashtagDates.forEach(d => {
+    headHtml += `
+      <th style="padding:4px 6px;background:#f0f9ff;text-align:center;font-size:10px;color:var(--text2);min-width:75px">검색량</th>
+      <th style="padding:4px 6px;background:#fef3c7;text-align:center;font-size:10px;color:var(--text2);min-width:45px;border-right:2px solid var(--border)">노출</th>
+    `;
+  });
+  headHtml += `</tr>`;
+  head.innerHTML = headHtml;
+
+  // 본문
+  if (!filtered.length) {
+    body.innerHTML = `<tr><td colspan="${5 + hashtagDates.length * 2 + 1}" style="padding:40px;text-align:center;color:var(--text3);font-size:12px">조건에 맞는 해시태그가 없어요</td></tr>`;
+    return;
+  }
+
+  let bodyHtml = '';
+  filtered.forEach(h => {
+    const seasonColor = h.season === '여름-네이버메인' ? '#fef3c7' : h.season === '추가' ? '#e0e7ff' : '#fff';
+    const sizeColors = { '천만': '#fecdd3', '백만': '#fed7aa', '십만': '#fef3c7', '5만': '#d1fae5', '만': '#dbeafe', '천': '#e9d5ff' };
+    const sizeColor = sizeColors[h.size_category] || '#f3f4f6';
+    const endedStyle = h.ended ? 'opacity:0.5;text-decoration:line-through' : '';
+
+    bodyHtml += `<tr style="border-bottom:1px solid var(--border);${endedStyle}">
+      <td style="padding:5px 8px;background:${seasonColor};font-size:11px;text-align:center;border-right:1px solid var(--border)">${h.season || '-'}</td>
+      <td style="padding:5px 8px;background:${sizeColor};font-size:11px;text-align:center;font-weight:600;border-right:1px solid var(--border)">${h.size_category || '-'}</td>
+      <td style="padding:5px 8px;background:#fff;font-size:11px;font-weight:600;border-right:2px solid var(--border);position:sticky;left:0;z-index:3">
+        <a href="https://www.instagram.com/explore/tags/${encodeURIComponent(h.keyword || '')}/" target="_blank" style="color:#1e40af;text-decoration:none" title="인스타에서 해시태그 보기">#${h.keyword || ''}</a>
+      </td>
+      <td style="padding:3px 4px;background:#fff;text-align:center;border-right:1px solid var(--border)">
+        <select onchange="updateHashtagField(${h.id}, 'type', this.value)" style="width:100%;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;background:transparent;outline:none"
+          onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
+          onblur="this.style.borderColor='transparent';this.style.background='transparent'">
+          <option value="" ${!h.type?'selected':''}>-</option>
+          <option value="제품,브랜드" ${h.type==='제품,브랜드'?'selected':''}>제품,브랜드</option>
+          <option value="커뮤니티" ${h.type==='커뮤니티'?'selected':''}>커뮤니티</option>
+        </select>
+      </td>
+      <td style="padding:3px;background:#fff;text-align:center;border-right:2px solid var(--border)">
+        <input type="checkbox" ${h.ended?'checked':''} onchange="updateHashtagField(${h.id}, 'ended', this.checked)"/>
+      </td>`;
+
+    hashtagDates.forEach(d => {
+      const cell = hashtagHistory[h.id]?.[d] || {};
+      const search = cell.search_count || 0;
+      const exposure = cell.exposure_count;
+      bodyHtml += `
+        <td style="padding:2px;background:#f0f9ff;text-align:center">
+          <input type="text" inputmode="numeric" value="${search ? search.toLocaleString() : ''}" placeholder=""
+            onchange="saveHashtagCell(${h.id}, '${d}', 'search_count', this.value, this)"
+            onkeydown="hashtagTabNav(event, this)"
+            onfocus="this.value=this.value.replace(/,/g,'');this.style.borderColor='#3b82f6';this.style.background='#fff'"
+            onblur="const n=parseInt(this.value.replace(/[^0-9-]/g,''))||0;this.value=n?n.toLocaleString():'';this.style.borderColor='transparent';this.style.background='transparent'"
+            style="width:70px;padding:2px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"/>
+        </td>
+        <td style="padding:2px;background:#fef3c7;text-align:center;border-right:2px solid var(--border)">
+          <input type="number" value="${exposure !== undefined && exposure !== null && exposure !== '' ? exposure : ''}" placeholder=""
+            onchange="saveHashtagCell(${h.id}, '${d}', 'exposure_count', this.value, this)"
+            onkeydown="hashtagTabNav(event, this)"
+            onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent'"
+            style="width:38px;padding:2px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"/>
+        </td>`;
+    });
+
+    bodyHtml += `<td style="padding:2px;text-align:center;background:#f9fafb">
+      <button onclick="deleteHashtag(${h.id}, '${(h.keyword||'').replace(/'/g, "\\'")}')" title="삭제" style="background:transparent;border:none;color:#dc2626;cursor:pointer;font-size:12px;padding:2px 4px">×</button>
+    </td>`;
+
+    bodyHtml += '</tr>';
+  });
+  body.innerHTML = bodyHtml;
+}
+
+function renderHashtagSummary() {
+  const container = document.getElementById('hashtagSummary');
+  if (!container) return;
+
+  const total = hashtagsList.length;
+  const active = hashtagsList.filter(h => !h.ended).length;
+  const ended = total - active;
+
+  // 가장 최신 측정 날짜
+  const latestDate = hashtagDates.length > 0 ? hashtagDates[hashtagDates.length - 1] : null;
+
+  // 가장 최신 날짜의 노출 합계
+  let totalExposure = 0;
+  let exposureCount = 0;
+  if (latestDate) {
+    hashtagsList.forEach(h => {
+      if (h.ended) return;
+      const exp = hashtagHistory[h.id]?.[latestDate]?.exposure_count;
+      if (exp && exp > 0) {
+        totalExposure += exp;
+        exposureCount++;
+      }
+    });
+  }
+
+  // 노출 1위 해시태그
+  let topHashtag = null;
+  let topExp = 0;
+  if (latestDate) {
+    hashtagsList.forEach(h => {
+      if (h.ended) return;
+      const exp = hashtagHistory[h.id]?.[latestDate]?.exposure_count || 0;
+      if (exp > topExp) {
+        topExp = exp;
+        topHashtag = h;
+      }
+    });
+  }
+
+  const latestLabel = latestDate ? `${new Date(latestDate).getMonth()+1}/${new Date(latestDate).getDate()} 기준` : '데이터 없음';
+
+  container.innerHTML = `
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">🏷️ 추적 중인 해시태그</div>
+      <div style="font-size:18px;font-weight:700;color:#1e40af">${active.toLocaleString()}개</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${ended > 0 ? `종료 ${ended}개 제외` : '전체 활성'}</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📊 노출된 해시태그</div>
+      <div style="font-size:18px;font-weight:700;color:#16a34a">${exposureCount.toLocaleString()}개</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${latestLabel}</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 총 노출 횟수</div>
+      <div style="font-size:18px;font-weight:700;color:#ec4899">${totalExposure.toLocaleString()}회</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${latestLabel}</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">🏆 ${latestLabel} 노출 1위</div>
+      <div style="font-size:13px;font-weight:700">${topHashtag ? `<a href="https://www.instagram.com/explore/tags/${encodeURIComponent(topHashtag.keyword)}/" target="_blank" style="color:#1e40af;text-decoration:none">#${topHashtag.keyword} ↗</a>` : '-'}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${topExp > 0 ? topExp + '회 노출' : ''}</div>
+    </div>
+  `;
+}
+
+// 셀 저장
+async function saveHashtagCell(hashtagId, date, field, val, inputEl) {
+  if (inputEl) inputEl.style.borderColor = '#f59e0b';
+  const numVal = parseInt(String(val).replace(/[^0-9-]/g, '')) || 0;
+
+  try {
+    const existing = hashtagHistory[hashtagId]?.[date];
+
+    if (existing) {
+      const { error } = await sb.from('insta_hashtag_history')
+        .update({ [field]: numVal })
+        .eq('hashtag_id', hashtagId)
+        .eq('date', date);
+      if (error) throw error;
+      existing[field] = numVal;
+    } else {
+      const newRow = { hashtag_id: hashtagId, date, [field]: numVal };
+      const { error } = await sb.from('insta_hashtag_history').insert(newRow);
+      if (error) throw error;
+      if (!hashtagHistory[hashtagId]) hashtagHistory[hashtagId] = {};
+      hashtagHistory[hashtagId][date] = { [field]: numVal };
+    }
+
+    if (inputEl) {
+      inputEl.style.borderColor = '#16a34a';
+      setTimeout(() => { if (inputEl) inputEl.style.borderColor = 'transparent'; }, 600);
+    }
+  } catch (e) {
+    console.error('saveHashtagCell:', e);
+    if (inputEl) inputEl.style.borderColor = '#dc2626';
+  }
+}
+
+// 마스터 필드 업데이트 (type, ended)
+async function updateHashtagField(id, field, val) {
+  try {
+    const { error } = await sb.from('insta_hashtags').update({ [field]: val }).eq('id', id);
+    if (error) throw error;
+    const target = hashtagsList.find(h => h.id === id);
+    if (target) target[field] = val;
+    if (field === 'ended') renderInstaHashtags();  // 종료 토글 시 다시 필터
+  } catch (e) {
+    showToast('업데이트 실패: ' + e.message);
+  }
+}
+
+// Tab/Enter 네비게이션
+function hashtagTabNav(event, currentInput) {
+  if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault();
+    const inputs = Array.from(document.querySelectorAll('#hashtagTableBody input[type="text"], #hashtagTableBody input[type="number"]'));
+    const idx = inputs.indexOf(currentInput);
+    if (idx === -1) return;
+    const nextIdx = event.shiftKey ? idx - 1 : idx + 1;
+    if (nextIdx >= 0 && nextIdx < inputs.length) {
+      inputs[nextIdx].focus();
+      inputs[nextIdx].select();
+    }
+  }
+}
+
+// 새 해시태그 추가 모달
+function openAddHashtagModal() {
+  document.getElementById('newHashtagKeyword').value = '';
+  document.getElementById('addHashtagModal').classList.add('open');
+  setTimeout(() => document.getElementById('newHashtagKeyword').focus(), 100);
+}
+function closeAddHashtagModal() {
+  document.getElementById('addHashtagModal').classList.remove('open');
+}
+
+async function saveNewHashtag() {
+  const keyword = document.getElementById('newHashtagKeyword').value.trim().replace(/^#/, '');
+  if (!keyword) { showToast('키워드를 입력해주세요'); return; }
+  const season = document.getElementById('newHashtagSeason').value;
+  const size = document.getElementById('newHashtagSize').value;
+  const type = document.getElementById('newHashtagType').value;
+
+  try {
+    const maxOrder = Math.max(0, ...hashtagsList.map(h => h.sort_order || 0));
+    const { error } = await sb.from('insta_hashtags').insert({
+      keyword, season, size_category: size, type, sort_order: maxOrder + 1
+    });
+    if (error) throw error;
+    showToast(`✓ #${keyword} 추가됨`);
+    closeAddHashtagModal();
+    await loadInstaHashtags();
+  } catch (e) {
+    showToast('추가 실패: ' + e.message);
+  }
+}
+
+// 측정 날짜 추가
+function openAddHashtagDateModal() {
+  // 기본값: 오늘
+  const today = new Date();
+  const yyyy_mm_dd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  document.getElementById('newHashtagDate').value = yyyy_mm_dd;
+  document.getElementById('addHashtagDateModal').classList.add('open');
+}
+function closeAddHashtagDateModal() {
+  document.getElementById('addHashtagDateModal').classList.remove('open');
+}
+
+function addNewHashtagDate() {
+  const date = document.getElementById('newHashtagDate').value;
+  if (!date) { showToast('날짜를 선택해주세요'); return; }
+  if (hashtagDates.includes(date)) {
+    showToast('이미 등록된 날짜예요');
+    closeAddHashtagDateModal();
+    return;
+  }
+  // 그냥 메모리에 추가 (실제 데이터는 셀에 입력 시 INSERT)
+  hashtagDates.push(date);
+  hashtagDates.sort();
+  closeAddHashtagDateModal();
+  renderInstaHashtags();
+  showToast(`✓ ${date} 컬럼 추가됨. 셀에 데이터를 입력하면 저장됩니다`);
+}
+
+// 해시태그 삭제
+async function deleteHashtag(id, keyword) {
+  if (!confirm(`#${keyword} 해시태그를 삭제할까요?\n과거 데이터도 모두 삭제됩니다.`)) return;
+  try {
+    // 히스토리도 자동 삭제 (ON DELETE CASCADE)
+    const { error } = await sb.from('insta_hashtags').delete().eq('id', id);
+    if (error) throw error;
+    showToast(`✓ #${keyword} 삭제됨`);
+    await loadInstaHashtags();
+  } catch (e) {
+    showToast('삭제 실패: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
 // 📊 경쟁사 추적
 // ══════════════════════════════════════════════════════════════
 
@@ -6549,6 +7057,7 @@ function goPage(name, btn) {
   }
   if (name === 'insta-trend') loadInstaRefs();
   if (name === 'insta-competitors') loadInstaCompetitors();
+  if (name === 'insta-hashtags') loadInstaHashtags();
   if (name === 'insta-feedback') {
     if (!instaPosts || !instaPosts.length) loadInstaPosts().then(() => renderInstaFeedbackList());
     else renderInstaFeedbackList();

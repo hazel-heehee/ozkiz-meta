@@ -1619,10 +1619,30 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       </div>
 
       <!-- 통계 요약 -->
-      <div id="competitorSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+      <div id="competitorSummary" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px"></div>
+
+      <!-- 날짜 필터 -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">📅 기간:</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="date" id="competitorFilterStart" onchange="applyCompetitorDateFilter()" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit"/>
+          <span style="color:var(--text3);font-size:12px">~</span>
+          <input type="date" id="competitorFilterEnd" onchange="applyCompetitorDateFilter()" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit"/>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button id="compQuick7" onclick="setCompetitorQuickRange(7)" style="background:#fff;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit">7일</button>
+          <button id="compQuick14" onclick="setCompetitorQuickRange(14)" style="background:#fff;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit">14일</button>
+          <button id="compQuick30" onclick="setCompetitorQuickRange(30)" style="background:#3b82f6;border:1px solid #3b82f6;color:#fff;border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:600">30일</button>
+          <button id="compQuick60" onclick="setCompetitorQuickRange(60)" style="background:#fff;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit">60일</button>
+          <button id="compQuick90" onclick="setCompetitorQuickRange(90)" style="background:#fff;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit">90일</button>
+          <button id="compQuickAll" onclick="setCompetitorQuickRange('all')" style="background:#fff;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit">전체</button>
+        </div>
+        <button onclick="clearCompetitorDateFilter()" style="background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit">초기화</button>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="competitorFilterInfo"></span>
+      </div>
 
       <!-- 메인 표 -->
-      <div style="overflow:auto;max-height:70vh;border:1px solid var(--border);border-radius:8px;background:#fff">
+      <div style="overflow:auto;max-height:65vh;border:1px solid var(--border);border-radius:8px;background:#fff">
         <table id="competitorTable" style="width:100%;border-collapse:collapse;font-size:11px;min-width:1800px">
           <thead id="competitorTableHead" style="position:sticky;top:0;background:#f8fafc;z-index:10"></thead>
           <tbody id="competitorTableBody"></tbody>
@@ -1654,6 +1674,48 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 
       <div class="modal-btns" style="margin-top:12px">
         <button class="btn btn-ghost btn-sm" onclick="closeCompetitorManageModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메모 편집 모달 -->
+  <div class="modal-overlay" id="competitorMemoModal">
+    <div class="modal" style="max-width:600px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="modal-title" id="competitorMemoTitle">📝 메모 편집</div>
+        <button onclick="closeCompetitorMemoModal()" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+      </div>
+      <div class="modal-desc" style="margin-bottom:10px">
+        그날의 이슈, 게시글 특징, 트렌드 등을 자유롭게 메모하세요. 자동 저장됩니다.<br>
+        <span style="font-size:11px;color:var(--text3)">💡 팁: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:11px">@아프리콧</code> 처럼 계정을 멘션할 수 있어요</span>
+      </div>
+
+      <!-- 빠른 입력 -->
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+        <span style="font-size:11px;color:var(--text3);align-self:center">빠른 추가:</span>
+        <button onclick="insertMemoTag('@오즈키즈')" style="background:#dbeafe;color:#1e40af;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">@오즈키즈</button>
+        <button onclick="insertMemoTag('@베베드피노')" style="background:#fce7f3;color:#9f1239;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">@베베드피노</button>
+        <button onclick="insertMemoTag('@로아앤제인')" style="background:#dcfce7;color:#166534;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">@로아앤제인</button>
+        <button onclick="insertMemoTag('@아프리콧')" style="background:#fef3c7;color:#92400e;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">@아프리콧</button>
+        <button onclick="insertMemoTag('@슈슈앤크라')" style="background:#e0e7ff;color:#3730a3;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">@슈슈앤크라</button>
+        <button onclick="insertMemoTag('@아이러브제이')" style="background:#fed7aa;color:#9a3412;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">@아이러브제이</button>
+        <button onclick="insertMemoTag('@에르고')" style="background:#f3f4f6;color:#374151;border:none;border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">@에르고</button>
+        <span style="border-left:1px solid var(--border);margin:0 4px"></span>
+        <button onclick="insertMemoTag('📌 ')" title="중요 표시" style="background:#fff;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">📌 중요</button>
+        <button onclick="insertMemoTag('🎉 이벤트: ')" style="background:#fff;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">🎉 이벤트</button>
+        <button onclick="insertMemoTag('📷 신상: ')" style="background:#fff;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">📷 신상</button>
+        <button onclick="insertMemoTag('💡 인사이트: ')" style="background:#fff;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit">💡 인사이트</button>
+      </div>
+
+      <textarea id="competitorMemoTextarea" placeholder="예: @아프리콧 대전 매장 오픈 게시물 / @로아앤제인 럭키박스 이벤트 공지" rows="10"
+        style="width:100%;padding:12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.6;resize:vertical;min-height:160px"></textarea>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <div id="competitorMemoStatus" style="font-size:11px;color:var(--text3)"></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="closeCompetitorMemoModal()">닫기</button>
+          <button class="btn btn-primary btn-sm" onclick="saveCompetitorMemoFromModal()">💾 저장</button>
+        </div>
       </div>
     </div>
   </div>
@@ -4955,6 +5017,10 @@ let competitorsList = [];      // 경쟁사 목록
 let competitorHistory = {};    // { 'YYYY-MM-DD': { 'username': {...} } }
 let competitorDates = [];      // 최근 30일 + 미래 14일
 let competitorSortDir = 'desc';  // 'desc' (최신순) | 'asc' (오래된순)
+let competitorFilterDays = 30;  // 기본 30일
+let competitorFilterStart = null;  // 직접 지정 시작일
+let competitorFilterEnd = null;    // 직접 지정 종료일
+let currentMemoDateKey = null;     // 메모 모달의 현재 편집 날짜
 
 async function loadInstaCompetitors() {
   try {
@@ -4974,14 +5040,42 @@ async function loadInstaCompetitors() {
       return;
     }
 
-    // 2. 날짜 범위 생성 (최근 30일 + 향후 14일)
+    // 2. 날짜 범위 생성 (필터에 따라)
     const today = new Date();
     competitorDates = [];
-    for (let i = -30; i <= 14; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      competitorDates.push(key);
+
+    if (competitorFilterStart && competitorFilterEnd) {
+      // 직접 지정 범위
+      const sd = new Date(competitorFilterStart);
+      const ed = new Date(competitorFilterEnd);
+      for (let d = new Date(sd); d <= ed; d.setDate(d.getDate() + 1)) {
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        competitorDates.push(key);
+      }
+    } else if (competitorFilterDays === 'all') {
+      // 전체: DB에서 가장 오래된 날짜부터 오늘+7일까지
+      // 일단 1년치로 가정
+      for (let i = -365; i <= 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        competitorDates.push(key);
+      }
+    } else {
+      // 기본: 최근 N일 + 향후 7일
+      const days = parseInt(competitorFilterDays) || 30;
+      for (let i = -days; i <= 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        competitorDates.push(key);
+      }
+    }
+
+    // 필터 정보 표시
+    const filterInfoEl = document.getElementById('competitorFilterInfo');
+    if (filterInfoEl) {
+      filterInfoEl.textContent = `${competitorDates[0]} ~ ${competitorDates[competitorDates.length-1]} (${competitorDates.length}일)`;
     }
 
     // 3. 히스토리 데이터 로드
@@ -5021,26 +5115,22 @@ function renderInstaCompetitorTable() {
   // 헤더: 메모 + 각 경쟁사별 4컬럼
   let headHtml = `
     <tr style="border-bottom:2px solid var(--border)">
-      <th rowspan="2" onclick="toggleCompetitorSort()" title="클릭하면 정렬 순서 변경 (현재: ${competitorSortDir === 'desc' ? '최신순' : '오래된순'})" style="padding:8px 6px;text-align:center;background:#f3f4f6;border-right:2px solid var(--border);min-width:70px;font-size:10px;color:var(--text2);position:sticky;left:0;z-index:11;cursor:pointer;user-select:none">
+      <th rowspan="2" onclick="toggleCompetitorSort()" title="클릭하면 정렬 순서 변경 (현재: ${competitorSortDir === 'desc' ? '최신순' : '오래된순'})" style="padding:8px 6px;text-align:center;background:#f3f4f6;border-right:2px solid var(--border);min-width:70px;width:70px;font-size:10px;color:var(--text2);position:sticky;left:0;z-index:11;cursor:pointer;user-select:none">
         날짜 <span style="font-size:10px;color:#3b82f6">${competitorSortDir === 'desc' ? '▼' : '▲'}</span>
       </th>
-      <th rowspan="2" style="padding:8px 6px;text-align:left;background:#fef3c7;border-right:2px solid var(--border);min-width:80px;font-size:10px;color:#92400e;position:sticky;left:60px;z-index:11">메모</th>
+      <th rowspan="2" style="padding:8px 6px;text-align:left;background:#fef3c7;border-right:2px solid var(--border);min-width:220px;font-size:10px;color:#92400e;position:sticky;left:70px;z-index:11">📝 메모</th>
   `;
   competitorsList.forEach((c, idx) => {
     const bgColor = c.username === 'ozkiz_official' ? '#dbeafe' : '#fff';
     const textColor = c.username === 'ozkiz_official' ? '#1e40af' : 'var(--text)';
-    const isFirst = idx === 0;
     // 한글 이름이 있고 username과 다르면 둘 다 표시, 같으면 username만
     const koreanName = (c.display_name && c.display_name !== c.username) ? c.display_name : '';
     headHtml += `
       <th colspan="4" style="padding:6px;text-align:center;background:${bgColor};color:${textColor};border-right:2px solid var(--border);font-size:11px;font-weight:700">
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-          <a href="https://www.instagram.com/${c.username}/" target="_blank" style="color:${textColor};text-decoration:none;line-height:1.2">
-            ${koreanName ? `<div style="font-size:12px;font-weight:700">${koreanName}</div>` : ''}
-            <div style="font-size:10px;font-weight:500;opacity:0.75">@${c.username}</div>
-          </a>
-          ${isFirst ? `<button onclick="sortCompetitorsByFollowers()" title="팔로워 많은 순으로 경쟁사 정렬" style="background:transparent;border:1px solid ${textColor};color:${textColor};border-radius:3px;padding:1px 4px;font-size:9px;cursor:pointer;font-family:inherit">팔로워순 ⇅</button>` : ''}
-        </div>
+        <a href="https://www.instagram.com/${c.username}/" target="_blank" style="color:${textColor};text-decoration:none;line-height:1.2;display:inline-block">
+          ${koreanName ? `<div style="font-size:12px;font-weight:700">${koreanName}</div>` : ''}
+          <div style="font-size:10px;font-weight:500;opacity:0.75">@${c.username}</div>
+        </a>
       </th>
     `;
   });
@@ -5085,17 +5175,25 @@ function renderInstaCompetitorTable() {
     const memoHistory = competitorHistory[dateKey]?.[firstComp.username];
     const memo = memoHistory?.memo || '';
 
+    // 메모 미리보기 (멘션 색상 + 줄임)
+    const memoEscaped = memo.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const memoPreview = memo
+      ? memo.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/(@\S+)/g, '<span style="background:#fef3c7;color:#92400e;padding:0 3px;border-radius:2px;font-weight:600">$1</span>')
+          .replace(/📌/g, '<span style="color:#dc2626">📌</span>')
+      : '<span style="color:var(--text3);font-style:italic;font-size:10px">+ 메모 추가</span>';
+
     bodyHtml += `
       <tr style="border-bottom:1px solid var(--border);background:${rowBg}">
         <td style="padding:6px 4px;text-align:center;font-size:10px;background:${dateBg};border-right:2px solid var(--border);position:sticky;left:0;z-index:5;white-space:nowrap;color:${isToday?'#fff':'var(--text2)'};font-weight:${isToday?'700':'400'}">
           ${m}/${d}<br><span style="color:${isToday?'#fff':dayColor};font-size:9px">${wd}${isToday?' ★':''}</span>
         </td>
-        <td style="padding:4px;background:#fffbeb;border-right:2px solid var(--border);position:sticky;left:60px;z-index:5">
-          <input type="text" value="${memo.replace(/"/g,'&quot;')}" placeholder=""
-            onchange="saveCompetitorMemo('${dateKey}', this.value, this)"
-            style="width:100%;padding:3px 5px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;background:transparent;outline:none;color:#92400e"
-            onfocus="this.style.borderColor='#f59e0b';this.style.background='#fff'"
-            onblur="this.style.borderColor='transparent';this.style.background='transparent'"/>
+        <td onclick="openCompetitorMemoModal('${dateKey}')"
+            title="클릭해서 메모 편집"
+            style="padding:6px 8px;background:#fffbeb;border-right:2px solid var(--border);position:sticky;left:70px;z-index:5;cursor:pointer;font-size:11px;color:#92400e;line-height:1.4;min-width:220px;max-width:280px;vertical-align:top"
+            onmouseover="this.style.background='#fef3c7'"
+            onmouseout="this.style.background='#fffbeb'">
+          ${memoPreview}
         </td>
     `;
 
@@ -5121,12 +5219,12 @@ function renderInstaCompetitorTable() {
 
       bodyHtml += `
         <td style="padding:2px;text-align:center;background:${cellBg}">
-          <input type="number" value="${followers || ''}" placeholder=""
+          <input type="text" inputmode="numeric" value="${followers ? followers.toLocaleString() : ''}" placeholder=""
             onchange="saveCompetitorCell('${dateKey}', '${c.username}', 'followers', this.value, this)"
             onkeydown="competitorTabNav(event, this)"
-            style="width:60px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"
-            onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
-            onblur="this.style.borderColor='transparent';this.style.background='transparent'"/>
+            onfocus="this.value=this.value.replace(/,/g,'');this.style.borderColor='#3b82f6';this.style.background='#fff'"
+            onblur="const n=parseInt(this.value.replace(/[^0-9-]/g,''))||0;this.value=n?n.toLocaleString():'';this.style.borderColor='transparent';this.style.background='transparent'"
+            style="width:70px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"/>
         </td>
         <td style="padding:2px;text-align:center;background:${cellBg};color:${changeColor};font-size:10px;font-weight:600">
           ${change !== 0 ? `<span style="background:${changeBg};padding:1px 4px;border-radius:3px">${changeSign}${Math.abs(change).toLocaleString()}</span>` : '<span style="color:var(--text3)">—</span>'}
@@ -5140,12 +5238,12 @@ function renderInstaCompetitorTable() {
             onblur="this.style.borderColor='transparent';this.style.background='transparent'"/><span style="font-size:9px;color:var(--text3)">%</span>
         </td>
         <td style="padding:2px;text-align:center;background:${cellBg};border-right:2px solid var(--border)">
-          <input type="number" value="${postsCount || ''}" placeholder=""
+          <input type="text" inputmode="numeric" value="${postsCount ? postsCount.toLocaleString() : ''}" placeholder=""
             onchange="saveCompetitorCell('${dateKey}', '${c.username}', 'posts_count', this.value, this)"
             onkeydown="competitorTabNav(event, this)"
-            style="width:55px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"
-            onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
-            onblur="this.style.borderColor='transparent';this.style.background='transparent'"/>
+            onfocus="this.value=this.value.replace(/,/g,'');this.style.borderColor='#3b82f6';this.style.background='#fff'"
+            onblur="const n=parseInt(this.value.replace(/[^0-9-]/g,''))||0;this.value=n?n.toLocaleString():'';this.style.borderColor='transparent';this.style.background='transparent'"
+            style="width:60px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;text-align:right;background:transparent;outline:none"/>
         </td>
       `;
     });
@@ -5179,12 +5277,12 @@ function renderInstaCompetitorTable() {
 async function saveCompetitorCell(dateKey, username, field, val, inputEl) {
   if (inputEl) inputEl.style.borderColor = '#f59e0b';
 
-  // 숫자 변환
+  // 숫자 변환 (콤마 + 비숫자 문자 모두 제거)
   let numVal;
   if (field === 'engagement') {
-    numVal = parseFloat(val) || 0;
+    numVal = parseFloat(String(val).replace(/[^0-9.-]/g, '')) || 0;
   } else {
-    numVal = parseInt(val) || 0;
+    numVal = parseInt(String(val).replace(/[^0-9-]/g, '')) || 0;
   }
 
   try {
@@ -5290,36 +5388,46 @@ function renderCompetitorSummary() {
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-  // 가장 최신 데이터 날짜 자동 찾기 (오늘 데이터 없으면 가장 최근 있는 날짜)
-  let latestDateKey = todayKey;
-  let latestData = competitorHistory[todayKey];
-  if (!latestData || !latestData['ozkiz_official']) {
-    // 오늘 데이터 없으면 가장 최근 ozkiz 데이터 있는 날 찾기
+  // ⭐ 기준일 = 어제 (어제 데이터가 없으면 가장 최근 데이터 있는 날)
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+
+  let baseDateKey = yesterdayKey;
+  let baseData = competitorHistory[yesterdayKey];
+  if (!baseData || !baseData['ozkiz_official']) {
+    // 어제 데이터 없으면 가장 최근 ozkiz 데이터 있는 날 찾기
     const allDates = Object.keys(competitorHistory).sort().reverse();
     for (const d of allDates) {
       if (competitorHistory[d]?.['ozkiz_official']?.followers > 0) {
-        latestDateKey = d;
-        latestData = competitorHistory[d];
+        baseDateKey = d;
+        baseData = competitorHistory[d];
         break;
       }
     }
   }
 
-  const ozkizLatest = latestData?.['ozkiz_official'];
-  const ozkizFollowers = ozkizLatest?.followers || 0;
+  // 어제 기준 전날 (그제)
+  const baseDateObj = new Date(baseDateKey);
+  const prevDateObj = new Date(baseDateObj);
+  prevDateObj.setDate(baseDateObj.getDate() - 1);
+  const prevDateKey = `${prevDateObj.getFullYear()}-${String(prevDateObj.getMonth()+1).padStart(2,'0')}-${String(prevDateObj.getDate()).padStart(2,'0')}`;
+  const prevData = competitorHistory[prevDateKey] || {};
 
-  // 최근 7일 평균 증감 (ozkiz) - latestDate 기준으로 역산
+  // ── 1) ozkiz 팔로워 (어제) ──
+  const ozkizBase = baseData?.['ozkiz_official'];
+  const ozkizFollowers = ozkizBase?.followers || 0;
+
+  // ── 2) ozkiz 일평균 증감 (어제 기준 최근 7일) ──
   let weekChangeOzkiz = 0;
   let weekCount = 0;
-  const baseDate = new Date(latestDateKey);
   for (let i = 0; i < 7; i++) {
-    const d = new Date(baseDate);
-    d.setDate(baseDate.getDate() - i);
+    const d = new Date(baseDateObj);
+    d.setDate(baseDateObj.getDate() - i);
     const dKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const d1 = new Date(d);
     d1.setDate(d.getDate() - 1);
     const d1Key = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
-
     const f = competitorHistory[dKey]?.['ozkiz_official']?.followers || 0;
     const fPrev = competitorHistory[d1Key]?.['ozkiz_official']?.followers || 0;
     if (f > 0 && fPrev > 0) {
@@ -5329,49 +5437,90 @@ function renderCompetitorSummary() {
   }
   const avgWeekChange = weekCount > 0 ? Math.round(weekChangeOzkiz / weekCount) : 0;
 
-  // 경쟁사 평균 팔로워 (최신)
-  const latestDayData = competitorHistory[latestDateKey] || {};
-  const competitorFollowers = competitorsList
-    .filter(c => c.username !== 'ozkiz_official')
-    .map(c => latestDayData[c.username]?.followers || 0)
-    .filter(f => f > 0);
-  const avgCompetitor = competitorFollowers.length > 0
-    ? Math.round(competitorFollowers.reduce((a,b) => a+b, 0) / competitorFollowers.length)
-    : 0;
-
-  // 1위 경쟁사 (최신)
-  let topCompetitor = null;
-  let topFollowers = 0;
+  // ── 3) 타 브랜드 평균 증감 (어제 기준, 에르고 제외) ──
+  const compChanges = [];
   competitorsList.forEach(c => {
-    const f = latestDayData[c.username]?.followers || 0;
-    if (f > topFollowers) {
-      topFollowers = f;
-      topCompetitor = c;
+    if (c.username === 'ozkiz_official') return;
+    if (c.username === 'the_ergo_official') return;  // 에르고 제외!
+    const cur = baseData?.[c.username]?.followers || 0;
+    const prev = prevData?.[c.username]?.followers || 0;
+    if (cur > 0 && prev > 0) {
+      compChanges.push(cur - prev);
     }
   });
+  const avgCompChange = compChanges.length > 0
+    ? Math.round(compChanges.reduce((a,b) => a+b, 0) / compChanges.length)
+    : 0;
+  const ozkizChange = (ozkizFollowers > 0 && prevData?.['ozkiz_official']?.followers > 0)
+    ? ozkizFollowers - prevData['ozkiz_official'].followers
+    : 0;
 
-  const dateLabel = latestDateKey === todayKey ? '오늘' : `${latestDateKey.slice(5).replace('-','/')} 기준`;
+  // ── 4) 어제 팔로워 가장 많이 늘어난 계정 ──
+  let topFollowerCompetitor = null;
+  let topFollowerChange = -Infinity;
+  competitorsList.forEach(c => {
+    const cur = baseData?.[c.username]?.followers || 0;
+    const prev = prevData?.[c.username]?.followers || 0;
+    if (cur > 0 && prev > 0) {
+      const change = cur - prev;
+      if (change > topFollowerChange) {
+        topFollowerChange = change;
+        topFollowerCompetitor = c;
+      }
+    }
+  });
+  if (!isFinite(topFollowerChange)) topFollowerChange = 0;
+
+  // ── 5) 어제 게시물 가장 많이 올린 계정 ──
+  let topPostCompetitor = null;
+  let topPostChange = -Infinity;
+  competitorsList.forEach(c => {
+    const cur = baseData?.[c.username]?.posts_count || 0;
+    const prev = prevData?.[c.username]?.posts_count || 0;
+    if (cur > 0 && prev > 0) {
+      const change = cur - prev;
+      if (change > topPostChange) {
+        topPostChange = change;
+        topPostCompetitor = c;
+      }
+    }
+  });
+  if (!isFinite(topPostChange)) topPostChange = 0;
+
+  const dateLabel = `${baseDateKey.slice(5).replace('-','/')} (어제)`;
+
+  // 헬퍼 함수
+  const compNameHtml = (c) => {
+    if (!c) return '-';
+    const kor = (c.display_name && c.display_name !== c.username) ? c.display_name : '';
+    return `<a href="https://www.instagram.com/${c.username}/" target="_blank" style="color:inherit;text-decoration:none">${kor ? `<div style="font-size:13px;font-weight:700">${kor} ↗</div>` : ''}<div style="font-size:10px;font-weight:500;color:var(--text3)">@${c.username}</div></a>`;
+  };
 
   container.innerHTML = `
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📷 ozkiz 팔로워</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📷 오즈키즈 팔로워</div>
       <div style="font-size:18px;font-weight:700;color:#1e40af">${ozkizFollowers.toLocaleString()}</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">${dateLabel}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${dateLabel} 기준 · <span style="color:${ozkizChange>0?'#16a34a':ozkizChange<0?'#dc2626':'var(--text3)'}">${ozkizChange>0?'+':''}${ozkizChange.toLocaleString()}</span></div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 ozkiz 일평균 증감</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 오즈키즈 일평균 증감</div>
       <div style="font-size:18px;font-weight:700;color:${avgWeekChange > 0 ? '#16a34a' : avgWeekChange < 0 ? '#dc2626' : 'var(--text2)'}">${avgWeekChange > 0 ? '+' : ''}${avgWeekChange.toLocaleString()}</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">최근 7일 일평균</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">최근 7일 평균</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📊 경쟁사 평균 팔로워</div>
-      <div style="font-size:18px;font-weight:700">${avgCompetitor.toLocaleString()}</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">${competitorFollowers.length}개 경쟁사 평균</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📊 타 브랜드 평균 증감</div>
+      <div style="font-size:18px;font-weight:700;color:${avgCompChange > 0 ? '#16a34a' : avgCompChange < 0 ? '#dc2626' : 'var(--text2)'}">${avgCompChange > 0 ? '+' : ''}${avgCompChange.toLocaleString()}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${compChanges.length}개 (에르고 제외)</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">🏆 ${dateLabel} 1위</div>
-      <div style="font-size:13px;font-weight:700;line-height:1.3">${(topCompetitor?.display_name && topCompetitor.display_name !== topCompetitor.username) ? topCompetitor.display_name : ''}<br><span style="font-size:11px;font-weight:500;color:var(--text2)">@${topCompetitor?.username || '-'}</span></div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">${topFollowers.toLocaleString()}명</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 어제 팔로워 1위</div>
+      ${compNameHtml(topFollowerCompetitor)}
+      <div style="font-size:10px;color:${topFollowerChange>=0?'#16a34a':'#dc2626'};margin-top:4px;font-weight:600">${topFollowerChange>=0?'+':''}${topFollowerChange.toLocaleString()}명</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📝 어제 게시물 1위</div>
+      ${compNameHtml(topPostCompetitor)}
+      <div style="font-size:10px;color:${topPostChange>0?'#16a34a':'var(--text3)'};margin-top:4px;font-weight:600">${topPostChange>0?'+':''}${topPostChange}개</div>
     </div>
   `;
 }
@@ -5422,6 +5571,142 @@ async function addCompetitorRow() {
 }
 
 // 경쟁사 관리 모달
+// ── 날짜 필터 ──────────────────────────────────────────────
+function setCompetitorQuickRange(days) {
+  competitorFilterDays = days;
+  competitorFilterStart = null;
+  competitorFilterEnd = null;
+  // 날짜 input 비우기
+  const startEl = document.getElementById('competitorFilterStart');
+  const endEl = document.getElementById('competitorFilterEnd');
+  if (startEl) startEl.value = '';
+  if (endEl) endEl.value = '';
+  // 활성 버튼 스타일
+  ['7','14','30','60','90','All'].forEach(d => {
+    const btn = document.getElementById(`compQuick${d}`);
+    if (!btn) return;
+    btn.style.background = '#fff';
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.fontWeight = '400';
+  });
+  const activeKey = days === 'all' ? 'All' : String(days);
+  const activeBtn = document.getElementById(`compQuick${activeKey}`);
+  if (activeBtn) {
+    activeBtn.style.background = '#3b82f6';
+    activeBtn.style.color = '#fff';
+    activeBtn.style.borderColor = '#3b82f6';
+    activeBtn.style.fontWeight = '600';
+  }
+  loadInstaCompetitors();
+}
+
+function applyCompetitorDateFilter() {
+  const start = document.getElementById('competitorFilterStart')?.value;
+  const end = document.getElementById('competitorFilterEnd')?.value;
+  if (!start || !end) return;
+  if (start > end) { showToast('시작일이 종료일보다 늦을 수 없어요'); return; }
+  competitorFilterStart = start;
+  competitorFilterEnd = end;
+  // 빠른 버튼 비활성화
+  ['7','14','30','60','90','All'].forEach(d => {
+    const btn = document.getElementById(`compQuick${d}`);
+    if (!btn) return;
+    btn.style.background = '#fff';
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.fontWeight = '400';
+  });
+  loadInstaCompetitors();
+}
+
+function clearCompetitorDateFilter() {
+  setCompetitorQuickRange(30);  // 기본 30일로 리셋
+}
+
+// ── 메모 모달 ──────────────────────────────────────────────
+function openCompetitorMemoModal(dateKey) {
+  currentMemoDateKey = dateKey;
+  const dt = new Date(dateKey);
+  const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
+  document.getElementById('competitorMemoTitle').textContent = `📝 ${dateKey} (${wd}) 메모`;
+
+  // 현재 메모 가져오기 (첫 번째 경쟁사 행에 저장됨)
+  const firstComp = competitorsList[0];
+  const memo = firstComp ? (competitorHistory[dateKey]?.[firstComp.username]?.memo || '') : '';
+  const textarea = document.getElementById('competitorMemoTextarea');
+  textarea.value = memo;
+  document.getElementById('competitorMemoStatus').textContent = '';
+
+  document.getElementById('competitorMemoModal').classList.add('open');
+  setTimeout(() => textarea.focus(), 100);
+}
+
+function closeCompetitorMemoModal() {
+  // 자동 저장 (변경됐으면)
+  saveCompetitorMemoFromModal(true);
+  document.getElementById('competitorMemoModal').classList.remove('open');
+}
+
+function insertMemoTag(tag) {
+  const textarea = document.getElementById('competitorMemoTextarea');
+  if (!textarea) return;
+  const cursorPos = textarea.selectionStart;
+  const before = textarea.value.substring(0, cursorPos);
+  const after = textarea.value.substring(textarea.selectionEnd);
+  // 앞에 텍스트가 있고 공백/줄바꿈으로 끝나지 않으면 줄바꿈 추가
+  const needsNewline = before && !before.match(/[\n\s]$/);
+  const insertion = (needsNewline ? '\n' : '') + tag;
+  textarea.value = before + insertion + after;
+  const newPos = cursorPos + insertion.length;
+  textarea.focus();
+  textarea.setSelectionRange(newPos, newPos);
+}
+
+async function saveCompetitorMemoFromModal(silent) {
+  if (!currentMemoDateKey) return;
+  const memo = document.getElementById('competitorMemoTextarea').value;
+  const status = document.getElementById('competitorMemoStatus');
+  const firstComp = competitorsList[0];
+  if (!firstComp) return;
+
+  if (status) { status.textContent = '저장 중...'; status.style.color = '#f59e0b'; }
+
+  try {
+    const existing = competitorHistory[currentMemoDateKey]?.[firstComp.username];
+    if (existing) {
+      const { error } = await sb.from('insta_competitor_history')
+        .update({ memo })
+        .eq('date', currentMemoDateKey)
+        .eq('username', firstComp.username);
+      if (error) throw error;
+      existing.memo = memo;
+    } else {
+      const newRow = { date: currentMemoDateKey, username: firstComp.username, memo };
+      const { data, error } = await sb.from('insta_competitor_history')
+        .insert(newRow).select().single();
+      if (error) throw error;
+      if (!competitorHistory[currentMemoDateKey]) competitorHistory[currentMemoDateKey] = {};
+      competitorHistory[currentMemoDateKey][firstComp.username] = data;
+    }
+    if (status) {
+      status.textContent = '✓ 저장됨';
+      status.style.color = '#16a34a';
+    }
+    if (!silent) {
+      showToast('✓ 메모가 저장되었어요');
+    }
+    // 표 갱신 (메모 미리보기 업데이트)
+    renderInstaCompetitorTable();
+  } catch (e) {
+    console.error('saveCompetitorMemoFromModal:', e);
+    if (status) {
+      status.textContent = '❌ 저장 실패: ' + e.message;
+      status.style.color = '#dc2626';
+    }
+  }
+}
+
 function openCompetitorManageModal() {
   renderCompetitorListInModal();
   document.getElementById('competitorManageModal').classList.add('open');

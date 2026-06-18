@@ -48,13 +48,30 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 /* ━━━ 콘텐츠 캘린더 컴팩트 모드 ━━━ */
 table.insta-cal-compact td,
 table.insta-cal-compact th{
-  padding:4px 4px !important;
-  font-size:10px !important;
+  padding:3px 3px !important;
+  font-size:9px !important;
 }
 table.insta-cal-compact input,
 table.insta-cal-compact select{
-  font-size:10px !important;
-  padding:3px 4px !important;
+  font-size:9px !important;
+  padding:2px 3px !important;
+}
+
+/* 핵심 컬럼만 모드 — col-detail 클래스 숨김 */
+table.insta-cal-compact.show-core .col-detail{
+  display:none !important;
+}
+
+/* ━━━ 드래그앤드롭 ━━━ */
+.cal-post-dot[draggable="true"]{
+  cursor:grab;
+  transition:opacity 0.15s, transform 0.15s;
+}
+.cal-post-dot[draggable="true"]:active{
+  cursor:grabbing;
+}
+.cal-day.drop-target{
+  transition:background 0.15s, outline 0.15s;
 }
 
 /* ━━━ 테이블 셀 리사이저 ━━━ */
@@ -1400,35 +1417,45 @@ table.resizable th .col-resizer:active{
 
       <!-- 캘린더 뷰 -->
       <div id="instaCalGridView">
+        <div style="background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px;line-height:1.5">
+          💡 <b>드래그&드롭</b>: 콘텐츠 카드를 끌어서 다른 날짜 칸에 놓으면 날짜가 변경돼요!
+        </div>
         <div class="cal-grid" id="instaCalGrid"></div>
       </div>
 
       <!-- 표 뷰 -->
       <div id="instaCalListView" style="display:none">
-        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff">
-          <table style="width:100%;border-collapse:collapse;font-size:10px;min-width:1400px" class="resizable insta-cal-compact">
+        <div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px;line-height:1.5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>💡 <b>인라인 편집</b>: 모든 셀을 직접 클릭해서 수정. 자동 저장됩니다.</div>
+          <div style="display:inline-flex;background:#fff;border-radius:6px;padding:2px;border:1px solid #f59e0b">
+            <button id="instaCalColMode-core" onclick="switchInstaCalColMode('core')" style="padding:4px 10px;font-size:11px;font-weight:600;border:none;background:#fff;border-radius:4px;cursor:pointer;font-family:inherit;color:var(--text)">📊 핵심 (한 화면)</button>
+            <button id="instaCalColMode-all" onclick="switchInstaCalColMode('all')" style="padding:4px 10px;font-size:11px;font-weight:500;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:inherit;color:var(--text2)">📋 전체 컬럼</button>
+          </div>
+        </div>
+        <div id="instaCalTableWrapper" style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff">
+          <table style="width:100%;border-collapse:collapse;font-size:10px;min-width:auto" class="resizable insta-cal-compact" id="instaCalTable">
             <thead style="background:#f8fafc">
               <tr style="border-bottom:1px solid var(--border)">
-                <th style="padding:5px 4px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap;font-size:9px">일자</th>
-                <th style="padding:5px 4px;text-align:center;font-weight:600;color:var(--text2);width:36px;font-size:9px">미디어</th>
-                <th style="padding:5px 4px;text-align:center;font-weight:600;color:var(--text2);width:48px;font-size:9px">타입</th>
-                <th style="padding:5px 4px;text-align:center;font-weight:600;color:var(--text2);width:56px;font-size:9px">제작소스</th>
-                <th style="padding:5px 4px;text-align:center;font-weight:600;color:var(--text2);width:60px;font-size:9px">CTA</th>
-                <th style="padding:5px 4px;text-align:left;font-weight:600;color:var(--text2);min-width:140px;font-size:9px">캡션</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:var(--text2);font-size:9px;background:#f9fafb">총팔로워</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#16a34a;font-size:9px;background:#f9fafb">↑팔로우</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:var(--red);font-size:9px;background:#f9fafb">↓취소</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#1e40af;font-size:9px;background:#eff6ff">조회수</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#1e40af;font-size:9px;background:#eff6ff">도달</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3">좋아요</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3">댓글</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3">저장</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3">공유</th>
-                <th style="padding:5px 4px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3">리포스트</th>
-                <th style="padding:8px 6px;text-align:right;font-weight:600;color:#92400e;font-size:10px;background:#fef3c7">프로필방문</th>
-                <th style="padding:8px 6px;text-align:right;font-weight:600;color:#92400e;font-size:10px;background:#fef3c7">외부링크</th>
-                <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);font-size:10px">참여율</th>
-                <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:70px;font-size:10px">액션</th>
+                <th style="padding:5px 3px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap;font-size:9px;width:60px">일자</th>
+                <th style="padding:5px 3px;text-align:center;font-weight:600;color:var(--text2);width:34px;font-size:9px">미디어</th>
+                <th style="padding:5px 3px;text-align:center;font-weight:600;color:var(--text2);width:46px;font-size:9px">타입</th>
+                <th style="padding:5px 3px;text-align:center;font-weight:600;color:var(--text2);width:50px;font-size:9px" class="col-detail">제작소스</th>
+                <th style="padding:5px 3px;text-align:center;font-weight:600;color:var(--text2);width:56px;font-size:9px">CTA</th>
+                <th style="padding:5px 3px;text-align:left;font-weight:600;color:var(--text2);min-width:130px;font-size:9px">캡션</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:var(--text2);font-size:9px;background:#f9fafb;width:60px">총팔로워</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#16a34a;font-size:9px;background:#f9fafb;width:44px" class="col-detail">↑팔로우</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:var(--red);font-size:9px;background:#f9fafb;width:44px" class="col-detail">↓취소</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#1e40af;font-size:9px;background:#eff6ff;width:54px">조회수</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#1e40af;font-size:9px;background:#eff6ff;width:50px">도달</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:48px">좋아요</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:42px">댓글</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:42px">저장</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:42px">공유</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:48px" class="col-detail">리포스트</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#92400e;font-size:9px;background:#fef3c7;width:54px" class="col-detail">프로필방문</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#92400e;font-size:9px;background:#fef3c7;width:50px" class="col-detail">외부링크</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:var(--text2);font-size:9px;width:44px">참여율</th>
+                <th style="padding:5px 3px;text-align:center;font-weight:600;color:var(--text2);width:54px;font-size:9px">액션</th>
               </tr>
             </thead>
             <tbody id="instaCalListBody">
@@ -3000,7 +3027,8 @@ function toNum(v) {
 // ══════════════════════════════════════════════════════════════
 // 📋 이미지 Paste 핸들러 — Ctrl+V로 화면 캡쳐 붙여넣기
 // ══════════════════════════════════════════════════════════════
-async function handleMediaPaste(event, postId) {
+async function handleMediaPaste(event, postId, channel) {
+  channel = channel || 'instagram';
   if (!postId) {
     showToast('먼저 게시물을 저장해주세요');
     return;
@@ -3035,11 +3063,12 @@ async function handleMediaPaste(event, postId) {
   }
 
   try {
-    // 파일명 생성: 게시물ID_타임스탬프.png
+    // 파일명 생성: 채널별
     const ext = imageBlob.type.split('/')[1] || 'png';
-    const fileName = `insta_post_${postId}_${Date.now()}.${ext}`;
+    const prefix = channel === 'threads' ? 'thread_post' : 'insta_post';
+    const fileName = `${prefix}_${postId}_${Date.now()}.${ext}`;
 
-    // Supabase Storage에 업로드
+    // Supabase Storage에 업로드 (양 채널 모두 insta-media 버킷 사용)
     const { data: uploadData, error: uploadError } = await sb.storage
       .from('insta-media')
       .upload(fileName, imageBlob, {
@@ -3057,28 +3086,41 @@ async function handleMediaPaste(event, postId) {
     const publicUrl = publicUrlData?.publicUrl;
     if (!publicUrl) throw new Error('공개 URL을 가져올 수 없어요');
 
-    // DB 업데이트
+    // DB 업데이트 (채널별 테이블)
+    const tableName = channel === 'threads' ? 'posts' : 'insta_posts';
     const { error: updateError } = await sb
-      .from('insta_posts')
+      .from(tableName)
       .update({ image_url: publicUrl })
       .eq('id', postId);
 
     if (updateError) throw updateError;
 
-    // 메모리 데이터도 업데이트
-    const target = (instaPosts || []).find(p => p.id === postId);
-    if (target) target.image_url = publicUrl;
+    // 메모리 데이터 업데이트
+    if (channel === 'threads') {
+      // sheetData에서 찾기 (COL.id 또는 직접 매칭)
+      if (typeof sheetData !== 'undefined' && Array.isArray(sheetData)) {
+        const target = sheetData.find(r => r.id === postId);
+        if (target) target.image_url = publicUrl;
+      }
+    } else {
+      const target = (instaPosts || []).find(p => p.id === postId);
+      if (target) target.image_url = publicUrl;
+    }
 
     showToast('✓ 이미지 추가됨!');
 
-    // 셀만 다시 그리기 (전체 새로고침 대신)
-    if (cell && target) {
+    // 셀만 다시 그리기
+    if (cell) {
       const size = parseInt(cell.style.width) || 36;
-      cell.outerHTML = buildMediaThumb(target, size);
-    } else {
-      // 폴백: 전체 다시 렌더
-      if (typeof renderInstaCalendar === 'function') renderInstaCalendar();
-      if (typeof loadInstaPosts === 'function') await loadInstaPosts(true);
+      let postObj;
+      if (channel === 'threads' && typeof sheetData !== 'undefined') {
+        postObj = sheetData.find(r => r.id === postId);
+      } else {
+        postObj = (instaPosts || []).find(p => p.id === postId);
+      }
+      if (postObj) {
+        cell.outerHTML = buildMediaThumb(postObj, size, channel);
+      }
     }
   } catch (e) {
     console.error('handleMediaPaste:', e);
@@ -3087,9 +3129,13 @@ async function handleMediaPaste(event, postId) {
       cell.style.borderColor = '#dc2626';
       cell.innerHTML = '❌';
       setTimeout(() => {
-        // 원래 상태로 복원
-        const target = (instaPosts || []).find(p => p.id === postId);
-        if (target) cell.outerHTML = buildMediaThumb(target, 36);
+        let postObj;
+        if (channel === 'threads' && typeof sheetData !== 'undefined') {
+          postObj = sheetData.find(r => r.id === postId);
+        } else {
+          postObj = (instaPosts || []).find(p => p.id === postId);
+        }
+        if (postObj) cell.outerHTML = buildMediaThumb(postObj, 36, channel);
       }, 1500);
     }
   }
@@ -3115,8 +3161,9 @@ document.addEventListener('blur', (e) => {
 //   - size: 픽셀 크기 (기본 36)
 //
 // ⚠️ 인스타 CDN URL은 1~2시간 후 만료됨 → 이미지 로드 실패 시 폴백 박스 표시
-function buildMediaThumb(post, size) {
+function buildMediaThumb(post, size, channel) {
   size = size || 36;
+  channel = channel || 'instagram';
   const imgUrl = String(post.image_url || '').trim();
   const vidUrl = String(post.video_url || '').trim();
   const link = String(post.link || '').trim();
@@ -3142,7 +3189,7 @@ function buildMediaThumb(post, size) {
     const fallbackBg = isReel ? 'linear-gradient(135deg,#fce7f3,#fbcfe8)' : isCarousel ? 'linear-gradient(135deg,#e0e7ff,#c7d2fe)' : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)';
     const fallbackHtml = `<a href="${clickUrl}" target="_blank" onclick="event.stopPropagation()" title="${isReel?'릴스':isCarousel?'캐러셀':'게시물'} 보기" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:${fallbackBg};border:1px solid var(--border);border-radius:4px;text-decoration:none;font-size:${Math.round(size*0.45)}px;position:relative;line-height:1">${fallbackEmoji}${badge}</a>`;
     const escapedFallback = fallbackHtml.replace(/"/g, '&quot;');
-    return `<div class="media-cell" data-post-id="${postId}" tabindex="0" onpaste="handleMediaPaste(event, ${postId})" style="display:inline-block;position:relative;line-height:0;width:${size}px;height:${size}px;outline:none">
+    return `<div class="media-cell" data-post-id="${postId}" data-channel="${channel}" tabindex="0" onpaste="handleMediaPaste(event, ${postId}, '${channel}')" style="display:inline-block;position:relative;line-height:0;width:${size}px;height:${size}px;outline:none">
       <a href="${clickUrl}" target="_blank" onclick="event.stopPropagation()" title="${isReel?'릴스':isCarousel?'캐러셀':'이미지'} 보기 (또는 Ctrl+V로 새 이미지)" style="display:inline-block;position:relative;line-height:0;width:${size}px;height:${size}px">
         <img src="${imgUrl}" referrerpolicy="no-referrer" style="width:${size}px;height:${size}px;border-radius:4px;object-fit:cover;border:1px solid var(--border);display:block"
           onerror="this.parentElement.outerHTML='${escapedFallback}'"/>
@@ -3154,8 +3201,8 @@ function buildMediaThumb(post, size) {
   // 이미지 없으면 paste 영역 표시
   const pasteEmoji = isReel ? '🎬' : isCarousel ? '🖼️' : '📋';
   const pasteBg = isReel ? 'linear-gradient(135deg,#fce7f3,#fbcfe8)' : isCarousel ? 'linear-gradient(135deg,#e0e7ff,#c7d2fe)' : 'linear-gradient(135deg,#fef3c7,#fde68a)';
-  return `<div class="media-cell media-paste-zone" data-post-id="${postId}" tabindex="0"
-    onpaste="handleMediaPaste(event, ${postId})"
+  return `<div class="media-cell media-paste-zone" data-post-id="${postId}" data-channel="${channel}" tabindex="0"
+    onpaste="handleMediaPaste(event, ${postId}, '${channel}')"
     onclick="this.focus();event.stopPropagation()"
     title="${postId ? '클릭 후 Ctrl+V로 이미지 붙여넣기' : '게시물 저장 후 이미지 추가 가능'}"
     style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:${pasteBg};border:1px dashed #94a3b8;border-radius:4px;font-size:${Math.round(size*0.4)}px;cursor:pointer;outline:none;position:relative;transition:border-color 0.15s">
@@ -3331,13 +3378,32 @@ function renderRecentCal() {
       if (!txt) return;
       if (!postsByDay[day]) postsByDay[day] = [];
       postsByDay[day].push({
+        id: r.id,
         text: txt + (cleanText(r[COL.text]).length > 14 ? '...' : ''),
         link: String(r[COL.link] || '').trim(),
         category: r[COL.category] || '',
         views: toNum(r[COL.views]),
-        eng: calcEngagement(r)
+        eng: calcEngagement(r),
+        image_url: r.image_url || '',
+        video_url: r.video_url || ''
       });
     }
+  });
+
+  // 예약 게시글 (스레드)
+  const schByDay = {};
+  (typeof scheduledPosts !== 'undefined' ? scheduledPosts : []).forEach(p => {
+    if (p.year !== recentCalYear || p.month !== recentCalMonth) return;
+    const day = p.day;
+    const txt = String(p.title || p.content || '').slice(0, 14);
+    if (!txt) return;
+    if (!schByDay[day]) schByDay[day] = [];
+    schByDay[day].push({
+      id: p.id,
+      text: txt + ((p.title || p.content || '').length > 14 ? '...' : ''),
+      category: p.category || '',
+      type: p.type || ''
+    });
   });
 
   // 유치원 일정
@@ -3372,6 +3438,7 @@ function renderRecentCal() {
   for (let d = 1; d <= total; d++) {
     const isToday = today.getFullYear()===recentCalYear && today.getMonth()===recentCalMonth && today.getDate()===d;
     const posts = postsByDay[d] || [];
+    const schs = schByDay[d] || [];
     const kgs = kgByDay[d] || [];
 
     const kgHtml = kgs.length > 0
@@ -3382,20 +3449,30 @@ function renderRecentCal() {
         }).join('')}</div>`
       : '';
 
-    const postHtml = posts.slice(0, 3).map(p => {
+    const postHtml = posts.slice(0, 2).map(p => {
       const catBadge = p.category && catLabels[p.category]
         ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
         : '';
-      const thumbHtml = (p.image_url || p.video_url) ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>` : '';
+      const thumbHtml = (p.image_url || p.video_url) ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20, 'threads')}</span>` : '';
       const content = `${thumbHtml}${catBadge}<span style="vertical-align:middle">${p.text}</span>`;
       return p.link
         ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
         : `<div class="cal-post-dot published">${content}</div>`;
     }).join('');
 
-    const moreHtml = posts.length > 3 ? `<div class="cal-more">+${posts.length-3}개</div>` : '';
+    // 예약 게시글 (회색)
+    const schHtml = schs.slice(0, 2).map(p => {
+      const catBadge = p.category && catLabels[p.category]
+        ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
+        : '';
+      const typeBadge = p.type ? `<span style="display:inline-block;background:#fed7aa;color:#9a3412;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.type}</span>` : '';
+      return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openScheduleModalEdit('${p.id}')" title="예약 글">${typeBadge}${catBadge}${p.text}</div>`;
+    }).join('');
+
+    const moreCount = (posts.length > 2 ? posts.length-2 : 0) + (schs.length > 2 ? schs.length-2 : 0);
+    const moreHtml = moreCount > 0 ? `<div class="cal-more">+${moreCount}개</div>` : '';
     const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
-    html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${moreHtml}</div>`;
+    html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${schHtml}${moreHtml}</div>`;
   }
   grid.innerHTML = html;
 }
@@ -3686,8 +3763,8 @@ function buildPostRow(r) {
   const engagement = calcEngagement(r);
   const engColor = engagement >= 10 ? '#16a34a' : engagement >= 5 ? '#3b82f6' : 'var(--text2)';
 
-  // 미디어 셀 (이미지 우선, 릴스/캐러셀 배지)
-  const mediaCell = buildMediaThumb(r, 40);
+  // 미디어 셀 (이미지 우선, 릴스/캐러셀 배지) - 스레드 채널
+  const mediaCell = buildMediaThumb(r, 40, 'threads');
 
   // 숫자 셀 (0이면 — 표시)
   const dash = '<span style="color:var(--text3)">—</span>';
@@ -3870,7 +3947,27 @@ function renderInstaRecentCal() {
         id: r.id,
         text: txt + (r.text && r.text.length > 14 ? '...' : ''),
         link: String(r.link || '').trim(),
-        post_type: r.post_type || ''
+        post_type: r.post_type || '',
+        image_url: r.image_url || '',
+        video_url: r.video_url || ''
+      });
+    }
+  });
+
+  // 예약 게시글 (캘린더 페이지와 동일하게 표시)
+  const schByDay = {};
+  (instaScheduledPosts || []).forEach(p => {
+    if (!p.scheduled_date) return;
+    const d = new Date(p.scheduled_date);
+    if (d.getFullYear() === instaRecentCalYear && d.getMonth() === instaRecentCalMonth) {
+      const day = d.getDate();
+      const txt = String(p.title || p.content || '').slice(0, 14);
+      if (!txt) return;
+      if (!schByDay[day]) schByDay[day] = [];
+      schByDay[day].push({
+        id: p.id,
+        text: txt + ((p.title || p.content || '').length > 14 ? '...' : ''),
+        post_type: p.post_type || ''
       });
     }
   });
@@ -3899,6 +3996,7 @@ function renderInstaRecentCal() {
   for (let d = 1; d <= total; d++) {
     const isToday = today.getFullYear()===instaRecentCalYear && today.getMonth()===instaRecentCalMonth && today.getDate()===d;
     const posts = postsByDay[d] || [];
+    const schs = schByDay[d] || [];
     const kgs = kgByDay[d] || [];
 
     const kgHtml = kgs.length > 0
@@ -3909,7 +4007,7 @@ function renderInstaRecentCal() {
         }).join('')}</div>`
       : '';
 
-    const postHtml = posts.slice(0, 3).map(p => {
+    const postHtml = posts.slice(0, 2).map(p => {
       const typeBadge = p.post_type && typeColors[p.post_type]
         ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
         : '';
@@ -3921,9 +4019,18 @@ function renderInstaRecentCal() {
         : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${content}</div>`;
     }).join('');
 
-    const moreHtml = posts.length > 3 ? `<div class="cal-more">+${posts.length-3}개</div>` : '';
+    // 예약 게시글 (회색)
+    const schHtml = schs.slice(0, 2).map(p => {
+      const typeBadge = p.post_type && typeColors[p.post_type]
+        ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
+        : '';
+      return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" title="예약 글">${typeBadge}${p.text}</div>`;
+    }).join('');
+
+    const moreCount = (posts.length > 2 ? posts.length-2 : 0) + (schs.length > 2 ? schs.length-2 : 0);
+    const moreHtml = moreCount > 0 ? `<div class="cal-more">+${moreCount}개</div>` : '';
     const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
-    html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${moreHtml}</div>`;
+    html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${schHtml}${moreHtml}</div>`;
   }
   grid.innerHTML = html;
 }
@@ -4748,9 +4855,10 @@ function renderInstaCalendar() {
         : '';
       const thumbHtml = `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>`;
       const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${p.text}</span>`;
+      const dragAttrs = `draggable="true" ondragstart="instaPostDragStart(event, ${p.id}, 'post')" ondragend="instaPostDragEnd(event)"`;
       return p.link
-        ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
-        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${content}</div>`;
+        ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab" ${dragAttrs} title="드래그해서 날짜 이동">${content}</a>`
+        : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})" style="cursor:grab" ${dragAttrs} title="드래그해서 날짜 이동">${content}</div>`;
     }).join('');
 
     // 예약글 (회색)
@@ -4759,14 +4867,20 @@ function renderInstaCalendar() {
         ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
         : '';
       const t = (p.title || p.content || '').slice(0, 14);
-      return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" title="예약 글">${typeBadge}${t}${(p.title||p.content||'').length>14?'...':''}</div>`;
+      return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" style="cursor:grab"
+        draggable="true" ondragstart="instaPostDragStart(event, ${p.id}, 'schedule')" ondragend="instaPostDragEnd(event)"
+        title="드래그해서 날짜 이동 (예약 글)">${typeBadge}${t}${(p.title||p.content||'').length>14?'...':''}</div>`;
     }).join('');
 
     const moreCount = (pubs.length > 2 ? pubs.length-2 : 0) + (schs.length > 2 ? schs.length-2 : 0);
     const moreHtml = moreCount > 0 ? `<div class="cal-more">+${moreCount}개</div>` : '';
 
     const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
-    html += `<div class="cal-day${isToday?' today':''}" data-day="${d}">${numEl}${kgHtml}${pubHtml}${schHtml}${moreHtml}<button class="cal-add-btn" onclick="event.stopPropagation();openInstaScheduleNew(${d})" title="예약 글 추가">+</button></div>`;
+    const dateKey = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += `<div class="cal-day${isToday?' today':''}" data-day="${d}" data-date="${dateKey}"
+      ondragover="instaPostDragOver(event, this)"
+      ondragleave="instaPostDragLeave(event, this)"
+      ondrop="instaPostDrop(event, '${dateKey}', this)">${numEl}${kgHtml}${pubHtml}${schHtml}${moreHtml}<button class="cal-add-btn" onclick="event.stopPropagation();openInstaScheduleNew(${d})" title="예약 글 추가">+</button></div>`;
   }
   grid.innerHTML = html;
 
@@ -4916,29 +5030,79 @@ async function renderInstaCalListView() {
               style="width:70px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;font-family:inherit;background:#fff"/>`
           : '<span style="color:var(--text3)">″</span>';
 
+        // 인라인 편집 셀 헬퍼
+        const baseInput = `width:100%;padding:3px 4px;border:1px solid transparent;border-radius:3px;font-size:10px;font-family:inherit;background:transparent;outline:none`;
+        const focusHandlers = `onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'" onblur="this.style.borderColor='transparent';this.style.background='transparent'"`;
+
+        // 타입 셀렉트
+        const typeInline = `<select onchange="updateInstaPostCell(${r.id},'post_type',this.value,this)" onclick="event.stopPropagation()" style="${baseInput};text-align:center;cursor:pointer" ${focusHandlers}>
+          <option value="" ${!r.post_type?'selected':''}>—</option>
+          <option value="릴스" ${r.post_type==='릴스'?'selected':''}>릴스</option>
+          <option value="피드" ${r.post_type==='피드'?'selected':''}>피드</option>
+          <option value="캐러셀" ${r.post_type==='캐러셀'?'selected':''}>캐러셀</option>
+          <option value="스토리" ${r.post_type==='스토리'?'selected':''}>스토리</option>
+        </select>`;
+
+        // 카테고리 셀렉트
+        const catInline = `<select onchange="updateInstaPostCell(${r.id},'category',this.value,this)" onclick="event.stopPropagation()" style="${baseInput};text-align:center;cursor:pointer" ${focusHandlers}>
+          <option value="" ${!r.category?'selected':''}>—</option>
+          <option value="제품성" ${r.category==='제품성'?'selected':''}>제품성</option>
+          <option value="정보성" ${r.category==='정보성'?'selected':''}>정보성</option>
+          <option value="감성" ${r.category==='감성'?'selected':''}>감성</option>
+          <option value="유머" ${r.category==='유머'?'selected':''}>유머</option>
+          <option value="UGC" ${r.category==='UGC'?'selected':''}>UGC</option>
+          <option value="이벤트, 공지" ${r.category==='이벤트, 공지'?'selected':''}>이벤트</option>
+        </select>`;
+
+        // CTA 셀렉트
+        const ctaInline = `<select onchange="updateInstaPostCell(${r.id},'cta',this.value,this)" onclick="event.stopPropagation()" style="${baseInput};text-align:center;cursor:pointer" ${focusHandlers}>
+          <option value="" ${!r.cta?'selected':''}>—</option>
+          <option value="조회수" ${r.cta==='조회수'?'selected':''}>조회수</option>
+          <option value="좋아요" ${r.cta==='좋아요'?'selected':''}>좋아요</option>
+          <option value="댓글" ${r.cta==='댓글'?'selected':''}>댓글</option>
+          <option value="저장" ${r.cta==='저장'?'selected':''}>저장</option>
+          <option value="공유" ${r.cta==='공유'?'selected':''}>공유</option>
+          <option value="팔로우" ${r.cta==='팔로우'?'selected':''}>팔로우</option>
+          <option value="프로필 방문" ${r.cta==='프로필 방문'?'selected':''}>프로필 방문</option>
+          <option value="링크 클릭" ${r.cta==='링크 클릭'?'selected':''}>링크 클릭</option>
+          <option value="DM 유도" ${r.cta==='DM 유도'?'selected':''}>DM 유도</option>
+        </select>`;
+
+        // 캡션 텍스트 input
+        const textInline = `<input type="text" value="${(r.text||'').replace(/"/g,'&quot;')}" placeholder="캡션..."
+          onchange="updateInstaPostCell(${r.id},'text',this.value,this)" onclick="event.stopPropagation()"
+          style="${baseInput};font-size:10px" ${focusHandlers}/>`;
+
+        // 숫자 input 헬퍼
+        const numIn = (field, val, color, bg) => `<input type="number" value="${val||''}" placeholder="0"
+          onchange="updateInstaPostCell(${r.id},'${field}',this.value,this)" onclick="event.stopPropagation()"
+          style="${baseInput};text-align:right;color:${color||'var(--text)'};${bg?'background:transparent':''}" ${focusHandlers}/>`;
+
         rows.push(`
-          <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openInstaPostEdit(${r.id})" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-            <td style="padding:8px 6px">${isFirstOfDay ? dateCell : ''}</td>
+          <tr style="border-bottom:1px solid var(--border);cursor:default" data-post-id="${r.id}" data-date="${dateKey}" draggable="true"
+            ondragstart="instaPostDragStart(event, ${r.id})"
+            ondragend="instaPostDragEnd(event)">
+            <td style="padding:4px">${isFirstOfDay ? dateCell : ''}</td>
             <td style="padding:4px;text-align:center">${mediaCell}</td>
-            <td style="padding:4px;text-align:center">${typeCell}</td>
-            <td style="padding:4px;text-align:center">${catCell}</td>
-            <td style="padding:4px;text-align:center">${ctaCell}</td>
-            <td style="padding:8px 6px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${txt.slice(0,40)}${txt.length>40?'...':''} ${linkUrl?'<a href="'+linkUrl+'" target="_blank" onclick="event.stopPropagation()" style="color:#3b82f6;font-size:11px">🔗</a>':''}</td>
-            <td style="padding:4px 6px;text-align:right;background:#f9fafb">${followerCell}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#16a34a;background:#f9fafb">${nVal(r.follows)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:var(--red);background:#f9fafb">${nVal(r.unfollows)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;font-weight:600;background:#eff6ff">${nVal(r.views)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;background:#eff6ff">${nVal(r.reach)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#9f1239;background:#fce7f3">${nVal(r.likes)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#9f1239;background:#fce7f3">${nVal(r.comments)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#9f1239;background:#fce7f3">${nVal(r.saves)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#9f1239;background:#fce7f3">${nVal(r.shares)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#9f1239;background:#fce7f3">${nVal(r.reposts)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#92400e;background:#fef3c7">${nVal(r.profile_visits)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;color:#92400e;background:#fef3c7">${nVal(r.ext_links)}</td>
-            <td style="padding:8px 6px;text-align:right;font-size:11px;font-weight:600;color:${engColor}">${eng>0?eng.toFixed(1)+'%':dash}</td>
-            <td style="padding:8px 6px;text-align:center;white-space:nowrap">
-              <button onclick="event.stopPropagation();openInstaPostEdit(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:10px;cursor:pointer;margin-right:2px">✏️</button>
+            <td style="padding:2px;text-align:center">${typeInline}</td>
+            <td style="padding:2px;text-align:center" class="col-detail">${catInline}</td>
+            <td style="padding:2px;text-align:center">${ctaInline}</td>
+            <td style="padding:2px;max-width:200px">${textInline} ${linkUrl?'<a href="'+linkUrl+'" target="_blank" onclick="event.stopPropagation()" style="color:#3b82f6;font-size:11px">🔗</a>':''}</td>
+            <td style="padding:2px;text-align:right;background:#f9fafb">${followerCell}</td>
+            <td style="padding:2px;background:#f9fafb" class="col-detail">${numIn('follows', r.follows, '#16a34a')}</td>
+            <td style="padding:2px;background:#f9fafb" class="col-detail">${numIn('unfollows', r.unfollows, 'var(--red)')}</td>
+            <td style="padding:2px;background:#eff6ff">${numIn('views', r.views, '#1e40af')}</td>
+            <td style="padding:2px;background:#eff6ff">${numIn('reach', r.reach, '#1e40af')}</td>
+            <td style="padding:2px;background:#fce7f3">${numIn('likes', r.likes, '#9f1239')}</td>
+            <td style="padding:2px;background:#fce7f3">${numIn('comments', r.comments, '#9f1239')}</td>
+            <td style="padding:2px;background:#fce7f3">${numIn('saves', r.saves, '#9f1239')}</td>
+            <td style="padding:2px;background:#fce7f3">${numIn('shares', r.shares, '#9f1239')}</td>
+            <td style="padding:2px;background:#fce7f3" class="col-detail">${numIn('reposts', r.reposts, '#9f1239')}</td>
+            <td style="padding:2px;background:#fef3c7" class="col-detail">${numIn('profile_visits', r.profile_visits, '#92400e')}</td>
+            <td style="padding:2px;background:#fef3c7" class="col-detail">${numIn('ext_links', r.ext_links, '#92400e')}</td>
+            <td style="padding:4px;text-align:right;font-size:10px;font-weight:600;color:${engColor}">${eng>0?eng.toFixed(1)+'%':dash}</td>
+            <td style="padding:4px;text-align:center;white-space:nowrap">
+              <button onclick="event.stopPropagation();openInstaPostEdit(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:10px;cursor:pointer;margin-right:2px" title="상세 편집">✏️</button>
               <button onclick="event.stopPropagation();deleteInstaPostFromCal(${r.id})" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:3px 5px;font-size:10px;cursor:pointer">🗑️</button>
             </td>
           </tr>
@@ -4948,6 +5112,149 @@ async function renderInstaCalListView() {
   }
 
   body.innerHTML = rows.length ? rows.join('') : `<tr><td colspan="20" style="padding:40px;text-align:center;color:var(--text3)">데이터 없음</td></tr>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🖱️ 인스타 콘텐츠 드래그앤드롭 (캘린더 뷰)
+// ══════════════════════════════════════════════════════════════
+let _instaDragData = null;  // { id, kind: 'post' | 'schedule' }
+
+function instaPostDragStart(e, id, kind) {
+  _instaDragData = { id, kind: kind || 'post' };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(id));
+  // 시각적 피드백
+  if (e.target && e.target.style) {
+    e.target.style.opacity = '0.4';
+  }
+}
+
+function instaPostDragEnd(e) {
+  if (e.target && e.target.style) {
+    e.target.style.opacity = '1';
+  }
+  // drop 영역 강조 제거
+  document.querySelectorAll('.cal-day.drop-target').forEach(el => {
+    el.classList.remove('drop-target');
+    el.style.background = '';
+    el.style.outline = '';
+  });
+  _instaDragData = null;
+}
+
+function instaPostDragOver(e, cell) {
+  if (!_instaDragData) return;
+  e.preventDefault();  // drop 허용
+  e.dataTransfer.dropEffect = 'move';
+  // 시각적 강조
+  if (cell && !cell.classList.contains('drop-target')) {
+    cell.classList.add('drop-target');
+    cell.style.background = '#dbeafe';
+    cell.style.outline = '2px dashed #3b82f6';
+  }
+}
+
+function instaPostDragLeave(e, cell) {
+  // 자식 요소로 이동한 경우 무시
+  if (cell && cell.contains(e.relatedTarget)) return;
+  if (cell) {
+    cell.classList.remove('drop-target');
+    cell.style.background = '';
+    cell.style.outline = '';
+  }
+}
+
+async function instaPostDrop(e, newDateKey, cell) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (cell) {
+    cell.classList.remove('drop-target');
+    cell.style.background = '';
+    cell.style.outline = '';
+  }
+  if (!_instaDragData) return;
+  const { id, kind } = _instaDragData;
+  _instaDragData = null;
+
+  // 같은 날짜로 드롭 시 무시
+  const sourceList = kind === 'schedule' ? (instaScheduledPosts || []) : (instaPosts || []);
+  const target = sourceList.find(p => p.id === id);
+  if (!target) {
+    showToast('데이터를 찾을 수 없어요');
+    return;
+  }
+  const oldDate = String(target.date || target.scheduled_date || '');
+  if (oldDate === newDateKey) return;
+
+  // Supabase 업데이트
+  const tableName = kind === 'schedule' ? 'insta_scheduled_posts' : 'insta_posts';
+  const dateField = kind === 'schedule' ? 'scheduled_date' : 'date';
+
+  try {
+    const { error } = await sb.from(tableName).update({ [dateField]: newDateKey }).eq('id', id);
+    if (error) throw error;
+
+    // 메모리 업데이트
+    target[dateField] = newDateKey;
+    if (kind === 'post' && target.date !== undefined) target.date = newDateKey;
+
+    showToast(`✓ ${oldDate} → ${newDateKey} 이동됨`);
+
+    // 캘린더 다시 렌더 (이동 반영)
+    renderInstaCalendar();
+  } catch (err) {
+    console.error('instaPostDrop:', err);
+    showToast('이동 실패: ' + err.message);
+  }
+}
+
+// 콘텐츠 캘린더 표 - 컬럼 모드 전환 (핵심만 / 전체)
+function switchInstaCalColMode(mode) {
+  const table = document.getElementById('instaCalTable');
+  if (!table) return;
+  const btnCore = document.getElementById('instaCalColMode-core');
+  const btnAll = document.getElementById('instaCalColMode-all');
+
+  if (mode === 'core') {
+    table.classList.add('show-core');
+    if (btnCore) { btnCore.style.background = '#fff'; btnCore.style.fontWeight = '600'; btnCore.style.color = 'var(--text)'; }
+    if (btnAll) { btnAll.style.background = 'transparent'; btnAll.style.fontWeight = '500'; btnAll.style.color = 'var(--text2)'; }
+  } else {
+    table.classList.remove('show-core');
+    if (btnAll) { btnAll.style.background = '#fff'; btnAll.style.fontWeight = '600'; btnAll.style.color = 'var(--text)'; }
+    if (btnCore) { btnCore.style.background = 'transparent'; btnCore.style.fontWeight = '500'; btnCore.style.color = 'var(--text2)'; }
+  }
+  localStorage.setItem('oz_insta_cal_col_mode', mode);
+}
+
+// 인스타 게시물 셀 인라인 저장
+async function updateInstaPostCell(id, field, value, inputEl) {
+  if (inputEl) inputEl.style.borderColor = '#f59e0b';
+
+  // 숫자 필드 변환
+  let val = value;
+  const numFields = ['views','reach','likes','comments','saves','shares','reposts','profile_visits','ext_links','follows','unfollows'];
+  if (numFields.includes(field)) {
+    val = parseInt(String(value).replace(/[^0-9-]/g, '')) || 0;
+  }
+
+  try {
+    const { error } = await sb.from('insta_posts').update({ [field]: val }).eq('id', id);
+    if (error) throw error;
+
+    // 메모리 데이터 업데이트
+    const target = (instaPosts || []).find(p => p.id === id);
+    if (target) target[field] = val;
+
+    if (inputEl) {
+      inputEl.style.borderColor = '#16a34a';
+      setTimeout(() => { if (inputEl) inputEl.style.borderColor = 'transparent'; }, 600);
+    }
+  } catch (e) {
+    console.error('updateInstaPostCell:', e);
+    if (inputEl) inputEl.style.borderColor = '#dc2626';
+    showToast('저장 실패: ' + e.message);
+  }
 }
 
 // 인스타 팔로워 저장
@@ -7526,6 +7833,14 @@ function goPage(name, btn) {
         // 이미 데이터 있으면 7일 필터 다시 적용
         setInstaQuick(7);
       }
+      // 예약 게시글도 로드 (캘린더 뷰에서 표시)
+      if (!instaScheduledPosts || !instaScheduledPosts.length) {
+        await loadInstaScheduledPosts();
+      }
+      // 캘린더 뷰 다시 렌더 (예약글 반영)
+      if (currentInstaRecentView === 'cal' && typeof renderInstaRecentCal === 'function') {
+        renderInstaRecentCal();
+      }
     })();
   }
   if (name === 'insta-calendar') {
@@ -7543,6 +7858,10 @@ function goPage(name, btn) {
       // 마지막 사용 뷰 복원 + 렌더
       const savedView = localStorage.getItem('oz_insta_cal_view') || 'cal';
       switchInstaCalView(savedView);
+
+      // 컬럼 모드 복원 (기본: 핵심)
+      const savedColMode = localStorage.getItem('oz_insta_cal_col_mode') || 'core';
+      setTimeout(() => switchInstaCalColMode(savedColMode), 50);
 
       // 모두 끝난 후 렌더 (둘 다 렌더해서 뷰 전환 시 즉시 보이게)
       renderInstaCalendar();

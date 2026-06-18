@@ -45,6 +45,29 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .sidebar-divider{height:1px;background:var(--border);margin:5px 0}
 .sidebar-section{font-size:10px;color:var(--text3);padding:6px 14px 3px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 
+/* ━━━ 테이블 셀 리사이저 ━━━ */
+table.resizable th{position:relative}
+table.resizable th .col-resizer{
+  position:absolute;
+  top:0;
+  right:0;
+  bottom:0;
+  width:6px;
+  cursor:col-resize;
+  user-select:none;
+  background:transparent;
+  transition:background 0.15s;
+  z-index:5;
+}
+table.resizable th .col-resizer:hover,
+table.resizable th .col-resizer.dragging{
+  background:#3b82f6;
+  opacity:0.6;
+}
+table.resizable th .col-resizer:active{
+  background:#1e40af;
+}
+
 .api-status-bar{margin-top:0;padding:7px 12px;background:var(--surface2);border-radius:var(--r);display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);cursor:pointer;border:1px solid var(--border);transition:border-color .2s}
 .api-status-bar:hover{border-color:var(--border2)}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s}
@@ -328,8 +351,11 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <button class="nav-item" onclick="goPage('calendar',this)">
       <span class="nav-icon">▦</span> 콘텐츠 캘린더
     </button>
-    <button class="nav-item" onclick="goPage('feedback',this)">
-      <span class="nav-icon">✎</span> 글 피드백
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">탐색</div>
+    <button class="nav-item" onclick="goPage('trend',this)">
+      <span class="nav-icon">↗</span> 스레드 레퍼런스
     </button>
 
     <div class="sidebar-divider"></div>
@@ -340,30 +366,28 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <button class="nav-item" onclick="goPage('persona',this)">
       <span class="nav-icon">◉</span> 브랜드 가이드
     </button>
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section">탐색</div>
-    <button class="nav-item" onclick="goPage('trend',this)">
-      <span class="nav-icon">↗</span> 스레드 레퍼런스
+    <button class="nav-item" onclick="goPage('feedback',this)">
+      <span class="nav-icon">✎</span> 글 피드백
     </button>
   </div>
 
-  <!-- ━━━ 공통 메뉴 (양 채널 모두 표시) ━━━ -->
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section">공통</div>
+  <!-- ━━━ 참고자료 (양 채널 공통, 하단 고정) ━━━ -->
+  <div style="margin-top:auto">
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">참고자료</div>
+    <button class="nav-item" onclick="goPage('kindergarten',this)">
+      <span class="nav-icon">📚</span> 유치원 일정
+    </button>
 
-  <button class="nav-item" onclick="goPage('kindergarten',this)">
-    <span class="nav-icon">📚</span> 유치원 일정
-  </button>
+    <a href="https://www.instagram.com/ozkiz_official/" target="_blank" id="channelLink" class="nav-item" style="text-decoration:none;margin-bottom:4px">
+      <span class="nav-icon" style="font-size:14px">⎋</span> <span id="channelLinkText">내 인스타 바로가기</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)">↗</span>
+    </a>
 
-  <a href="https://www.instagram.com/ozkiz_official/" target="_blank" id="channelLink" class="nav-item" style="text-decoration:none;margin-top:auto;margin-bottom:4px">
-    <span class="nav-icon" style="font-size:14px">⎋</span> <span id="channelLinkText">내 인스타 바로가기</span>
-    <span style="margin-left:auto;font-size:11px;color:var(--text3)">↗</span>
-  </a>
-
-  <div class="api-status-bar" onclick="openModal()">
-    <span class="status-dot" id="sidebarDot"></span>
-    <span id="sidebarStatus">API 키 설정</span>
+    <div class="api-status-bar" onclick="openModal()">
+      <span class="status-dot" id="sidebarDot"></span>
+      <span id="sidebarStatus">API 키 설정</span>
+    </div>
   </div>
 </nav>
 
@@ -399,20 +423,28 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <div class="content-area">
       <!-- 📊 주간 보고 -->
       <div id="threadWeeklyReport" style="background:linear-gradient(135deg,#dbeafe 0%,#e0e7ff 100%);border:1px solid #93c5fd;border-radius:10px;padding:12px 16px;margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px">
+        <div onclick="toggleWeeklyReport('threads')" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;cursor:pointer;user-select:none">
           <span style="font-weight:700">📅 주간 보고</span>
           <span style="color:var(--text2);font-size:11px" id="threadWeekRange">계산 중...</span>
+          <span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,0.6);padding:2px 6px;border-radius:3px">금~목</span>
           <span style="border-left:1px solid #93c5fd;margin:0 4px;height:14px"></span>
           <span>🎯 일평균 목표 <b id="threadWeekGoal" style="color:#1e40af">3,000</b>회</span>
           <span style="color:var(--text3)">|</span>
           <span>금주 일평균 <b id="threadWeekActual">-</b>회</span>
           <span style="color:var(--text3)">|</span>
           <span id="threadWeekStatus" style="font-weight:700">-</span>
-          <span style="margin-left:auto;display:flex;gap:6px">
+          <span style="margin-left:auto;display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()">
+            <button onclick="copyWeeklyReport('threads')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px" title="전체 주간 보고를 텍스트로 복사">📋 텍스트 복사</button>
             <button onclick="openWeekGoalModal('threads')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px">✏️ 목표 설정</button>
-            <button onclick="runWeekAIAnalysis('threads')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none">🤖 AI 분석</button>
+            <button onclick="runWeekAIAnalysis('threads', 'gemini')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none" title="Gemini로 분석">⚡ Gemini</button>
+            <button onclick="runWeekAIAnalysis('threads', 'claude')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#a855f7,#7c3aed);border:none" title="Claude로 분석">🟣 Claude</button>
+            <span id="threadWeekToggleArrow" style="font-size:14px;color:var(--text2);margin-left:4px;transition:transform 0.2s">▾</span>
           </span>
         </div>
+
+        <!-- 펼침 영역 -->
+        <div id="threadWeeklyContent" style="margin-top:8px">
+
         <div id="threadWeekAIResult" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #93c5fd;font-size:13px;line-height:1.7"></div>
 
         <!-- 사용자 메모 -->
@@ -426,6 +458,8 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             onblur="saveWeekNote('threads', this)"
             style="width:100%;padding:10px;border:1px solid rgba(59,130,246,0.3);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.6;background:rgba(255,255,255,0.7);outline:none;resize:vertical;min-height:60px"></textarea>
         </div>
+
+        </div><!-- /threadWeeklyContent -->
       </div>
 
       <!-- Stats -->
@@ -1046,9 +1080,11 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             </div>
 
             <!-- AI 분석 버튼 -->
-            <div style="display:flex;gap:8px;margin-bottom:12px">
-              <button class="btn btn-primary btn-sm" onclick="runFeedbackAnalysis()" id="feedbackAnalyzeBtn">🔍 AI 분석</button>
-              <button class="btn btn-primary btn-sm" onclick="runImproveGenerate()" id="feedbackImproveBtn" disabled>✨ 개선글 생성</button>
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="runFeedbackAnalysis('gemini')" id="feedbackAnalyzeBtnGemini" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none">⚡ Gemini로 분석</button>
+              <button class="btn btn-primary btn-sm" onclick="runFeedbackAnalysis('claude')" id="feedbackAnalyzeBtnClaude" style="background:linear-gradient(135deg,#a855f7,#7c3aed);border:none">🟣 Claude로 분석</button>
+              <button class="btn btn-primary btn-sm" onclick="runImproveGenerate('gemini')" id="feedbackImproveBtnGemini" disabled style="background:linear-gradient(135deg,#ec4899,#f59e0b);border:none">⚡ Gemini 개선글</button>
+              <button class="btn btn-primary btn-sm" onclick="runImproveGenerate('claude')" id="feedbackImproveBtnClaude" disabled style="background:linear-gradient(135deg,#d946ef,#a855f7);border:none">🟣 Claude 개선글</button>
             </div>
 
             <!-- AI 분석 결과 -->
@@ -1132,15 +1168,22 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
     <div class="content-area">
       <!-- 📊 주간 보고 -->
       <div id="instaWeeklyReport" style="background:linear-gradient(135deg,#fef3c7 0%,#fce7f3 100%);border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:14px">
-        <!-- 헤더 -->
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;margin-bottom:8px">
+        <!-- 헤더 (클릭 가능) -->
+        <div onclick="toggleWeeklyReport('instagram')" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;cursor:pointer;user-select:none">
           <span style="font-weight:700">📅 주간 보고</span>
           <span style="color:var(--text2);font-size:11px" id="instaWeekRange">계산 중...</span>
-          <span style="margin-left:auto;display:flex;gap:6px">
+          <span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,0.6);padding:2px 6px;border-radius:3px">금~목</span>
+          <span style="margin-left:auto;display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()">
+            <button onclick="copyWeeklyReport('instagram')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px" title="전체 주간 보고를 텍스트로 복사">📋 텍스트 복사</button>
             <button onclick="openWeekGoalModal('instagram')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px">✏️ 목표 설정</button>
-            <button onclick="runWeekAIAnalysis('instagram')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none">🤖 AI 분석</button>
+            <button onclick="runWeekAIAnalysis('instagram', 'gemini')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none" title="Gemini로 분석">⚡ Gemini</button>
+            <button onclick="runWeekAIAnalysis('instagram', 'claude')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#a855f7,#7c3aed);border:none" title="Claude로 분석">🟣 Claude</button>
+            <span id="instaWeekToggleArrow" style="font-size:14px;color:var(--text2);margin-left:4px;transition:transform 0.2s">▾</span>
           </span>
         </div>
+
+        <!-- 펼침 영역 -->
+        <div id="instaWeeklyContent" style="margin-top:8px">
 
         <!-- 메트릭 2줄 표시 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1180,6 +1223,8 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
             onblur="saveWeekNote('instagram', this)"
             style="width:100%;padding:10px;border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.6;background:rgba(255,255,255,0.7);outline:none;resize:vertical;min-height:60px"></textarea>
         </div>
+
+        </div><!-- /instaWeeklyContent -->
       </div>
 
       <!-- 기간 필터 -->
@@ -1251,9 +1296,13 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       <!-- 콘텐츠 캘린더 -->
       <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <div style="font-size:13px;font-weight:700">콘텐츠 캘린더</div>
             <span id="instaRecentCount" style="font-size:11px;color:var(--text3)"></span>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;padding:3px 8px;background:#f9fafb;border-radius:5px;user-select:none">
+              <input type="checkbox" id="instaRecentIgnoreFilter" onchange="toggleInstaRecentFilter()" style="cursor:pointer"/>
+              <span>📅 기간 필터 무시 <span style="color:var(--text3)">(전체 보기)</span></span>
+            </label>
           </div>
           <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px">
             <button id="instaRecentViewTable" onclick="switchInstaRecentView('table')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">📋 표</button>
@@ -1839,9 +1888,21 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
       </div>
     </div>
     <div class="content-area">
+      <!-- 📊 금주 요약 카드 (TOP 5 노출 키워드) -->
+      <div id="hashtagWeeklyTop" style="background:linear-gradient(135deg,#dbeafe 0%,#fef3c7 100%);border:1px solid #93c5fd;border-radius:10px;padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700">⭐ 금주 노출 TOP 5</span>
+          <span id="hashtagWeeklyDate" style="font-size:11px;color:var(--text2)">계산 중...</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--text3)">📊 규모(검색량) 큰 키워드 중 노출이 있는 상위 5개</span>
+        </div>
+        <div id="hashtagWeeklyTopList" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          <div style="text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1;padding:14px">데이터 로딩 중...</div>
+        </div>
+      </div>
+
       <!-- 안내 -->
       <div style="background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6">
-        💡 <b>사용법</b>: 검색량/노출 셀 클릭 → 입력 → 자동 저장. Tab으로 다음 셀 이동. 매주 데이터 측정 후 입력하세요.
+        💡 <b>사용법</b>: 검색량/노출 셀 클릭 → 입력 → 자동 저장. Tab으로 다음 셀 이동. 매주 데이터 측정 후 입력하세요. 컬럼 헤더 우측 모서리를 드래그하면 셀 너비 조정 가능!
       </div>
 
       <!-- 통계 카드 -->
@@ -2969,8 +3030,19 @@ function buildMediaThumb(post, size) {
 
 // ── RENDER DASHBOARD
 function renderDashboard(data) {
-  // 주간 보고 렌더 (필터와 무관, 항상 어제 기준 최근 7일)
+  // 주간 보고 렌더 (필터와 무관, 항상 금~목 기준)
   try { renderThreadWeeklyReport(); } catch(e) { console.warn('renderThreadWeeklyReport:', e); }
+
+  // 주간 보고 토글 상태 복원
+  try {
+    const weekCollapsed = localStorage.getItem('oz_threads_week_collapsed') === '1';
+    const weekContent = document.getElementById('threadWeeklyContent');
+    const weekArrow = document.getElementById('threadWeekToggleArrow');
+    if (weekContent && weekCollapsed) {
+      weekContent.style.display = 'none';
+      if (weekArrow) weekArrow.style.transform = 'rotate(-90deg)';
+    }
+  } catch(e){}
 
   if (!data || !data.length) return;
 
@@ -3580,6 +3652,18 @@ let currentInstaRecentView = 'table';
 let instaRecentCalYear = new Date().getFullYear();
 let instaRecentCalMonth = new Date().getMonth();
 
+// 콘텐츠 캘린더 - 기간 필터 무시 토글
+function toggleInstaRecentFilter() {
+  // 토글 상태 localStorage에 저장
+  const ignored = document.getElementById('instaRecentIgnoreFilter')?.checked;
+  localStorage.setItem('oz_insta_recent_ignore_filter', ignored ? '1' : '0');
+
+  // 다시 렌더링 (현재 필터 데이터 재사용)
+  if (typeof renderInstaDashboard === 'function') {
+    renderInstaDashboard(instaFilteredData);
+  }
+}
+
 function switchInstaRecentView(mode) {
   currentInstaRecentView = mode;
   const tableView = document.getElementById('instaRecentTableView');
@@ -3628,7 +3712,9 @@ function renderInstaRecentCal() {
 
   title.textContent = `${instaRecentCalYear}년 ${instaRecentCalMonth+1}월`;
 
-  const data = instaFilteredData.length ? instaFilteredData : instaPosts;
+  // 필터 무시 토글 확인
+  const ignoreFilter = document.getElementById('instaRecentIgnoreFilter')?.checked;
+  const data = ignoreFilter ? instaPosts : (instaFilteredData.length ? instaFilteredData : instaPosts);
   const today = new Date();
   const firstDay = new Date(instaRecentCalYear, instaRecentCalMonth, 1);
   const lastDay = new Date(instaRecentCalYear, instaRecentCalMonth+1, 0);
@@ -3848,16 +3934,24 @@ function renderInstaDashboard(data) {
   drawInstaFollowerChart(data);
   drawInstaViewsChart();  // 조회수 추이
 
-  // 최근 게시물 테이블 (필터된 데이터 전체, 최신 순)
-  const sorted = data.slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+  // 콘텐츠 캘린더 — 토글에 따라 전체 또는 필터된 데이터 사용
+  const ignoreFilter = document.getElementById('instaRecentIgnoreFilter')?.checked;
+  const recentSource = ignoreFilter ? (instaPosts || []) : data;
+  const sorted = recentSource.slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
   const recent = sorted.slice(0, 100);  // 최대 100개
   document.getElementById('instaRecentBody').innerHTML = recent.length
     ? recent.map(r => buildInstaPostRow(r)).join('')
-    : `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);font-size:13px">해당 기간에 게시물이 없어요</td></tr>`;
+    : `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);font-size:13px">${ignoreFilter ? '게시물이 없어요' : '해당 기간에 게시물이 없어요'}</td></tr>`;
 
   // 개수 표시
   const countEl = document.getElementById('instaRecentCount');
-  if (countEl) countEl.textContent = data.length > 0 ? `${data.length}개 표시 중` : '';
+  if (countEl) {
+    if (ignoreFilter) {
+      countEl.innerHTML = `<span style="color:#3b82f6;font-weight:600">전체 ${(instaPosts||[]).length}개</span> 표시 중 (필터 무시)`;
+    } else {
+      countEl.textContent = data.length > 0 ? `${data.length}개 표시 중` : '';
+    }
+  }
 
   // 캘린더 뷰가 활성화돼 있으면 같이 갱신
   if (currentInstaRecentView === 'cal') renderInstaRecentCal();
@@ -5259,6 +5353,97 @@ async function saveApifyPostsToSupabase(items) {
 // ══════════════════════════════════════════════════════════════
 
 // 채널별 목표 가져오기
+// 주간 보고 토글 (펼치기/접기)
+function toggleWeeklyReport(channel) {
+  const contentId = channel === 'instagram' ? 'instaWeeklyContent' : 'threadWeeklyContent';
+  const arrowId = channel === 'instagram' ? 'instaWeekToggleArrow' : 'threadWeekToggleArrow';
+  const content = document.getElementById(contentId);
+  const arrow = document.getElementById(arrowId);
+  if (!content) return;
+
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  if (arrow) arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+
+  // 상태 저장
+  localStorage.setItem(`oz_${channel}_week_collapsed`, isHidden ? '0' : '1');
+}
+
+// 주간 보고 텍스트 복사 (전체 내용을 클립보드에)
+async function copyWeeklyReport(channel) {
+  const { start, end } = getWeekRange();
+  const goal = getWeekGoal(channel);
+  const channelName = channel === 'instagram' ? '📷 인스타그램' : '📱 스레드';
+
+  let text = `📅 ${channelName} 주간 보고\n`;
+  text += `📆 기간: ${start} ~ ${end} (금~목)\n`;
+  text += `${'─'.repeat(45)}\n\n`;
+
+  if (channel === 'instagram') {
+    // 인스타: 팔로워 + 조회수
+    const actualEl = document.getElementById('instaWeekActual');
+    const statusEl = document.getElementById('instaWeekStatus');
+    const viewsEl = document.getElementById('instaWeekViews');
+    const viewsAvgEl = document.getElementById('instaWeekViewsAvg');
+    const viewsPostsEl = document.getElementById('instaWeekViewsPosts');
+
+    text += `🎯 팔로워 증가 (목표 있음)\n`;
+    text += `   목표: 일평균 +${goal.toLocaleString()}명\n`;
+    text += `   실제: 일평균 ${actualEl?.textContent || '-'}명\n`;
+    text += `   결과: ${(statusEl?.textContent || '-').replace(/[✅❌]/g, '').trim()}\n\n`;
+
+    text += `📊 조회수 (참고)\n`;
+    text += `   총 조회수: ${viewsEl?.textContent || '-'}회\n`;
+    text += `   일평균 조회수: ${viewsAvgEl?.textContent || '-'}회\n`;
+    text += `   ${viewsPostsEl?.textContent || ''}\n\n`;
+  } else {
+    // 스레드: 조회수만
+    const actualEl = document.getElementById('threadWeekActual');
+    const statusEl = document.getElementById('threadWeekStatus');
+
+    text += `🎯 일평균 조회수 (목표 있음)\n`;
+    text += `   목표: ${goal.toLocaleString()}회/일\n`;
+    text += `   실제: ${actualEl?.textContent || '-'}회/일\n`;
+    text += `   결과: ${(statusEl?.textContent || '-').replace(/[✅❌]/g, '').trim()}\n\n`;
+  }
+
+  // AI 분석 결과
+  const aiResultEl = document.getElementById(channel === 'instagram' ? 'instaWeekAIResult' : 'threadWeekAIResult');
+  if (aiResultEl && aiResultEl.style.display !== 'none' && aiResultEl.innerText.trim()) {
+    text += `🤖 AI 분석\n`;
+    // HTML 텍스트만 추출
+    const aiText = aiResultEl.innerText
+      .replace(/^.*?접기\s*\n?/m, '')   // "접기" 버튼 텍스트 제거
+      .trim();
+    text += aiText + '\n\n';
+  }
+
+  // 사용자 메모
+  const noteEl = document.getElementById(channel === 'instagram' ? 'instaWeekNote' : 'threadWeekNote');
+  if (noteEl && noteEl.value.trim()) {
+    text += `✍️ 나의 주간 메모\n`;
+    text += noteEl.value.trim() + '\n\n';
+  }
+
+  text += `${'─'.repeat(45)}\n`;
+  text += `생성: ${new Date().toLocaleString('ko-KR')}\n`;
+
+  // 클립보드에 복사
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ 주간 보고가 복사됐어요! 어디든 붙여넣으세요');
+  } catch (e) {
+    // 폴백: textarea로 복사
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✓ 주간 보고가 복사됐어요!');
+  }
+}
+
 function getWeekGoal(channel) {
   const key = channel === 'instagram' ? 'oz_insta_week_goal' : 'oz_thread_week_goal';
   const defaultVal = channel === 'instagram' ? 100 : 3000;  // 인스타: 100명, 스레드: 3000회
@@ -5273,15 +5458,9 @@ function setWeekGoal(channel, value) {
 // 어제 기준 최근 7일 범위
 // 주간 메모 저장 (localStorage, 주차별 분리)
 function getWeekNoteKey(channel) {
-  // 어제 기준 주 식별 — ISO 주 (월요일 기준)
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  // 그 주의 월요일을 키로 사용
-  const dayOfWeek = yesterday.getDay() || 7;  // 일요일=0이면 7로
-  const monday = new Date(yesterday);
-  monday.setDate(yesterday.getDate() - (dayOfWeek - 1));
-  const weekKey = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
+  // 금~목 주기에서 그 주의 금요일을 키로 사용
+  const { startDate } = getWeekRange();
+  const weekKey = `${startDate.getFullYear()}-${String(startDate.getMonth()+1).padStart(2,'0')}-${String(startDate.getDate()).padStart(2,'0')}`;
   return `oz_${channel}_week_note_${weekKey}`;
 }
 
@@ -5311,15 +5490,26 @@ function saveWeekNote(channel, el) {
   }
 }
 
+// 주간 범위: 금요일(시작) ~ 목요일(끝)
+// 오늘로부터 가장 최근의 "끝난 목요일"을 기준으로 계산
 function getWeekRange() {
   const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  const weekStart = new Date(yesterday);
-  weekStart.setDate(yesterday.getDate() - 6);  // 7일 전부터 어제까지
+  const dayOfWeek = today.getDay();  // 일=0, 월=1, 화=2, 수=3, 목=4, 금=5, 토=6
+
+  // 가장 최근 목요일까지 며칠 빼야 하는지
+  // 목(4): 0일, 금(5): 1일, 토(6): 2일, 일(0): 3일, 월(1): 4일, 화(2): 5일, 수(3): 6일
+  let daysToSubtract;
+  if (dayOfWeek === 4) daysToSubtract = 0;          // 오늘이 목 → 종료일
+  else if (dayOfWeek >= 5) daysToSubtract = dayOfWeek - 4;  // 금/토 → 1/2일 전
+  else daysToSubtract = dayOfWeek + 3;              // 일/월/화/수 → 3/4/5/6일 전
+
+  const endDate = new Date(today);
+  endDate.setDate(today.getDate() - daysToSubtract);  // 가장 최근 목요일
+  const startDate = new Date(endDate);
+  startDate.setDate(endDate.getDate() - 6);            // 그 직전 금요일
 
   const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  return { start: fmt(weekStart), end: fmt(yesterday), startDate: weekStart, endDate: yesterday };
+  return { start: fmt(startDate), end: fmt(endDate), startDate, endDate };
 }
 
 // 인스타 주간 보고 렌더
@@ -5503,11 +5693,22 @@ function saveWeekGoal() {
   else renderThreadWeeklyReport();
 }
 
-// AI 분석 (Gemini 또는 Claude)
-async function runWeekAIAnalysis(channel) {
-  const provider = claudeApiKey ? 'claude' : (apiKey ? 'gemini' : null);
+// AI 분석 (Gemini 또는 Claude) - provider를 명시적으로 선택
+async function runWeekAIAnalysis(channel, provider) {
+  // provider가 명시되지 않으면 사용자에게 선택 요청
   if (!provider) {
-    showToast('Gemini 또는 Claude API 키를 설정해주세요');
+    showToast('AI를 선택해주세요 (⚡ Gemini 또는 🟣 Claude)');
+    return;
+  }
+
+  // 선택한 provider의 키 확인
+  if (provider === 'claude' && !claudeApiKey) {
+    showToast('Claude API 키를 먼저 설정해주세요');
+    openModal();
+    return;
+  }
+  if (provider === 'gemini' && !apiKey) {
+    showToast('Gemini API 키를 먼저 설정해주세요');
     openModal();
     return;
   }
@@ -5840,6 +6041,7 @@ async function loadInstaHashtags() {
 
     renderInstaHashtags();
     renderHashtagSummary();
+    renderHashtagWeeklyTop();
   } catch (e) {
     console.error('loadInstaHashtags:', e);
     document.getElementById('hashtagTableBody').innerHTML = `
@@ -5964,6 +6166,82 @@ function renderInstaHashtags() {
     bodyHtml += '</tr>';
   });
   body.innerHTML = bodyHtml;
+
+  // 리사이저 자동 적용
+  setTimeout(applyResizersToAllTables, 50);
+}
+
+// 📊 금주 노출 TOP 5 (키워드규모 큰 것 중 노출 있는 상위 5개)
+function renderHashtagWeeklyTop() {
+  const container = document.getElementById('hashtagWeeklyTopList');
+  const dateEl = document.getElementById('hashtagWeeklyDate');
+  if (!container) return;
+
+  if (!hashtagDates.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1;padding:14px">아직 측정 데이터가 없어요</div>';
+    if (dateEl) dateEl.textContent = '';
+    return;
+  }
+
+  // 가장 최신 측정 날짜
+  const latestDate = hashtagDates[hashtagDates.length - 1];
+  const dt = new Date(latestDate);
+  if (dateEl) dateEl.textContent = `${dt.getMonth()+1}/${dt.getDate()} 측정 기준`;
+
+  // 키워드규모 순위 (큰 → 작은)
+  const sizeOrder = { '천만': 1, '백만': 2, '십만': 3, '5만': 4, '만': 5, '천': 6 };
+
+  // 노출 > 0 인 해시태그 필터링
+  const withExposure = hashtagsList
+    .filter(h => !h.ended)
+    .map(h => {
+      const cell = hashtagHistory[h.id]?.[latestDate] || {};
+      return {
+        ...h,
+        searchCount: cell.search_count || 0,
+        exposureCount: cell.exposure_count || 0,
+        sizeRank: sizeOrder[h.size_category] || 99
+      };
+    })
+    .filter(h => h.exposureCount > 0);
+
+  if (withExposure.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1;padding:14px">금주 노출된 해시태그가 없어요</div>';
+    return;
+  }
+
+  // 정렬: 규모 큰 순 → 같은 규모면 검색량 큰 순
+  withExposure.sort((a, b) => {
+    if (a.sizeRank !== b.sizeRank) return a.sizeRank - b.sizeRank;
+    return b.searchCount - a.searchCount;
+  });
+
+  const top5 = withExposure.slice(0, 5);
+
+  // 카드 렌더
+  const sizeColors = {
+    '천만': { bg: 'linear-gradient(135deg,#fecdd3,#fda4af)', text: '#881337' },
+    '백만': { bg: 'linear-gradient(135deg,#fed7aa,#fdba74)', text: '#9a3412' },
+    '십만': { bg: 'linear-gradient(135deg,#fef08a,#fde047)', text: '#854d0e' },
+    '5만':  { bg: 'linear-gradient(135deg,#bbf7d0,#86efac)', text: '#166534' },
+    '만':   { bg: 'linear-gradient(135deg,#bfdbfe,#93c5fd)', text: '#1e40af' },
+    '천':   { bg: 'linear-gradient(135deg,#e9d5ff,#d8b4fe)', text: '#6b21a8' }
+  };
+
+  container.innerHTML = top5.map((h, idx) => {
+    const colors = sizeColors[h.size_category] || { bg: '#fff', text: 'var(--text)' };
+    return `
+      <a href="https://www.instagram.com/explore/tags/${encodeURIComponent(h.keyword)}/" target="_blank"
+         style="background:${colors.bg};border-radius:8px;padding:10px 8px;text-align:center;text-decoration:none;color:${colors.text};display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90px;border:1px solid rgba(255,255,255,0.5);transition:transform 0.15s"
+         onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        <div style="font-size:10px;font-weight:600;opacity:0.7;margin-bottom:3px">#${idx + 1} · ${h.size_category}</div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:4px;word-break:break-all">#${h.keyword}</div>
+        <div style="font-size:11px;opacity:0.85">노출 <b>${h.exposureCount}</b>회</div>
+        <div style="font-size:9px;opacity:0.6;margin-top:2px">${h.searchCount.toLocaleString()}</div>
+      </a>
+    `;
+  }).join('');
 }
 
 function renderHashtagSummary() {
@@ -6407,6 +6685,9 @@ function renderInstaCompetitorTable() {
   });
 
   body.innerHTML = bodyHtml;
+
+  // 리사이저 자동 적용
+  setTimeout(applyResizersToAllTables, 50);
 
   // 데이터가 있는 가장 최근 날짜 행으로 자동 스크롤
   // (오늘 데이터가 없으면 사용자가 6/17 같은 데이터 보이는 곳으로 빠르게 이동)
@@ -7023,6 +7304,20 @@ function goPage(name, btn) {
   if (name === 'kindergarten') loadKindergartenEvents();
   // 인스타 페이지
   if (name === 'insta-dashboard') {
+    // 인사이트 진입 시 토글 상태 복원
+    const ignoredSaved = localStorage.getItem('oz_insta_recent_ignore_filter') === '1';
+    const ignoredCheckbox = document.getElementById('instaRecentIgnoreFilter');
+    if (ignoredCheckbox) ignoredCheckbox.checked = ignoredSaved;
+
+    // 주간 보고 토글 상태 복원
+    const weekCollapsed = localStorage.getItem('oz_instagram_week_collapsed') === '1';
+    const weekContent = document.getElementById('instaWeeklyContent');
+    const weekArrow = document.getElementById('instaWeekToggleArrow');
+    if (weekContent && weekCollapsed) {
+      weekContent.style.display = 'none';
+      if (weekArrow) weekArrow.style.transform = 'rotate(-90deg)';
+    }
+
     // 인사이트 진입 시 항상 7일 필터로 시작
     (async () => {
       if (!instaPosts || !instaPosts.length) {
@@ -9420,6 +9715,38 @@ async function callGeminiAPI(prompt, maxTokens = 1500, temperature = 0.9) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
+// Claude API 헬퍼
+async function callClaudeAPI(prompt, maxTokens = 1500) {
+  if (!claudeApiKey) {
+    throw new Error('Claude API 키가 설정되지 않았어요. 좌측 하단에서 키를 등록해주세요.');
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': claudeApiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    let errMsg = `Claude API 오류 (${res.status})`;
+    try {
+      const e = JSON.parse(errText);
+      errMsg = e.error?.message || errMsg;
+    } catch(_){}
+    throw new Error(errMsg);
+  }
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
 // ── 브랜드 가이드 (수동 입력형)
 const DEFAULT_BRAND_GUIDE = {
   profile: '오즈키즈(ozkiz) - 15년 제조 경력의 아동복 브랜드. 자체 디자인·생산으로 합리적 가격과 디테일에 신경 쓴 마감이 강점. 단순 판매자가 아니라 아이를 키우는 엄마들의 곁에서 진짜 필요한 옷을 만드는 동료처럼 느껴지는 브랜드.',
@@ -9574,12 +9901,19 @@ function selectFeedbackPost(idx) {
   document.getElementById('feedbackImproveBtn').disabled = true;
 }
 
-async function runFeedbackAnalysis() {
-  if (!apiKey) { showToast('먼저 API 키를 등록해주세요'); openModal(); return; }
+async function runFeedbackAnalysis(provider) {
+  if (!provider) { showToast('AI를 선택해주세요 (⚡ Gemini 또는 🟣 Claude)'); return; }
+  if (provider === 'claude' && !claudeApiKey) { showToast('Claude API 키를 먼저 설정해주세요'); openModal(); return; }
+  if (provider === 'gemini' && !apiKey) { showToast('Gemini API 키를 먼저 설정해주세요'); openModal(); return; }
   if (!selectedFeedbackPost) return;
 
-  const btn = document.getElementById('feedbackAnalyzeBtn');
-  btn.disabled = true;
+  const providerLabel = provider === 'claude' ? '🟣 Claude' : '⚡ Gemini';
+  const btnGemini = document.getElementById('feedbackAnalyzeBtnGemini');
+  const btnClaude = document.getElementById('feedbackAnalyzeBtnClaude');
+  const btn = provider === 'claude' ? btnClaude : btnGemini;
+  if (btnGemini) btnGemini.disabled = true;
+  if (btnClaude) btnClaude.disabled = true;
+  const originalText = btn.textContent;
   btn.textContent = '🤖 분석 중...';
 
   const personaContext = currentPersona ? `
@@ -9621,8 +9955,13 @@ ${personaContext}
 각 항목은 마케터가 바로 실행할 수 있는 구체적 조언으로 작성해주세요.`;
 
   try {
-    const result = await callGeminiAPI(prompt, 4000);
-    console.log('AI 분석 응답:', result);
+    let result;
+    if (provider === 'claude') {
+      result = await callClaudeAPI(prompt, 4000);
+    } else {
+      result = await callGeminiAPI(prompt, 4000);
+    }
+    console.log(`${providerLabel} 분석 응답:`, result);
     document.getElementById('feedbackAnalysisBody').innerHTML = result
       .replace(/\[강점\]/g, '<b style="color:#16a34a;display:block;margin-top:12px;font-size:13px">🟢 강점</b>')
       .replace(/\[약점\]/g, '<b style="color:#dc2626;display:block;margin-top:12px;font-size:13px">🔴 약점</b>')
@@ -9633,9 +9972,12 @@ ${personaContext}
     const hasAll = ['[강점]','[약점]','[알고리즘 분석]','[개선 방향]'].every(k => result.includes(k));
 
     document.getElementById('feedbackAnalysisResult').style.display = 'block';
-    document.getElementById('feedbackImproveBtn').disabled = false;
+    const btnImpGem = document.getElementById('feedbackImproveBtnGemini');
+    const btnImpCla = document.getElementById('feedbackImproveBtnClaude');
+    if (btnImpGem && apiKey) btnImpGem.disabled = false;
+    if (btnImpCla && claudeApiKey) btnImpCla.disabled = false;
     if (hasAll) {
-      showToast('✓ 분석 완료');
+      showToast(`✓ ${providerLabel} 분석 완료`);
     } else {
       showToast('⚠️ 일부 항목 누락 - 다시 분석 권장');
     }
@@ -9643,17 +9985,25 @@ ${personaContext}
     console.error('피드백 분석 오류:', e);
     showToast('분석 실패: ' + e.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = '🔍 AI 분석';
+    if (btnGemini && apiKey) btnGemini.disabled = false;
+    if (btnClaude && claudeApiKey) btnClaude.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
-async function runImproveGenerate() {
+async function runImproveGenerate(provider) {
   if (!selectedFeedbackPost) return;
-  if (!apiKey) { showToast('먼저 API 키를 등록해주세요'); openModal(); return; }
+  if (!provider) { showToast('AI를 선택해주세요 (⚡ Gemini 또는 🟣 Claude)'); return; }
+  if (provider === 'claude' && !claudeApiKey) { showToast('Claude API 키를 먼저 설정해주세요'); openModal(); return; }
+  if (provider === 'gemini' && !apiKey) { showToast('Gemini API 키를 먼저 설정해주세요'); openModal(); return; }
 
-  const btn = document.getElementById('feedbackImproveBtn');
-  btn.disabled = true;
+  const providerLabel = provider === 'claude' ? '🟣 Claude' : '⚡ Gemini';
+  const btnGemini = document.getElementById('feedbackImproveBtnGemini');
+  const btnClaude = document.getElementById('feedbackImproveBtnClaude');
+  const btn = provider === 'claude' ? btnClaude : btnGemini;
+  if (btnGemini) btnGemini.disabled = true;
+  if (btnClaude) btnClaude.disabled = true;
+  const originalText = btn.textContent;
   btn.textContent = '🤖 생성 중...';
 
   const analysis = document.getElementById('feedbackAnalysisBody').textContent;
@@ -9697,19 +10047,25 @@ ${personaContext}
 부연 설명 없이 위 3개 버전만 출력해주세요.`;
 
   try {
-    const result = await callGeminiAPI(prompt, 4000);
+    let result;
+    if (provider === 'claude') {
+      result = await callClaudeAPI(prompt, 4000);
+    } else {
+      result = await callGeminiAPI(prompt, 4000);
+    }
     document.getElementById('feedbackImproveBody').innerHTML = result
       .replace(/【버전 1[^】]*】/g, '<b style="color:#dc2626;display:block;margin-top:14px;font-size:13px">$&</b>')
       .replace(/【버전 2[^】]*】/g, '<b style="color:#3b82f6;display:block;margin-top:14px;font-size:13px">$&</b>')
       .replace(/【버전 3[^】]*】/g, '<b style="color:#16a34a;display:block;margin-top:14px;font-size:13px">$&</b>');
     document.getElementById('feedbackImproveBody').dataset.raw = result;
     document.getElementById('feedbackImproveResult').style.display = 'block';
-    showToast('✓ 개선글 생성 완료');
+    showToast(`✓ ${providerLabel} 개선글 생성 완료`);
   } catch(e) {
     showToast('생성 실패: ' + e.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = '✨ 개선글 생성';
+    if (btnGemini && apiKey) btnGemini.disabled = false;
+    if (btnClaude && claudeApiKey) btnClaude.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
@@ -10583,6 +10939,55 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ── 테이블 컬럼 너비 조정 (드래그)
+// 사용법: 테이블에 class="resizable" 추가하면 자동 적용
+function enableTableResizers() {
+  document.querySelectorAll('table.resizable th').forEach(th => {
+    // 이미 리사이저가 있으면 스킵
+    if (th.querySelector('.col-resizer')) return;
+    const resizer = document.createElement('div');
+    resizer.className = 'col-resizer';
+    th.appendChild(resizer);
+    resizer.addEventListener('mousedown', initResize);
+  });
+}
+
+function initResize(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const resizer = e.target;
+  const th = resizer.parentElement;
+  const startX = e.clientX;
+  const startWidth = th.offsetWidth;
+  resizer.classList.add('dragging');
+
+  function doDrag(e) {
+    const newWidth = Math.max(40, startWidth + e.clientX - startX);
+    th.style.width = newWidth + 'px';
+    th.style.minWidth = newWidth + 'px';
+    th.style.maxWidth = newWidth + 'px';
+  }
+  function stopDrag() {
+    resizer.classList.remove('dragging');
+    document.removeEventListener('mousemove', doDrag);
+    document.removeEventListener('mouseup', stopDrag);
+  }
+  document.addEventListener('mousemove', doDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+// 페이지 진입 시 + 표 렌더 시마다 호출
+function applyResizersToAllTables() {
+  // 모든 주요 표에 'resizable' 클래스 자동 부여
+  ['hashtagTable', 'competitorTable'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t && !t.classList.contains('resizable')) {
+      t.classList.add('resizable');
+    }
+  });
+  enableTableResizers();
 }
 
 // close modal on overlay click

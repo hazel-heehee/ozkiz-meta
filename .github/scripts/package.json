@@ -1,0 +1,10 @@
+{
+  "name": "ozkiz-competitor-sync",
+  "version": "1.0.0",
+  "description": "ozkiz 경쟁사 추적 자동 동기화 (GitHub Actions)",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "axios": "^1.7.0"
+  }
+}

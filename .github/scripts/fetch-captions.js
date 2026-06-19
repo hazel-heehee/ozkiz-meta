@@ -44,11 +44,41 @@ async function main() {
 
   console.log(`📊 처리 대상: ${posts.length}개 게시물`);
 
-  // URL 정리 (?hl=ko 같은 쿼리 제거)
-  const urls = posts.map(p => {
-    const u = String(p.link || '').trim();
-    return u.split('?')[0].replace(/\/$/, '');
-  }).filter(u => u);
+  // URL 정리 + 중복 제거
+  // - 쿼리스트링 (?hl=ko) 제거
+  // - 끝 슬래시 정리
+  // - 유저네임 prefix 제거 (예: /ozkiz_official/p/XXX → /p/XXX)
+  // - 인스타 URL만 (instagram.com)
+  // - 중복 제거 (Set)
+  function cleanUrl(u) {
+    if (!u) return null;
+    let url = String(u).trim();
+    if (!url.includes('instagram.com')) return null;
+    // 쿼리스트링 제거
+    url = url.split('?')[0].split('#')[0].replace(/\/+$/, '');
+    // /username/p/XXX → /p/XXX 정규화
+    const m = url.match(/instagram\.com\/(?:[^\/]+\/)?(p|reel|tv)\/([^\/]+)/);
+    if (!m) return null;
+    return `https://www.instagram.com/${m[1]}/${m[2]}/`;
+  }
+
+  // 게시물 → 정규화된 URL 매핑 보존 (DB 업데이트 시 사용)
+  const postToUrl = new Map();
+  const urlSet = new Set();
+  for (const p of posts) {
+    const cleanedUrl = cleanUrl(p.link);
+    if (cleanedUrl) {
+      postToUrl.set(p.id, cleanedUrl);
+      urlSet.add(cleanedUrl);
+    }
+  }
+  const urls = Array.from(urlSet);
+  console.log(`🔗 정리된 URL: ${urls.length}개 (원본 ${posts.length}개 → 중복 제거)`);
+
+  if (urls.length === 0) {
+    console.log('✓ 처리할 URL 없음');
+    return;
+  }
 
   console.log(`🚀 Apify 시작...`);
 

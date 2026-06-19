@@ -1776,8 +1776,11 @@ table.resizable th .col-resizer:active{
     </div>
     <div class="content-area">
       <!-- 안내 -->
+      <div style="background:#dcfce7;border-left:3px solid #16a34a;border-radius:6px;padding:10px 14px;margin-bottom:8px;font-size:12px;line-height:1.6">
+        🤖 <b>자동 동기화</b>: 매일 새벽 1시(KST)에 GitHub Actions가 자동으로 8개 경쟁사 팔로워 수를 수집해서 저장합니다. <span id="lastSyncInfo" style="color:var(--text3);font-size:11px"></span>
+      </div>
       <div style="background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6">
-        💡 <b>사용법</b>: 셀 클릭 → 숫자 입력 → 자동 저장. Tab/Enter로 다음 셀 이동. 증감은 어제 데이터와 비교해 자동 계산돼요.
+        💡 <b>수동 입력</b>: 셀 클릭 → 숫자 입력 → 자동 저장. Tab/Enter로 다음 셀 이동. 참여율 등 자동 수집 안 되는 정보는 수동 입력!
       </div>
 
       <!-- 통계 요약 -->
@@ -7003,6 +7006,29 @@ async function loadInstaCompetitors() {
     // 4. 렌더
     renderInstaCompetitorTable();
     renderCompetitorSummary();
+
+    // 마지막 자동 동기화 정보 (가장 최근의 created_at)
+    try {
+      const lastSyncEl = document.getElementById('lastSyncInfo');
+      if (lastSyncEl && history && history.length) {
+        // created_at이 있다면 가장 최근 것
+        const latestCreated = history
+          .map(h => h.created_at)
+          .filter(Boolean)
+          .sort()
+          .pop();
+        if (latestCreated) {
+          const d = new Date(latestCreated);
+          const now = new Date();
+          const diffHours = Math.floor((now - d) / (1000 * 60 * 60));
+          let label;
+          if (diffHours < 1) label = '방금 전';
+          else if (diffHours < 24) label = `${diffHours}시간 전`;
+          else label = `${Math.floor(diffHours/24)}일 전`;
+          lastSyncEl.textContent = `· 마지막 동기화: ${d.toLocaleString('ko-KR')} (${label})`;
+        }
+      }
+    } catch(e){}
 
   } catch (e) {
     console.error('loadInstaCompetitors:', e);

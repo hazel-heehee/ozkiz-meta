@@ -474,6 +474,20 @@ table.resizable th .col-resizer:active{
         <!-- 펼침 영역 -->
         <div id="threadWeeklyContent" style="margin-top:8px">
 
+        <!-- 가로형 막대그래프 -->
+        <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+          <div style="font-size:11px;color:#1e40af;font-weight:600;margin-bottom:6px">🎯 목표 대비 진행률 (조회수)</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;display:flex;justify-content:space-between">
+            <span>목표: <span id="threadGraphGoal">3,000</span>회/일 · 실제: <span id="threadGraphActual">-</span>회/일</span>
+            <span id="threadWeekProgressPct">-</span>
+          </div>
+          <div style="width:100%;height:14px;background:#f3f4f6;border-radius:7px;overflow:hidden;border:1px solid #e5e7eb;position:relative">
+            <!-- 목표 라인 -->
+            <div style="position:absolute;left:0;top:0;height:100%;width:100%;background:linear-gradient(90deg,transparent,transparent 99%,#1e40af 99%);"></div>
+            <div id="threadWeekProgressBar" style="height:100%;background:linear-gradient(90deg,#60a5fa,#3b82f6);width:0%;transition:width 0.6s ease;border-radius:7px"></div>
+          </div>
+        </div>
+
         <div id="threadWeekAIResult" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #93c5fd;font-size:13px;line-height:1.7"></div>
 
         <!-- 사용자 메모 (토글) -->
@@ -567,9 +581,13 @@ table.resizable th .col-resizer:active{
         <!-- 콘텐츠 캘린더 -->
         <div class="card" style="grid-column:1/-1">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;align-items:center;gap:12px">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
               <div class="card-title" style="margin-bottom:0">콘텐츠 캘린더</div>
               <span id="recentPostsCount" style="font-size:11px;color:var(--text3)"></span>
+              <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;padding:3px 8px;background:#f9fafb;border-radius:5px;user-select:none">
+                <input type="checkbox" id="threadRecentIgnoreFilter" onchange="toggleThreadRecentFilter()" style="cursor:pointer"/>
+                <span>📅 기간 필터 무시 <span style="color:var(--text3)">(전체 보기)</span></span>
+              </label>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:11px;color:var(--text3)" id="sheetLastUpdate"></span>
@@ -1222,22 +1240,41 @@ table.resizable th .col-resizer:active{
           <!-- 팔로워 (목표 있음) -->
           <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:10px 12px">
             <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px">🎯 팔로워 증가 (목표 있음)</div>
-            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px">
+            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px">
               <span>목표 <b id="instaWeekGoal" style="color:#1e40af">100</b>명/일</span>
               <span style="color:var(--text3)">→</span>
               <span>실제 <b id="instaWeekActual" style="font-size:15px">-</b>명/일</span>
               <span id="instaWeekStatus" style="font-weight:700;margin-left:auto">-</span>
+            </div>
+            <!-- 가로 막대그래프 -->
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;display:flex;justify-content:space-between">
+              <span>목표 대비 진행률</span>
+              <span id="instaWeekProgressPct">-</span>
+            </div>
+            <div style="width:100%;height:14px;background:#f3f4f6;border-radius:7px;overflow:hidden;position:relative;border:1px solid #e5e7eb">
+              <!-- 목표 라인 (100%) -->
+              <div style="position:absolute;left:0;top:0;height:100%;width:100%;background:linear-gradient(90deg,transparent,transparent 99%,#1e40af 99%);"></div>
+              <!-- 실제 진행 막대 -->
+              <div id="instaWeekProgressBar" style="height:100%;background:linear-gradient(90deg,#f59e0b,#10b981);width:0%;transition:width 0.6s ease;border-radius:7px"></div>
             </div>
           </div>
 
           <!-- 조회수 (참고용, 목표 없음) -->
           <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:10px 12px">
             <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px">📊 조회수 (참고)</div>
-            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px">
+            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px">
               <span>총 <b id="instaWeekViews" style="font-size:15px;color:#3b82f6">-</b>회</span>
               <span style="color:var(--text3)">·</span>
               <span style="font-size:12px;color:var(--text2)">일평균 <b id="instaWeekViewsAvg">-</b>회</span>
               <span style="font-size:11px;color:var(--text3);margin-left:auto" id="instaWeekViewsPosts">- 게시물</span>
+            </div>
+            <!-- 지난주 대비 막대 -->
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;display:flex;justify-content:space-between">
+              <span>지난주 대비</span>
+              <span id="instaWeekViewsTrendPct">-</span>
+            </div>
+            <div style="width:100%;height:14px;background:#f3f4f6;border-radius:7px;overflow:hidden;border:1px solid #e5e7eb">
+              <div id="instaWeekViewsTrendBar" style="height:100%;background:linear-gradient(90deg,#60a5fa,#3b82f6);width:0%;transition:width 0.6s ease;border-radius:7px"></div>
             </div>
           </div>
         </div>
@@ -1755,24 +1792,28 @@ table.resizable th .col-resizer:active{
 
       <!-- 레퍼런스 테이블 -->
       <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff">
-        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:1100px" class="resizable">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:1700px" class="resizable">
           <thead style="background:#f8fafc">
             <tr style="border-bottom:1px solid var(--border)">
-              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap;width:90px;font-size:10px">일자</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap;width:85px;font-size:10px">일자</th>
               <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:50px;font-size:10px">미디어</th>
-              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);width:100px;font-size:10px">브랜드</th>
-              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:60px;font-size:10px">타입</th>
-              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:70px;font-size:10px">분류</th>
-              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);min-width:200px;font-size:10px">후크 · 내용</th>
-              <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);width:65px;font-size:10px">조회수</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);width:90px;font-size:10px">브랜드</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);width:90px;font-size:10px">계정운영자</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:55px;font-size:10px">타입</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:65px;font-size:10px">분류</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:65px;font-size:10px">CTA</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);min-width:160px;font-size:10px">후크 · 내용</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);min-width:160px;font-size:10px">캡션</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);min-width:120px;font-size:10px">댓글반응</th>
+              <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);width:60px;font-size:10px">조회수</th>
               <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);width:55px;font-size:10px">좋아요</th>
               <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);width:48px;font-size:10px">댓글</th>
-              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);width:180px;font-size:10px">URL</th>
-              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:50px;font-size:10px">삭제</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);width:150px;font-size:10px">URL</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:45px;font-size:10px">삭제</th>
             </tr>
           </thead>
           <tbody id="instaRefBody">
-            <tr><td colspan="11" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>
+            <tr><td colspan="15" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -3389,7 +3430,7 @@ function renderRecentCal() {
 
   title.textContent = `${recentCalYear}년 ${recentCalMonth+1}월`;
 
-  const data = threadFilteredData || sheetData;
+  const data = getThreadRecentData();
   const today = new Date();
   const firstDay = new Date(recentCalYear, recentCalMonth, 1);
   const lastDay = new Date(recentCalYear, recentCalMonth+1, 0);
@@ -3478,15 +3519,24 @@ function renderRecentCal() {
         }).join('')}</div>`
       : '';
 
-    const postHtml = posts.slice(0, 2).map(p => {
+    // 빈 카드 필터링
+    const postsFiltered = posts.filter(p => (p.text||'').trim() || p.image_url || p.link);
+    const postHtml = postsFiltered.slice(0, 2).map(p => {
       const catBadge = p.category && catLabels[p.category]
         ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
         : '';
       const thumbHtml = `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20, 'threads')}</span>`;
-      const content = `${thumbHtml}${catBadge}<span style="vertical-align:middle">${p.text}</span>`;
+      let displayText = (p.text || '').trim();
+      if (!displayText) {
+        const link = p.link || '';
+        const m = link.match(/\/post\/([^\/?]+)/) || link.match(/\/(p|reel)\/([^\/?]+)/);
+        displayText = m ? (m[2] || m[1]) : (p.type || '게시물');
+      }
+      const content = `${thumbHtml}${catBadge}<span style="vertical-align:middle">${displayText}</span>`;
+      const dragAttrs = `draggable="true" ondragstart="threadPostDragStart(event, ${p.id}, 'post')" ondragend="threadPostDragEnd(event)"`;
       return p.link
-        ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
-        : `<div class="cal-post-dot published">${content}</div>`;
+        ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab" ${dragAttrs} title="드래그해서 날짜 이동">${content}</a>`
+        : `<div class="cal-post-dot published" style="cursor:grab" ${dragAttrs} title="드래그해서 날짜 이동">${content}</div>`;
     }).join('');
 
     // 예약 게시글 (회색)
@@ -3495,13 +3545,19 @@ function renderRecentCal() {
         ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
         : '';
       const typeBadge = p.type ? `<span style="display:inline-block;background:#fed7aa;color:#9a3412;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.type}</span>` : '';
-      return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openScheduleModalEdit('${p.id}')" title="예약 글">${typeBadge}${catBadge}${p.text}</div>`;
+      return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openScheduleModalEdit('${p.id}')" style="cursor:grab"
+        draggable="true" ondragstart="threadPostDragStart(event, '${p.id}', 'schedule')" ondragend="threadPostDragEnd(event)"
+        title="드래그해서 날짜 이동 (예약 글)">${typeBadge}${catBadge}${p.text}</div>`;
     }).join('');
 
-    const moreCount = (posts.length > 2 ? posts.length-2 : 0) + (schs.length > 2 ? schs.length-2 : 0);
+    const moreCount = (postsFiltered.length > 2 ? postsFiltered.length-2 : 0) + (schs.length > 2 ? schs.length-2 : 0);
     const moreHtml = moreCount > 0 ? `<div class="cal-more">+${moreCount}개</div>` : '';
     const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
-    html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${schHtml}${moreHtml}</div>`;
+    const dateKey = `${recentCalYear}-${String(recentCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += `<div class="cal-day${isToday?' today':''}" data-date="${dateKey}"
+      ondragover="threadPostDragOver(event, this)"
+      ondragleave="threadPostDragLeave(event, this)"
+      ondrop="threadPostDrop(event, '${dateKey}', this)">${numEl}${kgHtml}${postHtml}${schHtml}${moreHtml}</div>`;
   }
   grid.innerHTML = html;
 }
@@ -3874,6 +3930,11 @@ window.addEventListener('load', async () => {
     const dashBtn = document.querySelector('.channel-menu[data-channel="threads"] .nav-item');
     if (dashPage) dashPage.classList.add('active');
     if (dashBtn) dashBtn.classList.add('active');
+
+    // 스레드 필터 무시 체크박스 상태 복원
+    const threadIgnoredSaved = localStorage.getItem('oz_thread_recent_ignore_filter') === '1';
+    const threadIgnoredCheckbox = document.getElementById('threadRecentIgnoreFilter');
+    if (threadIgnoredCheckbox) threadIgnoredCheckbox.checked = threadIgnoredSaved;
   } else {
     // 인스타 채널 — 인스타 데이터 로드
     loadInstaPosts();
@@ -3897,7 +3958,25 @@ let currentInstaRecentView = 'table';
 let instaRecentCalYear = new Date().getFullYear();
 let instaRecentCalMonth = new Date().getMonth();
 
-// 콘텐츠 캘린더 - 기간 필터 무시 토글
+// 스레드 콘텐츠 캘린더 - 기간 필터 무시 토글
+function toggleThreadRecentFilter() {
+  const ignored = document.getElementById('threadRecentIgnoreFilter')?.checked;
+  localStorage.setItem('oz_thread_recent_ignore_filter', ignored ? '1' : '0');
+  // 다시 렌더
+  if (typeof renderRecentCal === 'function') renderRecentCal();
+  if (typeof renderTableOnly === 'function') renderTableOnly(getThreadRecentData());
+}
+
+// 스레드 콘텐츠 캘린더용 데이터 선택 (필터 무시 옵션 반영)
+function getThreadRecentData() {
+  const ignored = document.getElementById('threadRecentIgnoreFilter')?.checked;
+  if (ignored) return (typeof sheetData !== 'undefined' ? sheetData : []);
+  return (typeof threadFilteredData !== 'undefined' && threadFilteredData)
+    ? threadFilteredData
+    : (typeof sheetData !== 'undefined' ? sheetData : []);
+}
+
+// 콘텐츠 캘린더 - 기간 필터 무시 토글 (인스타)
 function toggleInstaRecentFilter() {
   // 토글 상태 localStorage에 저장
   const ignored = document.getElementById('instaRecentIgnoreFilter')?.checked;
@@ -4882,12 +4961,21 @@ function renderInstaCalendar() {
       : '';
 
     // 발행글 (녹색) — 썸네일 + 텍스트
-    const pubHtml = pubs.slice(0,2).map(p => {
+    // 빈 데이터 (텍스트/이미지/링크 모두 없음) 카드는 제외
+    const pubsFiltered = pubs.filter(p => (p.text||'').trim() || p.image_url || p.link);
+    const pubHtml = pubsFiltered.slice(0,2).map(p => {
       const typeBadge = p.post_type && typeColors[p.post_type]
         ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
         : '';
       const thumbHtml = `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>`;
-      const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${p.text}</span>`;
+      // 텍스트가 비어 있으면 link의 shortcode를 대체로 사용
+      let displayText = (p.text || '').trim();
+      if (!displayText) {
+        const link = p.link || '';
+        const m = link.match(/\/(p|reel|tv)\/([^\/?]+)/);
+        displayText = m ? m[2] : (p.post_type || '게시물');
+      }
+      const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${displayText}</span>`;
       const dragAttrs = `draggable="true" ondragstart="instaPostDragStart(event, ${p.id}, 'post')" ondragend="instaPostDragEnd(event)"`;
       return p.link
         ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab" ${dragAttrs} title="드래그해서 날짜 이동">${content}</a>`
@@ -5162,6 +5250,99 @@ async function renderInstaCalListView() {
 // 🖱️ 인스타 콘텐츠 드래그앤드롭 (캘린더 뷰)
 // ══════════════════════════════════════════════════════════════
 let _instaDragData = null;  // { id, kind: 'post' | 'schedule' }
+
+// ════════════════════════════════════════════════════════════
+// 🧵 스레드 콘텐츠 캘린더 드래그앤드롭
+// ════════════════════════════════════════════════════════════
+let _threadDragData = null;
+
+function threadPostDragStart(e, id, kind) {
+  _threadDragData = { id, kind: kind || 'post' };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(id));
+  if (e.target && e.target.style) e.target.style.opacity = '0.4';
+}
+
+function threadPostDragEnd(e) {
+  if (e.target && e.target.style) e.target.style.opacity = '1';
+  document.querySelectorAll('.cal-day.drop-target').forEach(el => {
+    el.classList.remove('drop-target');
+    el.style.background = '';
+    el.style.outline = '';
+  });
+  _threadDragData = null;
+}
+
+function threadPostDragOver(e, cell) {
+  if (!_threadDragData) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if (cell && !cell.classList.contains('drop-target')) {
+    cell.classList.add('drop-target');
+    cell.style.background = '#dbeafe';
+    cell.style.outline = '2px dashed #3b82f6';
+  }
+}
+
+function threadPostDragLeave(e, cell) {
+  if (cell && cell.contains(e.relatedTarget)) return;
+  if (cell) {
+    cell.classList.remove('drop-target');
+    cell.style.background = '';
+    cell.style.outline = '';
+  }
+}
+
+async function threadPostDrop(e, newDateKey, cell) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (cell) {
+    cell.classList.remove('drop-target');
+    cell.style.background = '';
+    cell.style.outline = '';
+  }
+  if (!_threadDragData) return;
+  const { id, kind } = _threadDragData;
+  _threadDragData = null;
+
+  try {
+    if (kind === 'schedule') {
+      // 스레드 예약 게시글 (scheduledPosts 배열)
+      const sch = (typeof scheduledPosts !== 'undefined' ? scheduledPosts : []).find(p => p.id === id);
+      if (!sch) { showToast('예약 게시글을 찾을 수 없어요'); return; }
+      const [y, m, d] = newDateKey.split('-').map(Number);
+      // 메모리
+      sch.year = y; sch.month = m - 1; sch.day = d;
+      // DB (scheduled_posts 테이블이 있다면)
+      if (sb && typeof sb.from === 'function') {
+        try {
+          await sb.from('scheduled_posts').update({
+            year: y, month: m - 1, day: d
+          }).eq('id', id);
+        } catch (e2) { /* 무시 */ }
+      }
+      showToast(`✓ ${newDateKey}로 이동됨`);
+    } else {
+      // 발행글: sheetData의 row 찾아서 date 변경 (Apps Script는 read-only이므로 메모리만)
+      const row = (sheetData || []).find(r => r.id === id);
+      if (!row) { showToast('데이터를 찾을 수 없어요'); return; }
+      const oldDate = String(row[COL.date] || '');
+      if (oldDate === newDateKey) return;
+      row[COL.date] = newDateKey;
+      // posts 테이블이 있으면 업데이트
+      if (sb) {
+        try {
+          await sb.from('posts').update({ date: newDateKey }).eq('id', id);
+        } catch (e2) { /* 무시 */ }
+      }
+      showToast(`✓ ${oldDate} → ${newDateKey} 이동됨`);
+    }
+    renderRecentCal();
+  } catch (err) {
+    console.error('threadPostDrop:', err);
+    showToast('이동 실패: ' + err.message);
+  }
+}
 
 function instaPostDragStart(e, id, kind) {
   _instaDragData = { id, kind: kind || 'post' };
@@ -5452,15 +5633,14 @@ function renderInstaRefs() {
   document.getElementById('instaRefCount').textContent = `${data.length}개 표시`;
 
   if (!data.length) {
-    body.innerHTML = `<tr><td colspan="11" style="padding:60px 20px;text-align:center;color:var(--text3)">
+    body.innerHTML = `<tr><td colspan="15" style="padding:60px 20px;text-align:center;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:8px">📭</div>
       등록된 레퍼런스가 없어요<br>
       <span style="font-size:11px;margin-top:6px">아래 <b>+ 레퍼런스 추가</b> 버튼을 누르세요</span>
     </td></tr>`;
-    // 추가 버튼 행도 표시
     body.innerHTML += `
       <tr style="background:#f0f9ff">
-        <td colspan="11" style="padding:8px;text-align:center">
+        <td colspan="15" style="padding:8px;text-align:center">
           <button onclick="openInstaRefAddModal()" style="background:transparent;border:1px dashed #3b82f6;color:#3b82f6;border-radius:6px;padding:6px 16px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:600">+ 레퍼런스 추가</button>
         </td>
       </tr>`;
@@ -5470,14 +5650,11 @@ function renderInstaRefs() {
   const dash = '<span style="color:var(--text3)">—</span>';
 
   body.innerHTML = data.map(r => {
-    // 미디어 셀 — buildMediaThumb 사용 (Ctrl+V 가능 영역)
-    // channel='instagram_ref'로 처리해서 insta_refs 테이블 업데이트
     const mediaCell = buildMediaThumb(r, 36, 'instagram_ref');
 
     const baseInput = `width:100%;padding:4px 5px;border:1px solid transparent;border-radius:3px;font-size:11px;font-family:inherit;background:transparent;outline:none`;
     const focusHandlers = `onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'" onblur="this.style.borderColor='transparent';this.style.background='transparent'"`;
 
-    // 타입 셀렉트
     const typeInline = `<select onchange="updateInstaRefCell(${r.id},'post_type',this.value,this)" onclick="event.stopPropagation()" style="${baseInput};text-align:center;cursor:pointer" ${focusHandlers}>
       <option value="" ${!r.post_type?'selected':''}>—</option>
       <option value="릴스" ${r.post_type==='릴스'?'selected':''}>릴스</option>
@@ -5486,7 +5663,6 @@ function renderInstaRefs() {
       <option value="스토리" ${r.post_type==='스토리'?'selected':''}>스토리</option>
     </select>`;
 
-    // 카테고리 셀렉트
     const catInline = `<select onchange="updateInstaRefCell(${r.id},'category',this.value,this)" onclick="event.stopPropagation()" style="${baseInput};text-align:center;cursor:pointer" ${focusHandlers}>
       <option value="" ${!r.category?'selected':''}>—</option>
       <option value="제품성" ${r.category==='제품성'?'selected':''}>제품성</option>
@@ -5501,18 +5677,22 @@ function renderInstaRefs() {
         <td style="padding:4px"><input type="date" value="${r.date||''}" onchange="updateInstaRefCell(${r.id},'date',this.value,this)" style="${baseInput};color:var(--text2)" ${focusHandlers}/></td>
         <td style="padding:4px;text-align:center">${mediaCell}</td>
         <td style="padding:4px"><input type="text" value="${(r.brand||'').replace(/"/g,'&quot;')}" placeholder="브랜드" onchange="updateInstaRefCell(${r.id},'brand',this.value,this)" style="${baseInput};font-weight:600" ${focusHandlers}/></td>
+        <td style="padding:4px"><input type="text" value="${(r.account_operator||'').replace(/"/g,'&quot;')}" placeholder="@계정명" onchange="updateInstaRefCell(${r.id},'account_operator',this.value,this)" style="${baseInput};color:#3730a3" ${focusHandlers}/></td>
         <td style="padding:2px">${typeInline}</td>
         <td style="padding:2px">${catInline}</td>
-        <td style="padding:4px;max-width:240px">
+        <td style="padding:4px"><input type="text" value="${(r.cta||'').replace(/"/g,'&quot;')}" placeholder="저장/팔로우/공유..." onchange="updateInstaRefCell(${r.id},'cta',this.value,this)" style="${baseInput};text-align:center" ${focusHandlers}/></td>
+        <td style="padding:4px;max-width:200px">
           <input type="text" value="${(r.content||'').replace(/"/g,'&quot;')}" placeholder="후크/내용" onchange="updateInstaRefCell(${r.id},'content',this.value,this)" style="${baseInput};font-weight:500" ${focusHandlers}/>
-          <input type="text" value="${(r.point||'').replace(/"/g,'&quot;')}" placeholder="💡 포인트 (선택)" onchange="updateInstaRefCell(${r.id},'point',this.value,this)" style="${baseInput};font-size:10px;color:var(--text3);margin-top:2px" ${focusHandlers}/>
+          <input type="text" value="${(r.point||'').replace(/"/g,'&quot;')}" placeholder="💡 포인트" onchange="updateInstaRefCell(${r.id},'point',this.value,this)" style="${baseInput};font-size:10px;color:var(--text3);margin-top:2px" ${focusHandlers}/>
         </td>
+        <td style="padding:4px"><textarea rows="2" placeholder="게시물 캡션" onchange="updateInstaRefCell(${r.id},'caption',this.value,this)" style="${baseInput};resize:vertical;line-height:1.4;min-height:32px" ${focusHandlers}>${(r.caption||'').replace(/</g,'&lt;')}</textarea></td>
+        <td style="padding:4px"><textarea rows="2" placeholder="댓글 분위기, 주요 댓글 등" onchange="updateInstaRefCell(${r.id},'comment_reaction',this.value,this)" style="${baseInput};resize:vertical;line-height:1.4;min-height:32px;color:var(--text2)" ${focusHandlers}>${(r.comment_reaction||'').replace(/</g,'&lt;')}</textarea></td>
         <td style="padding:4px"><input type="number" value="${r.views||''}" placeholder="0" onchange="updateInstaRefCell(${r.id},'views',this.value,this)" style="${baseInput};text-align:right;font-weight:600" ${focusHandlers}/></td>
         <td style="padding:4px"><input type="number" value="${r.likes||''}" placeholder="0" onchange="updateInstaRefCell(${r.id},'likes',this.value,this)" style="${baseInput};text-align:right;color:var(--red)" ${focusHandlers}/></td>
         <td style="padding:4px"><input type="number" value="${r.comments||''}" placeholder="0" onchange="updateInstaRefCell(${r.id},'comments',this.value,this)" style="${baseInput};text-align:right" ${focusHandlers}/></td>
-        <td style="padding:4px;max-width:200px">
+        <td style="padding:4px">
           <div style="display:flex;gap:3px;align-items:center">
-            <input type="text" value="${(r.link||'').replace(/"/g,'&quot;')}" placeholder="https://..." onchange="updateInstaRefCell(${r.id},'link',this.value,this)" style="${baseInput};flex:1;min-width:80px" ${focusHandlers}/>
+            <input type="text" value="${(r.link||'').replace(/"/g,'&quot;')}" placeholder="https://..." onchange="updateInstaRefCell(${r.id},'link',this.value,this)" style="${baseInput};flex:1;min-width:60px" ${focusHandlers}/>
             ${r.link ? `<a href="${(r.link||'').startsWith('http')?r.link:'https://'+r.link}" target="_blank" style="text-decoration:none;color:#3b82f6;font-size:13px" title="링크 열기">↗</a>` : ''}
           </div>
         </td>
@@ -5526,7 +5706,7 @@ function renderInstaRefs() {
   // 표 안에 + 추가 버튼
   body.innerHTML += `
     <tr style="background:#f0f9ff">
-      <td colspan="11" style="padding:8px;text-align:center">
+      <td colspan="15" style="padding:8px;text-align:center">
         <button onclick="openInstaRefAddModal()" style="background:transparent;border:1px dashed #3b82f6;color:#3b82f6;border-radius:6px;padding:6px 16px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:600">+ 레퍼런스 추가</button>
       </td>
     </tr>`;
@@ -6263,6 +6443,53 @@ function renderInstaWeeklyReport() {
   document.getElementById('instaWeekViewsAvg').textContent = viewsAvg.toLocaleString();
   document.getElementById('instaWeekViewsPosts').textContent =
     `${totalPostsInWeek}개 게시물 (조회수 있음: ${postCountWithViews}개)`;
+
+  // ── 📊 가로 막대그래프 (목표 대비 진행률) ──
+  const progressBar = document.getElementById('instaWeekProgressBar');
+  const progressPct = document.getElementById('instaWeekProgressPct');
+  if (progressBar && progressPct) {
+    if (dailyAvg === null || goal <= 0) {
+      progressBar.style.width = '0%';
+      progressPct.textContent = '-';
+    } else {
+      const pct = Math.max(0, Math.min(150, (dailyAvg / goal) * 100));
+      progressBar.style.width = pct + '%';
+      progressBar.style.background = dailyAvg >= goal
+        ? 'linear-gradient(90deg,#10b981,#059669)'
+        : 'linear-gradient(90deg,#f59e0b,#ef4444)';
+      progressPct.textContent = pct.toFixed(0) + '%';
+      progressPct.style.color = dailyAvg >= goal ? '#16a34a' : '#dc2626';
+      progressPct.style.fontWeight = '700';
+    }
+  }
+
+  // ── 📊 지난주 대비 조회수 막대 ──
+  const viewsTrendBar = document.getElementById('instaWeekViewsTrendBar');
+  const viewsTrendPct = document.getElementById('instaWeekViewsTrendPct');
+  if (viewsTrendBar && viewsTrendPct) {
+    // 지난주 (start-7 ~ end-7)
+    const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - 7);
+    const prevEnd = new Date(end); prevEnd.setDate(prevEnd.getDate() - 7);
+    const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const prevStartStr = fmt(prevStart);
+    const prevEndStr = fmt(prevEnd);
+    let prevViews = 0;
+    (instaPosts || []).forEach(r => {
+      if (!r.date) return;
+      if (r.date < prevStartStr || r.date > prevEndStr) return;
+      prevViews += parseInt(r.views) || 0;
+    });
+    if (prevViews > 0) {
+      const pct = (totalViews / prevViews) * 100;
+      viewsTrendBar.style.width = Math.min(150, pct) + '%';
+      viewsTrendPct.textContent = (pct - 100 >= 0 ? '+' : '') + (pct - 100).toFixed(0) + '%';
+      viewsTrendPct.style.color = pct >= 100 ? '#16a34a' : '#dc2626';
+      viewsTrendPct.style.fontWeight = '700';
+    } else {
+      viewsTrendBar.style.width = totalViews > 0 ? '100%' : '0%';
+      viewsTrendPct.textContent = totalViews > 0 ? '신규' : '-';
+    }
+  }
 }
 
 // 스레드 주간 보고 렌더
@@ -6305,6 +6532,29 @@ function renderThreadWeeklyReport() {
     const under = goal - dailyAvg;
     const pct = ((dailyAvg / goal) * 100).toFixed(0);
     statusEl.innerHTML = `<span style="color:#dc2626">❌ 미달성 -${under.toLocaleString()} (${pct}%)</span>`;
+  }
+
+  // ── 📊 가로 막대그래프 ──
+  const graphGoalEl = document.getElementById('threadGraphGoal');
+  const graphActualEl = document.getElementById('threadGraphActual');
+  const progressBar = document.getElementById('threadWeekProgressBar');
+  const progressPct = document.getElementById('threadWeekProgressPct');
+  if (graphGoalEl) graphGoalEl.textContent = goal.toLocaleString();
+  if (graphActualEl) graphActualEl.textContent = dailyAvg.toLocaleString();
+  if (progressBar && progressPct) {
+    if (postCount === 0 || goal <= 0) {
+      progressBar.style.width = '0%';
+      progressPct.textContent = '-';
+    } else {
+      const pct = Math.max(0, Math.min(150, (dailyAvg / goal) * 100));
+      progressBar.style.width = pct + '%';
+      progressBar.style.background = dailyAvg >= goal
+        ? 'linear-gradient(90deg,#10b981,#059669)'
+        : 'linear-gradient(90deg,#60a5fa,#3b82f6)';
+      progressPct.textContent = pct.toFixed(0) + '%';
+      progressPct.style.color = dailyAvg >= goal ? '#16a34a' : '#3b82f6';
+      progressPct.style.fontWeight = '700';
+    }
   }
 }
 

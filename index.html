@@ -184,7 +184,8 @@ table.resizable th .col-resizer:active{
 .cal-day-num{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
 .cal-day.today .cal-day-num{color:var(--text);background:var(--text);color:var(--bg);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin-bottom:5px}
 .cal-post-dot{font-size:11px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px;padding:2px 5px;margin-bottom:2px;cursor:pointer;transition:all .15s}
-.cal-post-dot.published{background:rgba(34,197,94,.15);color:#16a34a;border:1px solid rgba(34,197,94,.25)}
+.cal-post-dot.published{background:#fff;color:var(--text);border:1px solid var(--border)}
+.cal-post-dot.published:hover{background:#f9fafb;border-color:#94a3b8}
 .cal-post-dot.scheduled{background:#f3f4f6;color:#6b7280;border:1px dashed #d1d5db;cursor:grab}
 .cal-post-dot.scheduled:hover{background:#e5e7eb;color:#374151}
 .cal-post-dot.scheduled.selected{outline:2px solid #3b82f6;outline-offset:1px;background:#dbeafe;color:#1e40af}
@@ -375,7 +376,7 @@ table.resizable th .col-resizer:active{
   <div class="channel-menu" data-channel="threads" style="display:none">
     <div class="sidebar-section">운영 (스레드)</div>
     <button class="nav-item" onclick="goPage('dashboard',this)">
-      <span class="nav-icon">◎</span> 대시보드
+      <span class="nav-icon">◎</span> 인사이트
     </button>
     <button class="nav-item" onclick="goPage('calendar',this)">
       <span class="nav-icon">▦</span> 콘텐츠 캘린더
@@ -423,10 +424,10 @@ table.resizable th .col-resizer:active{
 <!-- MAIN -->
 <main class="main">
 
-  <!-- ① 대시보드 -->
+  <!-- ① 인사이트 -->
   <div class="page" id="page-dashboard">
     <div class="page-top">
-      <div class="page-title">대시보드</div>
+      <div class="page-title">인사이트</div>
       <div class="page-actions">
         <span id="sheetSyncStatus" style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">
           <span id="syncDot" style="width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block"></span>
@@ -467,7 +468,6 @@ table.resizable th .col-resizer:active{
             <button onclick="openWeekGoalModal('threads')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px">✏️ 목표 설정</button>
             <button onclick="runWeekAIAnalysis('threads', 'gemini')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none" title="Gemini로 분석">⚡ Gemini</button>
             <button onclick="runWeekAIAnalysis('threads', 'claude')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#a855f7,#7c3aed);border:none" title="Claude로 분석">🟣 Claude</button>
-            <span id="threadWeekToggleArrow" style="font-size:14px;color:var(--text2);margin-left:4px;transition:transform 0.2s">▾</span>
           </span>
         </div>
 
@@ -476,16 +476,21 @@ table.resizable th .col-resizer:active{
 
         <div id="threadWeekAIResult" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #93c5fd;font-size:13px;line-height:1.7"></div>
 
-        <!-- 사용자 메모 -->
+        <!-- 사용자 메모 (토글) -->
         <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #93c5fd">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:12px;font-weight:600;color:#1e40af">✍️ 나의 주간 메모 <span style="color:var(--text3);font-weight:400;font-size:10px">(자동 저장)</span></div>
+          <div onclick="toggleWeekNote('threads')" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer;user-select:none">
+            <div style="font-size:12px;font-weight:600;color:#1e40af">
+              <span id="threadWeekNoteArrow" style="display:inline-block;transition:transform 0.2s">▼</span>
+              ✍️ 나의 주간 메모 <span style="color:var(--text3);font-weight:400;font-size:10px">(자동 저장 · 클릭해서 펼치기)</span>
+            </div>
             <span id="threadWeekNoteStatus" style="font-size:10px;color:var(--text3)"></span>
           </div>
-          <textarea id="threadWeekNote" placeholder="예: 이번주 베스트 글 — 워킹맘 공감 콘텐츠. 다음주는 신상 출시 예고 시작."
-            onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
-            onblur="saveWeekNote('threads', this)"
-            style="width:100%;padding:10px;border:1px solid rgba(59,130,246,0.3);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.6;background:rgba(255,255,255,0.7);outline:none;resize:vertical;min-height:60px"></textarea>
+          <div id="threadWeekNoteContent">
+            <textarea id="threadWeekNote" placeholder="예: 이번주 베스트 글 — 워킹맘 공감 콘텐츠. 다음주는 신상 출시 예고 시작. ✍️ 자유롭게 길게 작성하세요!"
+              onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
+              onblur="saveWeekNote('threads', this)"
+              style="width:100%;padding:12px;border:1px solid rgba(59,130,246,0.3);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.7;background:rgba(255,255,255,0.7);outline:none;resize:vertical;min-height:200px"></textarea>
+          </div>
         </div>
 
         </div><!-- /threadWeeklyContent -->
@@ -1187,7 +1192,7 @@ table.resizable th .col-resizer:active{
 
   <div class="page active" id="page-insta-dashboard">
     <div class="page-top">
-      <div class="page-title">📷 인사이트</div>
+      <div class="page-title">인사이트</div>
       <div class="page-actions">
         <button class="btn btn-primary btn-sm" onclick="openInstaPostNew()">+ 게시물 추가</button>
         <button class="btn btn-ghost btn-sm" onclick="loadInstaPosts(true)">↻ 새로고침</button>
@@ -1206,7 +1211,6 @@ table.resizable th .col-resizer:active{
             <button onclick="openWeekGoalModal('instagram')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px">✏️ 목표 설정</button>
             <button onclick="runWeekAIAnalysis('instagram', 'gemini')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none" title="Gemini로 분석">⚡ Gemini</button>
             <button onclick="runWeekAIAnalysis('instagram', 'claude')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#a855f7,#7c3aed);border:none" title="Claude로 분석">🟣 Claude</button>
-            <span id="instaWeekToggleArrow" style="font-size:14px;color:var(--text2);margin-left:4px;transition:transform 0.2s">▾</span>
           </span>
         </div>
 
@@ -1240,16 +1244,21 @@ table.resizable th .col-resizer:active{
 
         <div id="instaWeekAIResult" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #fcd34d;font-size:13px;line-height:1.7"></div>
 
-        <!-- 사용자 메모 -->
+        <!-- 사용자 메모 (토글) -->
         <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #fcd34d">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:12px;font-weight:600;color:#92400e">✍️ 나의 주간 메모 <span style="color:var(--text3);font-weight:400;font-size:10px">(자동 저장)</span></div>
+          <div onclick="toggleWeekNote('instagram')" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer;user-select:none">
+            <div style="font-size:12px;font-weight:600;color:#92400e">
+              <span id="instaWeekNoteArrow" style="display:inline-block;transition:transform 0.2s">▼</span>
+              ✍️ 나의 주간 메모 <span style="color:var(--text3);font-weight:400;font-size:10px">(자동 저장 · 클릭해서 펼치기)</span>
+            </div>
             <span id="instaWeekNoteStatus" style="font-size:10px;color:var(--text3)"></span>
           </div>
-          <textarea id="instaWeekNote" placeholder="예: 이번주 매장 오픈 이벤트로 팔로워 증가. 다음주는 신상 라인 집중 예정. 댓글 응답률 떨어진 점 개선 필요."
-            onfocus="this.style.borderColor='#f59e0b';this.style.background='#fff'"
-            onblur="saveWeekNote('instagram', this)"
-            style="width:100%;padding:10px;border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.6;background:rgba(255,255,255,0.7);outline:none;resize:vertical;min-height:60px"></textarea>
+          <div id="instaWeekNoteContent">
+            <textarea id="instaWeekNote" placeholder="예: 이번주 매장 오픈 이벤트로 팔로워 증가. 다음주는 신상 라인 집중 예정. 댓글 응답률 떨어진 점 개선 필요. ✍️ 자유롭게 길게 작성하세요!"
+              onfocus="this.style.borderColor='#f59e0b';this.style.background='#fff'"
+              onblur="saveWeekNote('instagram', this)"
+              style="width:100%;padding:12px;border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.7;background:rgba(255,255,255,0.7);outline:none;resize:vertical;min-height:200px"></textarea>
+          </div>
         </div>
 
         </div><!-- /instaWeeklyContent -->
@@ -1426,7 +1435,7 @@ table.resizable th .col-resizer:active{
       <!-- 표 뷰 -->
       <div id="instaCalListView" style="display:none">
         <div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px;line-height:1.5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <div>💡 <b>인라인 편집</b>: 모든 셀을 직접 클릭해서 수정. 자동 저장됩니다.</div>
+          <div>💡 <b>인라인 편집</b>: 셀 직접 클릭해서 수정. <span style="color:#16a34a;font-weight:600">🤖 자동</span> = 경쟁사 추적에서 자동 가져온 ozkiz 팔로워 수. <b>팔로우</b> = 게시물 인사이트의 신규 팔로우 수.</div>
           <div style="display:inline-flex;background:#fff;border-radius:6px;padding:2px;border:1px solid #f59e0b">
             <button id="instaCalColMode-core" onclick="switchInstaCalColMode('core')" style="padding:4px 10px;font-size:11px;font-weight:600;border:none;background:#fff;border-radius:4px;cursor:pointer;font-family:inherit;color:var(--text)">📊 핵심 (한 화면)</button>
             <button id="instaCalColMode-all" onclick="switchInstaCalColMode('all')" style="padding:4px 10px;font-size:11px;font-weight:500;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:inherit;color:var(--text2)">📋 전체 컬럼</button>
@@ -1451,7 +1460,7 @@ table.resizable th .col-resizer:active{
                 <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:42px">댓글</th>
                 <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:42px">저장</th>
                 <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:42px">공유</th>
-                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#9f1239;font-size:9px;background:#fce7f3;width:48px" class="col-detail">리포스트</th>
+                <th style="padding:5px 3px;text-align:right;font-weight:600;color:#92400e;font-size:9px;background:#fef3c7;width:48px" title="이 게시물을 통한 신규 팔로우 수">팔로우</th>
                 <th style="padding:5px 3px;text-align:right;font-weight:600;color:#92400e;font-size:9px;background:#fef3c7;width:54px" class="col-detail">프로필방문</th>
                 <th style="padding:5px 3px;text-align:right;font-weight:600;color:#92400e;font-size:9px;background:#fef3c7;width:50px" class="col-detail">외부링크</th>
                 <th style="padding:5px 3px;text-align:right;font-weight:600;color:var(--text2);font-size:9px;width:44px">참여율</th>
@@ -1704,9 +1713,8 @@ table.resizable th .col-resizer:active{
 
   <div class="page" id="page-insta-trend">
     <div class="page-top">
-      <div class="page-title">📷 인스타 레퍼런스</div>
+      <div class="page-title">인스타 레퍼런스</div>
       <div class="page-actions">
-        <button class="btn btn-primary btn-sm" onclick="openInstaRefAddModal()">+ 레퍼런스 추가</button>
         <button class="btn btn-ghost btn-sm" onclick="loadInstaRefs(true)">↻ 새로고침</button>
       </div>
     </div>
@@ -1740,25 +1748,31 @@ table.resizable th .col-resizer:active{
         </div>
       </div>
 
+      <!-- 안내 -->
+      <div style="background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px;line-height:1.5">
+        💡 <b>인라인 편집</b>: 셀 직접 클릭해서 수정 (자동 저장). 미디어 셀 클릭 후 <b>Ctrl+V</b>로 캡쳐 이미지 붙여넣기 가능!
+      </div>
+
       <!-- 레퍼런스 테이블 -->
       <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:1100px" class="resizable">
           <thead style="background:#f8fafc">
             <tr style="border-bottom:1px solid var(--border)">
-              <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap">일자</th>
-              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px">미디어</th>
-              <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2)">브랜드</th>
-              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:70px">타입</th>
-              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:80px">분류</th>
-              <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:240px">후크 · 내용</th>
-              <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">조회수</th>
-              <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">좋아요</th>
-              <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2)">댓글</th>
-              <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px">액션</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap;width:90px;font-size:10px">일자</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:50px;font-size:10px">미디어</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);width:100px;font-size:10px">브랜드</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:60px;font-size:10px">타입</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:70px;font-size:10px">분류</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);min-width:200px;font-size:10px">후크 · 내용</th>
+              <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);width:65px;font-size:10px">조회수</th>
+              <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);width:55px;font-size:10px">좋아요</th>
+              <th style="padding:8px 6px;text-align:right;font-weight:600;color:var(--text2);width:48px;font-size:10px">댓글</th>
+              <th style="padding:8px 6px;text-align:left;font-weight:600;color:var(--text2);width:180px;font-size:10px">URL</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:600;color:var(--text2);width:50px;font-size:10px">삭제</th>
             </tr>
           </thead>
           <tbody id="instaRefBody">
-            <tr><td colspan="10" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>
+            <tr><td colspan="11" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -3068,7 +3082,9 @@ async function handleMediaPaste(event, postId, channel) {
   try {
     // 파일명 생성: 채널별
     const ext = imageBlob.type.split('/')[1] || 'png';
-    const prefix = channel === 'threads' ? 'thread_post' : 'insta_post';
+    let prefix = 'insta_post';
+    if (channel === 'threads') prefix = 'thread_post';
+    else if (channel === 'instagram_ref') prefix = 'insta_ref';
     const fileName = `${prefix}_${postId}_${Date.now()}.${ext}`;
 
     // Supabase Storage에 업로드 (양 채널 모두 insta-media 버킷 사용)
@@ -3090,7 +3106,9 @@ async function handleMediaPaste(event, postId, channel) {
     if (!publicUrl) throw new Error('공개 URL을 가져올 수 없어요');
 
     // DB 업데이트 (채널별 테이블)
-    const tableName = channel === 'threads' ? 'posts' : 'insta_posts';
+    let tableName = 'insta_posts';
+    if (channel === 'threads') tableName = 'posts';
+    else if (channel === 'instagram_ref') tableName = 'insta_refs';
     const { error: updateError } = await sb
       .from(tableName)
       .update({ image_url: publicUrl })
@@ -3100,9 +3118,13 @@ async function handleMediaPaste(event, postId, channel) {
 
     // 메모리 데이터 업데이트
     if (channel === 'threads') {
-      // sheetData에서 찾기 (COL.id 또는 직접 매칭)
       if (typeof sheetData !== 'undefined' && Array.isArray(sheetData)) {
         const target = sheetData.find(r => r.id === postId);
+        if (target) target.image_url = publicUrl;
+      }
+    } else if (channel === 'instagram_ref') {
+      if (typeof instaRefs !== 'undefined' && Array.isArray(instaRefs)) {
+        const target = instaRefs.find(r => r.id === postId);
         if (target) target.image_url = publicUrl;
       }
     } else {
@@ -3118,6 +3140,8 @@ async function handleMediaPaste(event, postId, channel) {
       let postObj;
       if (channel === 'threads' && typeof sheetData !== 'undefined') {
         postObj = sheetData.find(r => r.id === postId);
+      } else if (channel === 'instagram_ref' && typeof instaRefs !== 'undefined') {
+        postObj = instaRefs.find(r => r.id === postId);
       } else {
         postObj = (instaPosts || []).find(p => p.id === postId);
       }
@@ -3135,6 +3159,8 @@ async function handleMediaPaste(event, postId, channel) {
         let postObj;
         if (channel === 'threads' && typeof sheetData !== 'undefined') {
           postObj = sheetData.find(r => r.id === postId);
+        } else if (channel === 'instagram_ref' && typeof instaRefs !== 'undefined') {
+          postObj = instaRefs.find(r => r.id === postId);
         } else {
           postObj = (instaPosts || []).find(p => p.id === postId);
         }
@@ -3456,7 +3482,7 @@ function renderRecentCal() {
       const catBadge = p.category && catLabels[p.category]
         ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
         : '';
-      const thumbHtml = (p.image_url || p.video_url) ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20, 'threads')}</span>` : '';
+      const thumbHtml = `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20, 'threads')}</span>`;
       const content = `${thumbHtml}${catBadge}<span style="vertical-align:middle">${p.text}</span>`;
       return p.link
         ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
@@ -4015,7 +4041,7 @@ function renderInstaRecentCal() {
         ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
         : '';
       const linkUrl = p.link && !p.link.startsWith('http') ? 'https://' + p.link : p.link;
-      const thumbHtml = (p.image_url || p.video_url) ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>` : '';
+      const thumbHtml = `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 20)}</span>`;
       const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${p.text}</span>`;
       return linkUrl
         ? `<a href="${linkUrl}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block">${content}</a>`
@@ -4973,7 +4999,14 @@ async function renderInstaCalListView() {
     const dateKey = `${instaCalYear}-${String(instaCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const posts = postsByDate[dateKey] || [];
     const follower = followersByDate[dateKey];
-    const followerCount = follower ? follower.count : 0;
+    // 1) 경쟁사 추적의 ozkiz_official 팔로워 수 우선 사용
+    // 2) 없으면 insta_followers 테이블의 값 fallback
+    let followerCount = 0;
+    if (typeof competitorHistory !== 'undefined' && competitorHistory[dateKey]?.['ozkiz_official']?.followers) {
+      followerCount = competitorHistory[dateKey]['ozkiz_official'].followers;
+    } else if (follower) {
+      followerCount = follower.count;
+    }
 
     const dt = new Date(instaCalYear, instaCalMonth, d);
     const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
@@ -5026,11 +5059,15 @@ async function renderInstaCalListView() {
           ? `<span style="background:${ctaColors[cta].bg};color:${ctaColors[cta].text};padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600">${cta}</span>`
           : dash;
 
+        // ozkiz 자동 동기화 데이터인지 확인
+        const ozkizAutoFollowers = (typeof competitorHistory !== 'undefined' && competitorHistory[dateKey]?.['ozkiz_official']?.followers) || 0;
+        const isAutoSynced = ozkizAutoFollowers > 0 && ozkizAutoFollowers === followerCount;
         const followerCell = isFirstOfDay
           ? `<input type="number" value="${followerCount || r.follower || ''}" placeholder="0"
               onchange="saveInstaFollowerCount('${dateKey}', this.value, this)"
               onclick="event.stopPropagation()"
-              style="width:70px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;font-family:inherit;background:#fff"/>`
+              title="${isAutoSynced ? '🤖 경쟁사 추적의 ozkiz_official 자동 동기화 데이터' : '수동 입력'}"
+              style="width:70px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;font-family:inherit;background:${isAutoSynced ? '#dcfce7' : '#fff'}"/>${isAutoSynced ? '<div style="font-size:8px;color:#16a34a;text-align:center;margin-top:1px">🤖 자동</div>' : ''}`
           : '<span style="color:var(--text3)">″</span>';
 
         // 인라인 편집 셀 헬퍼
@@ -5100,7 +5137,7 @@ async function renderInstaCalListView() {
             <td style="padding:2px;background:#fce7f3">${numIn('comments', r.comments, '#9f1239')}</td>
             <td style="padding:2px;background:#fce7f3">${numIn('saves', r.saves, '#9f1239')}</td>
             <td style="padding:2px;background:#fce7f3">${numIn('shares', r.shares, '#9f1239')}</td>
-            <td style="padding:2px;background:#fce7f3" class="col-detail">${numIn('reposts', r.reposts, '#9f1239')}</td>
+            <td style="padding:2px;background:#fef3c7">${numIn('post_follows', r.post_follows, '#92400e')}</td>
             <td style="padding:2px;background:#fef3c7" class="col-detail">${numIn('profile_visits', r.profile_visits, '#92400e')}</td>
             <td style="padding:2px;background:#fef3c7" class="col-detail">${numIn('ext_links', r.ext_links, '#92400e')}</td>
             <td style="padding:4px;text-align:right;font-size:10px;font-weight:600;color:${engColor}">${eng>0?eng.toFixed(1)+'%':dash}</td>
@@ -5411,78 +5448,84 @@ function renderInstaRefs() {
   document.getElementById('instaRefCount').textContent = `${data.length}개 표시`;
 
   if (!data.length) {
-    body.innerHTML = `<tr><td colspan="10" style="padding:60px 20px;text-align:center;color:var(--text3)">
+    body.innerHTML = `<tr><td colspan="11" style="padding:60px 20px;text-align:center;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:8px">📭</div>
       등록된 레퍼런스가 없어요<br>
-      <span style="font-size:11px;margin-top:6px">우측 상단 <b>+ 레퍼런스 추가</b>로 시작해보세요</span>
+      <span style="font-size:11px;margin-top:6px">아래 <b>+ 레퍼런스 추가</b> 버튼을 누르세요</span>
     </td></tr>`;
+    // 추가 버튼 행도 표시
+    body.innerHTML += `
+      <tr style="background:#f0f9ff">
+        <td colspan="11" style="padding:8px;text-align:center">
+          <button onclick="openInstaRefAddModal()" style="background:transparent;border:1px dashed #3b82f6;color:#3b82f6;border-radius:6px;padding:6px 16px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:600">+ 레퍼런스 추가</button>
+        </td>
+      </tr>`;
     return;
   }
 
   const dash = '<span style="color:var(--text3)">—</span>';
-  const nVal = (v) => { const n = parseInt(v)||0; return n === 0 ? dash : n.toLocaleString(); };
-  const typeColors = {
-    '릴스':   { bg:'#fce7f3', text:'#9f1239' },
-    '피드':   { bg:'#dbeafe', text:'#1e40af' },
-    '캐러셀': { bg:'#e0e7ff', text:'#3730a3' },
-    '스토리': { bg:'#fed7aa', text:'#9a3412' }
-  };
-  const catColors = {
-    '제품성': { bg:'#fef3c7', text:'#92400e' },
-    '정보성': { bg:'#dbeafe', text:'#1e40af' },
-    '감성':   { bg:'#fce7f3', text:'#9f1239' },
-    '유머':   { bg:'#fef9c3', text:'#854d0e' },
-    'UGC':    { bg:'#e0e7ff', text:'#3730a3' }
-  };
 
   body.innerHTML = data.map(r => {
-    const imgUrl = String(r.image_url||'').trim();
-    const vidUrl = String(r.video_url||'').trim();
-    const link = String(r.link||'').trim();
-    const linkUrl = link && !link.startsWith('http') ? 'https://' + link : link;
-    // 이미지 우선, 릴스 ▶ 배지
-    let mediaCell;
-    if (r.image_url || r.video_url) {
-      mediaCell = buildMediaThumb(r, 36);
-    } else if (linkUrl) {
-      mediaCell = `<a href="${linkUrl}" target="_blank" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#f3f4f6;border:1px solid var(--border);border-radius:4px;text-decoration:none;font-size:14px">🔗</a>`;
-    } else {
-      mediaCell = '<span style="color:var(--text3)">—</span>';
-    }
+    // 미디어 셀 — buildMediaThumb 사용 (Ctrl+V 가능 영역)
+    // channel='instagram_ref'로 처리해서 insta_refs 테이블 업데이트
+    const mediaCell = buildMediaThumb(r, 36, 'instagram_ref');
 
-    const type = r.post_type || '';
-    const typeCell = type && typeColors[type]
-      ? `<span style="background:${typeColors[type].bg};color:${typeColors[type].text};padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600">${type}</span>`
-      : dash;
+    const baseInput = `width:100%;padding:4px 5px;border:1px solid transparent;border-radius:3px;font-size:11px;font-family:inherit;background:transparent;outline:none`;
+    const focusHandlers = `onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'" onblur="this.style.borderColor='transparent';this.style.background='transparent'"`;
 
-    const cat = r.category || '';
-    const catCell = cat && catColors[cat]
-      ? `<span style="background:${catColors[cat].bg};color:${catColors[cat].text};padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600">${cat}</span>`
-      : dash;
+    // 타입 셀렉트
+    const typeInline = `<select onchange="updateInstaRefCell(${r.id},'post_type',this.value,this)" onclick="event.stopPropagation()" style="${baseInput};text-align:center;cursor:pointer" ${focusHandlers}>
+      <option value="" ${!r.post_type?'selected':''}>—</option>
+      <option value="릴스" ${r.post_type==='릴스'?'selected':''}>릴스</option>
+      <option value="피드" ${r.post_type==='피드'?'selected':''}>피드</option>
+      <option value="캐러셀" ${r.post_type==='캐러셀'?'selected':''}>캐러셀</option>
+      <option value="스토리" ${r.post_type==='스토리'?'selected':''}>스토리</option>
+    </select>`;
 
-    const content = String(r.content||'');
-    const point = String(r.point||'');
+    // 카테고리 셀렉트
+    const catInline = `<select onchange="updateInstaRefCell(${r.id},'category',this.value,this)" onclick="event.stopPropagation()" style="${baseInput};text-align:center;cursor:pointer" ${focusHandlers}>
+      <option value="" ${!r.category?'selected':''}>—</option>
+      <option value="제품성" ${r.category==='제품성'?'selected':''}>제품성</option>
+      <option value="정보성" ${r.category==='정보성'?'selected':''}>정보성</option>
+      <option value="감성" ${r.category==='감성'?'selected':''}>감성</option>
+      <option value="유머" ${r.category==='유머'?'selected':''}>유머</option>
+      <option value="UGC" ${r.category==='UGC'?'selected':''}>UGC</option>
+    </select>`;
 
     return `
-      <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openInstaRefEditModal(${r.id})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-        <td style="padding:9px 10px;white-space:nowrap;color:var(--text2);font-size:12px">${r.date ? r.date.slice(5).replace('-','/') : '—'}</td>
-        <td style="padding:6px;text-align:center">${mediaCell}</td>
-        <td style="padding:9px 10px;font-size:12px;font-weight:600">${r.brand || '—'}</td>
-        <td style="padding:6px;text-align:center">${typeCell}</td>
-        <td style="padding:6px;text-align:center">${catCell}</td>
-        <td style="padding:9px 10px;max-width:260px;overflow:hidden;font-size:12px">
-          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${content.slice(0,40)}${content.length>40?'...':''}</div>
-          ${point ? `<div style="font-size:10px;color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💡 ${point.slice(0,40)}${point.length>40?'...':''}</div>` : ''}
+      <tr style="border-bottom:1px solid var(--border)" data-ref-id="${r.id}">
+        <td style="padding:4px"><input type="date" value="${r.date||''}" onchange="updateInstaRefCell(${r.id},'date',this.value,this)" style="${baseInput};color:var(--text2)" ${focusHandlers}/></td>
+        <td style="padding:4px;text-align:center">${mediaCell}</td>
+        <td style="padding:4px"><input type="text" value="${(r.brand||'').replace(/"/g,'&quot;')}" placeholder="브랜드" onchange="updateInstaRefCell(${r.id},'brand',this.value,this)" style="${baseInput};font-weight:600" ${focusHandlers}/></td>
+        <td style="padding:2px">${typeInline}</td>
+        <td style="padding:2px">${catInline}</td>
+        <td style="padding:4px;max-width:240px">
+          <input type="text" value="${(r.content||'').replace(/"/g,'&quot;')}" placeholder="후크/내용" onchange="updateInstaRefCell(${r.id},'content',this.value,this)" style="${baseInput};font-weight:500" ${focusHandlers}/>
+          <input type="text" value="${(r.point||'').replace(/"/g,'&quot;')}" placeholder="💡 포인트 (선택)" onchange="updateInstaRefCell(${r.id},'point',this.value,this)" style="${baseInput};font-size:10px;color:var(--text3);margin-top:2px" ${focusHandlers}/>
         </td>
-        <td style="padding:9px 10px;text-align:right;font-size:12px;font-weight:600">${nVal(r.views)}</td>
-        <td style="padding:9px 10px;text-align:right;font-size:12px;color:var(--red)">${nVal(r.likes)}</td>
-        <td style="padding:9px 10px;text-align:right;font-size:12px">${nVal(r.comments)}</td>
-        <td style="padding:9px 10px;text-align:center">
-          <button onclick="event.stopPropagation();openInstaRefEditModal(${r.id})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">✏️</button>
+        <td style="padding:4px"><input type="number" value="${r.views||''}" placeholder="0" onchange="updateInstaRefCell(${r.id},'views',this.value,this)" style="${baseInput};text-align:right;font-weight:600" ${focusHandlers}/></td>
+        <td style="padding:4px"><input type="number" value="${r.likes||''}" placeholder="0" onchange="updateInstaRefCell(${r.id},'likes',this.value,this)" style="${baseInput};text-align:right;color:var(--red)" ${focusHandlers}/></td>
+        <td style="padding:4px"><input type="number" value="${r.comments||''}" placeholder="0" onchange="updateInstaRefCell(${r.id},'comments',this.value,this)" style="${baseInput};text-align:right" ${focusHandlers}/></td>
+        <td style="padding:4px;max-width:200px">
+          <div style="display:flex;gap:3px;align-items:center">
+            <input type="text" value="${(r.link||'').replace(/"/g,'&quot;')}" placeholder="https://..." onchange="updateInstaRefCell(${r.id},'link',this.value,this)" style="${baseInput};flex:1;min-width:80px" ${focusHandlers}/>
+            ${r.link ? `<a href="${(r.link||'').startsWith('http')?r.link:'https://'+r.link}" target="_blank" style="text-decoration:none;color:#3b82f6;font-size:13px" title="링크 열기">↗</a>` : ''}
+          </div>
+        </td>
+        <td style="padding:6px;text-align:center">
+          <button onclick="event.stopPropagation();deleteInstaRefFromDB(${r.id})" style="background:#fee;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:3px 6px;font-size:11px;cursor:pointer" title="삭제">🗑️</button>
         </td>
       </tr>
     `;
   }).join('');
+
+  // 표 안에 + 추가 버튼
+  body.innerHTML += `
+    <tr style="background:#f0f9ff">
+      <td colspan="11" style="padding:8px;text-align:center">
+        <button onclick="openInstaRefAddModal()" style="background:transparent;border:1px dashed #3b82f6;color:#3b82f6;border-radius:6px;padding:6px 16px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:600">+ 레퍼런스 추가</button>
+      </td>
+    </tr>`;
 }
 
 function openInstaRefAddModal() {
@@ -5505,6 +5548,43 @@ function openInstaRefAddModal() {
   document.getElementById('instaRefFormDeleteBtn').style.display = 'none';
   document.getElementById('instaRefFormModal').classList.add('open');
   previewInstaImageUrl('ref', '');
+}
+
+// 인스타 레퍼런스 셀 인라인 저장
+async function updateInstaRefCell(id, field, value, inputEl) {
+  if (inputEl) inputEl.style.borderColor = '#f59e0b';
+  let val = value;
+  if (['views', 'likes', 'comments', 'reposts', 'shares'].includes(field)) {
+    val = parseInt(String(value).replace(/[^0-9-]/g, '')) || 0;
+  }
+  try {
+    const { error } = await sb.from('insta_refs').update({ [field]: val }).eq('id', id);
+    if (error) throw error;
+    const target = (instaRefs || []).find(r => r.id === id);
+    if (target) target[field] = val;
+    if (inputEl) {
+      inputEl.style.borderColor = '#16a34a';
+      setTimeout(() => { if (inputEl) inputEl.style.borderColor = 'transparent'; }, 600);
+    }
+  } catch (e) {
+    console.error('updateInstaRefCell:', e);
+    if (inputEl) inputEl.style.borderColor = '#dc2626';
+    showToast('저장 실패: ' + e.message);
+  }
+}
+
+// 인스타 레퍼런스 삭제
+async function deleteInstaRefFromDB(id) {
+  if (!confirm('이 레퍼런스를 삭제할까요?')) return;
+  try {
+    const { error } = await sb.from('insta_refs').delete().eq('id', id);
+    if (error) throw error;
+    await loadInstaRefs(true);
+    showToast('✓ 삭제됨');
+  } catch (e) {
+    console.error('deleteInstaRefFromDB:', e);
+    showToast('삭제 실패: ' + e.message);
+  }
 }
 
 function openInstaRefEditModal(id) {
@@ -5764,15 +5844,25 @@ async function saveApifyPostsToSupabase(items) {
 
       const existing = existingByShortcode[shortCode];
       if (existing) {
-        // 기존 게시물: 공개 통계 업데이트 + 이미지 URL은 항상 새것으로 (인스타 CDN 만료 대응)
+        // 기존 게시물: 공개 통계 업데이트
         const updateData = {
           views: postData.views,
           likes: postData.likes,
           comments: postData.comments,
           post_type: postData.post_type  // 타입도 다시 분류
         };
-        // image_url은 항상 새것으로 갱신 (인스타 CDN URL은 1~2시간 후 만료됨)
-        if (postData.image_url) updateData.image_url = postData.image_url;
+
+        // 🛡️ image_url 보호 로직:
+        // - 사용자가 직접 업로드한 Supabase Storage URL (insta-media 버킷)은 절대 덮어쓰지 않음
+        // - 기존 URL이 없거나 인스타 CDN URL인 경우만 새 URL로 갱신
+        const existingImg = String(existing.image_url || '').trim();
+        const isUserUploaded = existingImg.includes('insta-media') || existingImg.includes('supabase');
+        if (!isUserUploaded && postData.image_url) {
+          // 인스타 CDN URL이거나 비어있을 때만 새 URL로 갱신
+          updateData.image_url = postData.image_url;
+        }
+        // (Supabase Storage URL이 이미 있으면 image_url 필드 자체를 안 보내서 그대로 유지)
+
         if (postData.video_url) updateData.video_url = postData.video_url;
         // 캡션은 사용자가 비웠을 경우만 채움
         if (!existing.text && postData.text) updateData.text = postData.text;
@@ -5796,6 +5886,20 @@ async function saveApifyPostsToSupabase(items) {
 // ══════════════════════════════════════════════════════════════
 // 📅 주간 보고 + AI 분석
 // ══════════════════════════════════════════════════════════════
+
+// 주간 메모 펼치기/접기
+function toggleWeekNote(channel) {
+  const contentId = channel === 'instagram' ? 'instaWeekNoteContent' : 'threadWeekNoteContent';
+  const arrowId = channel === 'instagram' ? 'instaWeekNoteArrow' : 'threadWeekNoteArrow';
+  const content = document.getElementById(contentId);
+  const arrow = document.getElementById(arrowId);
+  if (!content) return;
+
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  if (arrow) arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+  localStorage.setItem(`oz_${channel}_week_note_collapsed`, isHidden ? '0' : '1');
+}
 
 // 채널별 목표 가져오기
 // 주간 보고 토글 (펼치기/접기)
@@ -7882,6 +7986,11 @@ function goPage(name, btn) {
 
       // 유치원 일정 캐시 없으면 가져오기
       if (!window.__kgEventsCache) await fetchKgEventsForCache();
+
+      // 경쟁사 추적 데이터 로드 (총 팔로워 표시용 — ozkiz_official 데이터)
+      if (typeof loadInstaCompetitors === 'function' && (!competitorHistory || Object.keys(competitorHistory).length === 0)) {
+        try { await loadInstaCompetitors(); } catch(e) { console.warn('경쟁사 데이터 로드 실패:', e); }
+      }
 
       // 마지막 사용 뷰 복원 + 렌더
       const savedView = localStorage.getItem('oz_insta_cal_view') || 'cal';

@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
-    "axios": "^1.7.0"
+    "axios": "^1.7.0",
+    "ws": "^8.18.0"
   }
 }

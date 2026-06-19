@@ -2364,7 +2364,7 @@ table.resizable th .col-resizer:active{
       <!-- 참여 -->
       <div style="background:#fce7f3;border-radius:6px;padding:8px;margin-bottom:8px">
         <div style="font-size:10px;font-weight:700;color:#9f1239;margin-bottom:6px">💬 참여</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
           <div>
             <div style="font-size:10px;color:var(--text3);margin-bottom:2px">좋아요</div>
             <input type="number" id="instaPostFormLikes" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:#fff"/>
@@ -2381,17 +2381,17 @@ table.resizable th .col-resizer:active{
             <div style="font-size:10px;color:var(--text3);margin-bottom:2px">공유</div>
             <input type="number" id="instaPostFormShares" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:#fff"/>
           </div>
-          <div>
-            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">리포스트</div>
-            <input type="number" id="instaPostFormReposts" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:#fff"/>
-          </div>
         </div>
       </div>
 
       <!-- 액션 -->
       <div style="background:#fef3c7;border-radius:6px;padding:8px">
         <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:6px">🔗 액션 (외부 행동)</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div>
+            <div style="font-size:10px;color:#16a34a;margin-bottom:2px">🆕 팔로우 (게시물)</div>
+            <input type="number" id="instaPostFormPostFollows" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:#fff" title="이 게시물을 보고 새로 팔로우한 사람 수"/>
+          </div>
           <div>
             <div style="font-size:10px;color:var(--text3);margin-bottom:2px">프로필 방문</div>
             <input type="number" id="instaPostFormProfileVisits" placeholder="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:#fff"/>
@@ -3822,6 +3822,10 @@ function buildPostRow(r) {
 // ── INIT
 window.addEventListener('load', async () => {
   if (apiKey) setConnected(true);
+
+  // 앱 설정 (주간 목표 등) DB에서 로드
+  await loadAppSettings();
+
   renderCalendar();
   renderHistory();
   // 대시보드(posts) 우선 로드 — 사용자가 가장 먼저 보는 화면
@@ -4514,7 +4518,7 @@ function openInstaPostNew() {
   document.getElementById('instaPostFormComments').value = '';
   document.getElementById('instaPostFormSaves').value = '';
   document.getElementById('instaPostFormShares').value = '';
-  document.getElementById('instaPostFormReposts').value = '';
+  document.getElementById('instaPostFormPostFollows').value = '';
   document.getElementById('instaPostFormFollows').value = '';
   document.getElementById('instaPostFormUnfollows').value = '';
   document.getElementById('instaPostFormProfileVisits').value = '';
@@ -4545,7 +4549,7 @@ function openInstaPostEdit(id) {
   document.getElementById('instaPostFormComments').value = post.comments || '';
   document.getElementById('instaPostFormSaves').value = post.saves || '';
   document.getElementById('instaPostFormShares').value = post.shares || '';
-  document.getElementById('instaPostFormReposts').value = post.reposts || '';
+  document.getElementById('instaPostFormPostFollows').value = post.post_follows || '';
   document.getElementById('instaPostFormFollows').value = post.follows || '';
   document.getElementById('instaPostFormUnfollows').value = post.unfollows || '';
   document.getElementById('instaPostFormProfileVisits').value = post.profile_visits || '';
@@ -4581,7 +4585,7 @@ async function saveInstaPost() {
     comments: parseInt(document.getElementById('instaPostFormComments').value) || 0,
     saves: parseInt(document.getElementById('instaPostFormSaves').value) || 0,
     shares: parseInt(document.getElementById('instaPostFormShares').value) || 0,
-    reposts: parseInt(document.getElementById('instaPostFormReposts').value) || 0,
+    post_follows: parseInt(document.getElementById('instaPostFormPostFollows').value) || 0,
     follows: parseInt(document.getElementById('instaPostFormFollows').value) || 0,
     unfollows: parseInt(document.getElementById('instaPostFormUnfollows').value) || 0,
     profile_visits: parseInt(document.getElementById('instaPostFormProfileVisits').value) || 0,
@@ -5993,15 +5997,48 @@ async function copyWeeklyReport(channel) {
   }
 }
 
-function getWeekGoal(channel) {
-  const key = channel === 'instagram' ? 'oz_insta_week_goal' : 'oz_thread_week_goal';
-  const defaultVal = channel === 'instagram' ? 100 : 3000;  // 인스타: 100명, 스레드: 3000회
-  return parseInt(localStorage.getItem(key)) || defaultVal;
+// 앱 설정 메모리 캐시 (DB에서 한 번에 로드)
+let _appSettings = {};
+
+// 페이지 로드 시 DB에서 모든 설정 가져와 캐시에 저장
+async function loadAppSettings() {
+  try {
+    const { data, error } = await sb.from('app_settings').select('*');
+    if (error) throw error;
+    _appSettings = {};
+    (data || []).forEach(s => { _appSettings[s.key] = s.value; });
+    console.log(`✓ app_settings 로드: ${Object.keys(_appSettings).length}개`);
+  } catch (e) {
+    console.warn('loadAppSettings:', e.message);
+  }
 }
 
-function setWeekGoal(channel, value) {
-  const key = channel === 'instagram' ? 'oz_insta_week_goal' : 'oz_thread_week_goal';
-  localStorage.setItem(key, String(value));
+function getWeekGoal(channel) {
+  const key = channel === 'instagram' ? 'insta_week_goal' : 'thread_week_goal';
+  const defaultVal = channel === 'instagram' ? 100 : 3000;
+  // DB 캐시 → localStorage 백업 → 기본값
+  return parseInt(_appSettings[key]) ||
+         parseInt(localStorage.getItem('oz_' + key)) ||
+         defaultVal;
+}
+
+async function setWeekGoal(channel, value) {
+  const key = channel === 'instagram' ? 'insta_week_goal' : 'thread_week_goal';
+  // 캐시 업데이트
+  _appSettings[key] = String(value);
+  // localStorage 백업
+  localStorage.setItem('oz_' + key, String(value));
+  // DB upsert
+  try {
+    const { error } = await sb.from('app_settings').upsert({
+      key,
+      value: String(value),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
+    if (error) throw error;
+  } catch (e) {
+    console.warn('setWeekGoal (DB):', e.message);
+  }
 }
 
 // 어제 기준 최근 7일 범위
@@ -6013,30 +6050,85 @@ function getWeekNoteKey(channel) {
   return `oz_${channel}_week_note_${weekKey}`;
 }
 
-function loadWeekNote(channel) {
-  const key = getWeekNoteKey(channel);
-  const saved = localStorage.getItem(key) || '';
+async function applyWeekNoteToUI(channel) {
   const elId = channel === 'instagram' ? 'instaWeekNote' : 'threadWeekNote';
   const el = document.getElementById(elId);
-  if (el) el.value = saved;
+  if (!el) return;
+  const note = await loadWeekNote(channel);
+  el.value = note || '';
 }
 
-function saveWeekNote(channel, el) {
-  const key = getWeekNoteKey(channel);
+async function saveWeekNote(channel, el) {
   const val = el.value;
-  localStorage.setItem(key, val);
+  const range = getWeekRange();
+  const weekFriday = range.start;  // 금요일 (주 시작일)
+
   // 상태 표시
   const statusId = channel === 'instagram' ? 'instaWeekNoteStatus' : 'threadWeekNoteStatus';
   const statusEl = document.getElementById(statusId);
   if (statusEl) {
-    statusEl.textContent = '✓ 저장됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    statusEl.style.color = '#16a34a';
+    statusEl.textContent = '저장 중...';
+    statusEl.style.color = '#f59e0b';
   }
+
+  try {
+    // Supabase에 upsert
+    const { error } = await sb
+      .from('weekly_notes')
+      .upsert({
+        channel: channel,
+        week_friday: weekFriday,
+        note: val,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'channel,week_friday' });
+
+    if (error) throw error;
+
+    if (statusEl) {
+      statusEl.textContent = '✓ 저장됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      statusEl.style.color = '#16a34a';
+    }
+
+    // localStorage에도 백업 (오프라인 대비)
+    localStorage.setItem(getWeekNoteKey(channel), val);
+  } catch (e) {
+    console.error('saveWeekNote:', e);
+    if (statusEl) {
+      statusEl.textContent = '✗ 저장 실패 (오프라인?)';
+      statusEl.style.color = '#dc2626';
+    }
+    // 실패 시 localStorage에만 저장
+    localStorage.setItem(getWeekNoteKey(channel), val);
+  }
+
   // 테두리 원복
   if (el) {
     el.style.borderColor = channel === 'instagram' ? 'rgba(245,158,11,0.3)' : 'rgba(59,130,246,0.3)';
     el.style.background = 'rgba(255,255,255,0.7)';
   }
+}
+
+// DB에서 주간 메모 가져오기 (없으면 localStorage 백업)
+async function loadWeekNote(channel) {
+  const range = getWeekRange();
+  const weekFriday = range.start;
+
+  try {
+    const { data, error } = await sb
+      .from('weekly_notes')
+      .select('note')
+      .eq('channel', channel)
+      .eq('week_friday', weekFriday)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data && data.note != null) return data.note;
+  } catch (e) {
+    console.warn('loadWeekNote (DB):', e.message);
+  }
+
+  // 폴백: localStorage
+  return localStorage.getItem(getWeekNoteKey(channel)) || '';
 }
 
 // 주간 범위: 금요일(시작) ~ 목요일(끝)
@@ -6069,8 +6161,8 @@ function renderInstaWeeklyReport() {
   const { start, end } = getWeekRange();
   document.getElementById('instaWeekRange').textContent = `${start.slice(5).replace('-','/')} ~ ${end.slice(5).replace('-','/')}`;
 
-  // 메모 로드
-  loadWeekNote('instagram');
+  // 메모 로드 (DB에서 비동기)
+  applyWeekNoteToUI('instagram');
 
   // ── 팔로워 증가 계산 ──
   // 기준: end 날짜의 팔로워 - (start-1) 날짜의 팔로워 = 7일간 증가
@@ -6181,8 +6273,8 @@ function renderThreadWeeklyReport() {
   const { start, end } = getWeekRange();
   document.getElementById('threadWeekRange').textContent = `${start.slice(5).replace('-','/')} ~ ${end.slice(5).replace('-','/')}`;
 
-  // 메모 로드
-  loadWeekNote('threads');
+  // 메모 로드 (DB에서 비동기)
+  applyWeekNoteToUI('threads');
 
   // 금주 게시물 조회수 합산
   let totalViews = 0;
@@ -6232,10 +6324,10 @@ function closeWeekGoalModal() {
   document.getElementById('weekGoalModal').classList.remove('open');
 }
 
-function saveWeekGoal() {
+async function saveWeekGoal() {
   const val = parseInt(document.getElementById('weekGoalInput').value);
   if (!val || val <= 0) { showToast('올바른 숫자를 입력해주세요'); return; }
-  setWeekGoal(currentGoalChannel, val);
+  await setWeekGoal(currentGoalChannel, val);
   closeWeekGoalModal();
   showToast(`✓ 목표가 ${val.toLocaleString()}회로 설정되었어요`);
   if (currentGoalChannel === 'instagram') renderInstaWeeklyReport();

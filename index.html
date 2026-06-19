@@ -6925,7 +6925,7 @@ async function deleteHashtag(id, keyword) {
 let competitorsList = [];      // 경쟁사 목록
 let competitorHistory = {};    // { 'YYYY-MM-DD': { 'username': {...} } }
 let competitorDates = [];      // 최근 30일 + 미래 14일
-let competitorSortDir = 'desc';  // 'desc' (최신순) | 'asc' (오래된순)
+let competitorSortDir = 'asc';  // 'desc' (최신순) | 'asc' (오래된순, 기본)
 let competitorFilterDays = 30;  // 기본 30일
 let competitorFilterStart = null;  // 직접 지정 시작일
 let competitorFilterEnd = null;    // 직접 지정 종료일
@@ -7420,10 +7420,11 @@ function renderCompetitorSummary() {
     ? ozkizFollowers - prevData['ozkiz_official'].followers
     : 0;
 
-  // ── 4) 어제 팔로워 가장 많이 늘어난 계정 ──
+  // ── 4) 어제 팔로워 가장 많이 늘어난 계정 (에르고 제외) ──
   let topFollowerCompetitor = null;
   let topFollowerChange = -Infinity;
   competitorsList.forEach(c => {
+    if (c.username === 'the_ergo_official') return;  // 에르고 제외
     const cur = baseData?.[c.username]?.followers || 0;
     const prev = prevData?.[c.username]?.followers || 0;
     if (cur > 0 && prev > 0) {
@@ -7436,10 +7437,11 @@ function renderCompetitorSummary() {
   });
   if (!isFinite(topFollowerChange)) topFollowerChange = 0;
 
-  // ── 5) 어제 게시물 가장 많이 올린 계정 ──
+  // ── 5) 어제 게시물 가장 많이 올린 계정 (에르고 제외) ──
   let topPostCompetitor = null;
   let topPostChange = -Infinity;
   competitorsList.forEach(c => {
+    if (c.username === 'the_ergo_official') return;  // 에르고 제외
     const cur = baseData?.[c.username]?.posts_count || 0;
     const prev = prevData?.[c.username]?.posts_count || 0;
     if (cur > 0 && prev > 0) {
@@ -7478,12 +7480,12 @@ function renderCompetitorSummary() {
       <div style="font-size:10px;color:var(--text3);margin-top:2px">${compChanges.length}개 (에르고 제외)</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 어제 팔로워 1위</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 팔로워 증감 1위 <span style="color:var(--text3);font-size:9px">(에르고 제외)</span></div>
       ${compNameHtml(topFollowerCompetitor)}
       <div style="font-size:10px;color:${topFollowerChange>=0?'#16a34a':'#dc2626'};margin-top:4px;font-weight:600">${topFollowerChange>=0?'+':''}${topFollowerChange.toLocaleString()}명</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📝 어제 게시물 1위</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📝 게시물 증감 1위 <span style="color:var(--text3);font-size:9px">(에르고 제외)</span></div>
       ${compNameHtml(topPostCompetitor)}
       <div style="font-size:10px;color:${topPostChange>0?'#16a34a':'var(--text3)'};margin-top:4px;font-weight:600">${topPostChange>0?'+':''}${topPostChange}개</div>
     </div>

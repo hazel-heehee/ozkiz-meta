@@ -1,0 +1,34 @@
+name: Check Hashtag Exposure
+
+# 매주 목요일 KST 07:00 자동 실행 + 수동 실행도 가능
+on:
+  workflow_dispatch:    # 만일을 대비한 수동 실행
+  schedule:
+    # 매주 목요일 KST 07:00 = UTC 수요일 22:00
+    - cron: '0 22 * * 3'
+
+jobs:
+  check-exposure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: .github/scripts
+        run: npm install
+
+      - name: Check hashtag exposure
+        working-directory: .github/scripts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          APIFY_TOKEN:  ${{ secrets.APIFY_TOKEN }}
+        run: node check-hashtag-exposure.js

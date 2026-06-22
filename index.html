@@ -2002,7 +2002,7 @@ table.resizable th .col-resizer:active{
       </div>
 
       <!-- 통계 카드 -->
-      <div id="hashtagSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+      <div id="hashtagSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px"></div>
 
       <!-- 필터 -->
       <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -7040,22 +7040,33 @@ function renderInstaHashtags() {
       let exposureExtra = '';
       if (breakdown && exposure > 0) {
         const ranks = breakdown.ranks || [];
+        const breakdownPosts = breakdown.posts || [];
+        // 순위 → 게시물 매핑
+        const rankToPost = {};
+        breakdownPosts.forEach(p => { rankToPost[p.rank] = p; });
+
         // 순위를 top9 / top30 그룹으로 분류
         const top9Ranks = ranks.filter(r => r <= 9);
         const top30Ranks = ranks.filter(r => r > 9 && r <= 30);
         const rankPills = [];
-        if (top9Ranks.length > 0) {
-          // top 9는 금색
-          top9Ranks.forEach(r => {
-            rankPills.push(`<span style="display:inline-block;background:#fbbf24;color:#78350f;padding:0 4px;border-radius:8px;font-size:9px;font-weight:700;margin:1px" title="top 9 (1~9위)">${r}</span>`);
-          });
-        }
-        if (top30Ranks.length > 0) {
-          // top 30은 회색
-          top30Ranks.forEach(r => {
-            rankPills.push(`<span style="display:inline-block;background:#e5e7eb;color:#374151;padding:0 4px;border-radius:8px;font-size:9px;font-weight:600;margin:1px" title="top 30 (10~30위)">${r}</span>`);
-          });
-        }
+
+        const makePill = (r, isTop9) => {
+          const post = rankToPost[r];
+          const url = post?.url || '';
+          const tooltip = post
+            ? `${r}위 - @${post.owner} (${post.match_type})\n${post.caption_preview || ''}\n💛 ${post.likes} · 💬 ${post.comments}`
+            : `${r}위`;
+          const style = isTop9
+            ? 'background:#fbbf24;color:#78350f;font-weight:700'
+            : 'background:#e5e7eb;color:#374151;font-weight:600';
+          if (url) {
+            return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="display:inline-block;${style};padding:0 4px;border-radius:8px;font-size:9px;margin:1px;text-decoration:none;cursor:pointer" title="${tooltip.replace(/"/g, '&quot;')}">${r}</a>`;
+          }
+          return `<span style="display:inline-block;${style};padding:0 4px;border-radius:8px;font-size:9px;margin:1px" title="${tooltip.replace(/"/g, '&quot;')}">${r}</span>`;
+        };
+
+        top9Ranks.forEach(r => rankPills.push(makePill(r, true)));
+        top30Ranks.forEach(r => rankPills.push(makePill(r, false)));
 
         const detailParts = [];
         if (breakdown.by_account) detailParts.push(`@${breakdown.by_account}`);
@@ -7216,6 +7227,79 @@ function renderHashtagSummary() {
     });
   }
 
+  // ─── 추가 분석 ───
+
+  // 1. top9 노출 카운트 + top9 1위 해시태그
+  let top9Count = 0;
+  let topHashtagByTop9 = null;
+  let topTop9 = 0;
+  if (latestDate) {
+    hashtagsList.forEach(h => {
+      if (h.ended) return;
+      const t9 = hashtagHistory[h.id]?.[latestDate]?.top9_count || 0;
+      if (t9 > 0) {
+        top9Count += t9;
+        if (t9 > topTop9) {
+          topTop9 = t9;
+          topHashtagByTop9 = h;
+        }
+      }
+    });
+  }
+
+  // 2. 개선 기회: 검색량 큰데 노출 0인 해시태그 (TOP 1)
+  let bestOpportunity = null;
+  let bestOpportunitySearch = 0;
+  if (latestDate) {
+    hashtagsList.forEach(h => {
+      if (h.ended) return;
+      const cell = hashtagHistory[h.id]?.[latestDate] || {};
+      const search = cell.search_count || 0;
+      const exp = cell.exposure_count || 0;
+      if (exp === 0 && search > bestOpportunitySearch) {
+        bestOpportunitySearch = search;
+        bestOpportunity = h;
+      }
+    });
+  }
+
+  // 3. 노출 트렌드 (이번 vs 지난주)
+  let trendPct = null;
+  let trendDirection = '';
+  if (hashtagDates.length >= 2) {
+    const thisDate = hashtagDates[0];
+    const prevDate = hashtagDates[1];
+    let thisTotal = 0, prevTotal = 0;
+    hashtagsList.forEach(h => {
+      if (h.ended) return;
+      thisTotal += hashtagHistory[h.id]?.[thisDate]?.exposure_count || 0;
+      prevTotal += hashtagHistory[h.id]?.[prevDate]?.exposure_count || 0;
+    });
+    if (prevTotal > 0) {
+      trendPct = ((thisTotal - prevTotal) / prevTotal) * 100;
+      trendDirection = thisTotal > prevTotal ? '📈' : (thisTotal < prevTotal ? '📉' : '➡️');
+    } else if (thisTotal > 0) {
+      trendDirection = '🆕';
+    }
+  }
+
+  // 4. 노출 유형 분포 (자동 측정 데이터 있는 경우만)
+  let byAccount = 0, byHashtag = 0, byCaption = 0, byMention = 0;
+  if (latestDate) {
+    hashtagsList.forEach(h => {
+      if (h.ended) return;
+      const b = hashtagHistory[h.id]?.[latestDate]?.exposure_breakdown;
+      if (b) {
+        byAccount += b.by_account || 0;
+        byHashtag += b.by_hashtag || 0;
+        byCaption += b.by_caption || 0;
+        byMention += b.by_mention || 0;
+      }
+    });
+  }
+  const totalBy = byAccount + byHashtag + byCaption + byMention;
+  const pct = (n) => totalBy > 0 ? Math.round((n / totalBy) * 100) : 0;
+
   const latestLabel = latestDate ? `${new Date(latestDate).getMonth()+1}/${new Date(latestDate).getDate()} 기준` : '데이터 없음';
 
   container.innerHTML = `
@@ -7230,14 +7314,52 @@ function renderHashtagSummary() {
       <div style="font-size:10px;color:var(--text3);margin-top:2px">${latestLabel}</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 총 노출 횟수</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📈 총 노출 횟수 ${trendDirection}</div>
       <div style="font-size:18px;font-weight:700;color:#ec4899">${totalExposure.toLocaleString()}회</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">${latestLabel}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">
+        ${trendPct !== null ? `지난 측정 대비 <b style="color:${trendPct >= 0 ? '#16a34a' : '#dc2626'}">${trendPct >= 0 ? '+' : ''}${trendPct.toFixed(0)}%</b>` : latestLabel}
+      </div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">🏆 ${latestLabel} 노출 1위</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">🏆 노출 1위</div>
       <div style="font-size:13px;font-weight:700">${topHashtag ? `<a href="https://www.instagram.com/explore/tags/${encodeURIComponent(topHashtag.keyword)}/" target="_blank" style="color:#1e40af;text-decoration:none">#${topHashtag.keyword} ↗</a>` : '-'}</div>
       <div style="font-size:10px;color:var(--text3);margin-top:2px">${topExp > 0 ? topExp + '회 노출' : ''}</div>
+    </div>
+
+    <!-- ─── 신규 분석 카드 4개 ─── -->
+
+    <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #fbbf24;border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:#92400e;margin-bottom:4px;font-weight:600">🥇 top 9 노출</div>
+      <div style="font-size:18px;font-weight:700;color:#78350f">${top9Count.toLocaleString()}회</div>
+      <div style="font-size:10px;color:#92400e;margin-top:2px">
+        ${topHashtagByTop9 ? `<a href="https://www.instagram.com/explore/tags/${encodeURIComponent(topHashtagByTop9.keyword)}/" target="_blank" style="color:#78350f;font-weight:600;text-decoration:none">#${topHashtagByTop9.keyword}</a> (${topTop9}회)` : '없음'}
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#fee2e2,#fecaca);border:1px solid #f87171;border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:#991b1b;margin-bottom:4px;font-weight:600">💡 개선 기회</div>
+      <div style="font-size:13px;font-weight:700;color:#991b1b">${bestOpportunity ? `#${bestOpportunity.keyword}` : '-'}</div>
+      <div style="font-size:10px;color:#7f1d1d;margin-top:2px">
+        ${bestOpportunity ? `게시물 ${bestOpportunitySearch.toLocaleString()}개 / 노출 0` : ''}
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border:1px solid #60a5fa;border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:#1e40af;margin-bottom:4px;font-weight:600">🎯 노출 유형 (총 ${totalBy})</div>
+      ${totalBy > 0 ? `
+        <div style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#1e3a8a;margin-top:2px">
+          <div>@계정 직접 <b>${byAccount}</b> (${pct(byAccount)}%)</div>
+          <div>#오즈키즈 태그 <b>${byHashtag}</b> (${pct(byHashtag)}%)</div>
+          <div>📝 캡션 언급 <b>${byCaption}</b> (${pct(byCaption)}%)</div>
+          <div>@멘션 <b>${byMention}</b> (${pct(byMention)}%)</div>
+        </div>
+      ` : `<div style="font-size:11px;color:#1e3a8a;margin-top:6px">자동 측정 후 표시</div>`}
+    </div>
+
+    <div style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);border:1px solid #4ade80;border-radius:8px;padding:12px">
+      <div style="font-size:11px;color:#166534;margin-bottom:4px;font-weight:600">📊 노출률</div>
+      <div style="font-size:18px;font-weight:700;color:#14532d">${active > 0 ? Math.round((exposureCount / active) * 100) : 0}%</div>
+      <div style="font-size:10px;color:#15803d;margin-top:2px">${active}개 중 ${exposureCount}개 노출 중</div>
     </div>
   `;
 }

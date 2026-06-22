@@ -1651,15 +1651,18 @@ function renderInstaRecentCal() {
  : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})">${content}</div>`;
  }).join('');
 
- // 예약 게시글 (회색)
- const schHtml = schs.slice(0, 2).map(p => {
+ // 예약 게시글 (회색) — 빈 카드 제거
+ const schsFiltered = schs.filter(p => (p.text||p.title||p.content||'').trim() || p.post_type);
+ const schHtml = schsFiltered.slice(0, 2).map(p => {
  const typeBadge = p.post_type && typeColors[p.post_type]
  ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
  : '';
- return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" title="예약 글">${typeBadge}${p.text}</div>`;
- }).join('');
+ const fullText = (p.text || p.title || p.content || '').trim();
+ if (!typeBadge && !fullText) return '';
+ return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" title="예약 글">${typeBadge}${fullText}</div>`;
+ }).filter(h => h).join('');
 
- const moreCount = (posts.length >2 ? posts.length-2 : 0) + (schs.length >2 ? schs.length-2 : 0);
+ const moreCount = (posts.length >2 ? posts.length-2 : 0) + (schsFiltered.length >2 ? schsFiltered.length-2 : 0);
  const moreHtml = moreCount >0 ? `<div class="cal-more">+${moreCount}개</div>` : '';
  const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;
  html += `<div class="cal-day${isToday?' today':''}">${numEl}${kgHtml}${postHtml}${schHtml}${moreHtml}</div>`;
@@ -2435,7 +2438,12 @@ function renderInstaCalendar() {
 
  // 발행글 (녹색) — 썸네일 + 텍스트
  // 빈 데이터 (텍스트/이미지/링크 모두 없음) 카드는 제외
- const pubsFiltered = pubs.filter(p => (p.text||'').trim() || p.image_url || p.link);
+ const pubsFiltered = pubs.filter(p => {
+ const hasText = (p.text || '').trim();
+ const hasImage = p.image_url && String(p.image_url).trim() && p.image_url !== 'null';
+ const hasLink = p.link && String(p.link).trim() && p.link !== 'null';
+ return hasText || hasImage || hasLink;
+ });
  const pubHtml = pubsFiltered.slice(0,2).map(p => {
  const typeBadge = p.post_type && typeColors[p.post_type]
  ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
@@ -2446,27 +2454,32 @@ function renderInstaCalendar() {
  if (!displayText) {
  const link = p.link || '';
  const m = link.match(/\/(p|reel|tv)\/([^\/?]+)/);
- displayText = m ? m[2] : (p.post_type || '게시물');
+ displayText = m ? m[2] : (p.post_type || '');
  }
- const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${displayText}</span>`;
+ // 표시할 게 아무것도 없으면 카드 그리지 않음
+ if (!displayText && !p.image_url && !typeBadge) return '';
+ const content = `${thumbHtml}${typeBadge}<span style="vertical-align:middle">${displayText || '게시물'}</span>`;
  const dragAttrs = `draggable="true" ondragstart="instaPostDragStart(event, ${p.id}, 'post')" ondragend="instaPostDragEnd(event)"`;
  return p.link
  ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab" ${dragAttrs} title="드래그해서 날짜 이동">${content}</a>`
  : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})" style="cursor:grab" ${dragAttrs} title="드래그해서 날짜 이동">${content}</div>`;
- }).join('');
+ }).filter(h => h).join('');
 
- // 예약글 (회색)
- const schHtml = schs.slice(0,2).map(p => {
+ // 예약글 (회색) — 빈 카드 제거
+ const schsFiltered = schs.filter(p => (p.title||p.content||'').trim() || p.post_type);
+ const schHtml = schsFiltered.slice(0,2).map(p => {
  const typeBadge = p.post_type && typeColors[p.post_type]
  ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
  : '';
- const t = (p.title || p.content || '').slice(0, 14);
+ const fullText = (p.title || p.content || '').trim();
+ if (!typeBadge && !fullText) return '';  // 빈 카드 안 그림
+ const t = fullText.slice(0, 14);
  return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" style="cursor:grab"
  draggable="true" ondragstart="instaPostDragStart(event, ${p.id}, 'schedule')" ondragend="instaPostDragEnd(event)"
- title="드래그해서 날짜 이동 (예약 글)">${typeBadge}${t}${(p.title||p.content||'').length>14?'...':''}</div>`;
- }).join('');
+ title="드래그해서 날짜 이동 (예약 글)">${typeBadge}${t}${fullText.length>14?'...':''}</div>`;
+ }).filter(h => h).join('');
 
- const moreCount = (pubs.length >2 ? pubs.length-2 : 0) + (schs.length >2 ? schs.length-2 : 0);
+ const moreCount = (pubsFiltered.length >2 ? pubsFiltered.length-2 : 0) + (schsFiltered.length >2 ? schsFiltered.length-2 : 0);
  const moreHtml = moreCount >0 ? `<div class="cal-more">+${moreCount}개</div>` : '';
 
  const numEl = `<div class="cal-day-num${isToday ? ' today' : ''}">${d}</div>`;

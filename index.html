@@ -1051,7 +1051,7 @@ function renderRecentCal() {
  }).join('')}</div>`
  : '';
 
- // 발행글 (녹색) — 큰 썸네일 위주
+ // 발행글 (녹색) — 큰 썸네일 위주 (직접 img)
  const postsFiltered = posts.filter(p => {
  const hasText = (p.text || '').trim();
  const hasImage = p.image_url && String(p.image_url).trim() && p.image_url !== 'null';
@@ -1060,10 +1060,9 @@ function renderRecentCal() {
  });
  const postHtml = postsFiltered.slice(0, 2).map(p => {
  const catBadge = p.category && catLabels[p.category]
- ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 3px;border-radius:3px;font-size:9px;font-weight:600">${catLabels[p.category]}</span>`
+ ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 3px;border-radius:3px;font-size:9px;font-weight:600;line-height:1.4">${catLabels[p.category]}</span>`
  : '';
  const hasImage = p.image_url && String(p.image_url).trim() && p.image_url !== 'null';
- const bigThumb = buildMediaThumb(p, 60, 'threads');
  let displayText = (p.text || '').trim();
  if (!displayText) {
  const link = p.link || '';
@@ -1074,32 +1073,27 @@ function renderRecentCal() {
 
  const dragAttrs = `draggable="true" ondragstart="threadPostDragStart(event, ${p.id}, 'post')" ondragend="threadPostDragEnd(event)"`;
  const cardInner = hasImage
- ? `<div style="position:relative;width:100%">
- <div style="width:100%;aspect-ratio:1;overflow:hidden;border-radius:4px;background:#f3f4f6;display:flex;align-items:center;justify-content:center">${bigThumb}</div>
- ${catBadge ? `<div style="position:absolute;top:2px;left:2px">${catBadge}</div>` : ''}
- ${displayText ? `<div style="font-size:9px;color:var(--text2);margin-top:2px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical">${displayText}</div>` : ''}
- </div>`
- : `<div style="display:flex;align-items:center;gap:3px">${catBadge}<span style="font-size:10px;line-height:1.3">${displayText || '게시물'}</span></div>`;
+ ? `<div style="position:relative;width:100%;aspect-ratio:1;border-radius:4px;overflow:hidden;background:#f3f4f6"><img src="${p.image_url}" style="width:100%;height:100%;object-fit:cover;display:block" referrerpolicy="no-referrer" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#e5e7eb,#d1d5db)'"/>${catBadge ? `<div style="position:absolute;top:2px;left:2px;z-index:1">${catBadge}</div>` : ''}</div>${displayText ? `<div style="font-size:9px;color:var(--text2);margin-top:1px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;padding:0 1px">${displayText}</div>` : ''}`
+ : `<div style="display:flex;align-items:center;gap:3px;padding:2px 3px">${catBadge}<span style="font-size:10px;line-height:1.3">${displayText || '게시물'}</span></div>`;
 
  return p.link
- ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab;padding:3px;margin-bottom:3px" ${dragAttrs} title="드래그해서 날짜 이동">${cardInner}</a>`
- : `<div class="cal-post-dot published" style="cursor:grab;padding:3px;margin-bottom:3px" ${dragAttrs} title="드래그해서 날짜 이동">${cardInner}</div>`;
+ ? `<a href="${p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab;padding:1px;margin-bottom:2px;border:none;background:transparent" ${dragAttrs} title="드래그해서 날짜 이동">${cardInner}</a>`
+ : `<div class="cal-post-dot published" style="cursor:grab;padding:1px;margin-bottom:2px;border:none;background:transparent" ${dragAttrs} title="드래그해서 날짜 이동">${cardInner}</div>`;
  }).filter(h => h).join('');
 
- // 예약 게시글 (회색) — 썸네일 + 드래그
+ // 예약 게시글 (회색)
  const schsFiltered = schs.filter(p => (p.text||p.title||p.content||'').trim() || p.type || p.image_url);
  const schHtml = schsFiltered.slice(0, 2).map(p => {
  const catBadge = p.category && catLabels[p.category]
- ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${catLabels[p.category]}</span>`
+ ? `<span style="display:inline-block;background:${catColors[p.category]};color:#374151;padding:0 3px;border-radius:3px;font-size:9px;font-weight:600;margin-right:2px;line-height:1.4">${catLabels[p.category]}</span>`
  : '';
- const typeBadge = p.type ? `<span style="display:inline-block;background:#fed7aa;color:#9a3412;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.type}</span>` : '';
+ const typeBadge = p.type ? `<span style="display:inline-block;background:#fed7aa;color:#9a3412;padding:0 3px;border-radius:3px;font-size:9px;font-weight:600;margin-right:2px;line-height:1.4">${p.type}</span>` : '';
  const fullText = (p.text || p.title || p.content || '').trim();
  const hasImage = p.image_url && String(p.image_url).trim() && p.image_url !== 'null';
  if (!typeBadge && !catBadge && !fullText && !hasImage) return '';
- const thumb = hasImage ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 18, 'threads')}</span>` : '';
- return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openScheduleModalEdit('${p.id}')" style="cursor:grab"
+ return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openScheduleModalEdit('${p.id}')" style="cursor:grab;padding:2px 3px;margin-bottom:2px;font-size:10px"
  draggable="true" ondragstart="threadPostDragStart(event, '${p.id}', 'schedule')" ondragend="threadPostDragEnd(event)"
- title="드래그해서 날짜 이동 (예약 글)">${thumb}${typeBadge}${catBadge}<span style="vertical-align:middle">${fullText}</span></div>`;
+ title="드래그해서 날짜 이동 (예약 글)">${typeBadge}${catBadge}<span style="vertical-align:middle">${fullText}</span></div>`;
  }).filter(h => h).join('');
 
  const moreCount = (postsFiltered.length >2 ? postsFiltered.length-2 : 0) + (schsFiltered.length >2 ? schsFiltered.length-2 : 0);
@@ -2456,7 +2450,7 @@ function renderInstaCalendar() {
  }).join('')}</div>`
  : '';
 
- // 발행글 (녹색) — 큰 썸네일 위주 (글자 작게)
+ // 발행글 (녹색) — 큰 썸네일 위주 (직접 img, 여백 최소)
  const pubsFiltered = pubs.filter(p => {
  const hasText = (p.text || '').trim();
  const hasImage = p.image_url && String(p.image_url).trim() && p.image_url !== 'null';
@@ -2465,11 +2459,9 @@ function renderInstaCalendar() {
  });
  const pubHtml = pubsFiltered.slice(0,2).map(p => {
  const typeBadge = p.post_type && typeColors[p.post_type]
- ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 3px;border-radius:3px;font-size:9px;font-weight:600">${p.post_type}</span>`
+ ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 3px;border-radius:3px;font-size:9px;font-weight:600;line-height:1.4">${p.post_type}</span>`
  : '';
  const hasImage = p.image_url && String(p.image_url).trim() && p.image_url !== 'null';
- // 큰 썸네일 (60px) — 이미지 위주
- const bigThumb = buildMediaThumb(p, 60);
  // 텍스트 (이미지 있을 땐 짧게, 없을 땐 길게)
  let displayText = (p.text || '').trim();
  if (!displayText) {
@@ -2480,34 +2472,28 @@ function renderInstaCalendar() {
  if (!displayText && !hasImage && !typeBadge) return '';
 
  const dragAttrs = `draggable="true" ondragstart="instaPostDragStart(event, ${p.id}, 'post')" ondragend="instaPostDragEnd(event)"`;
- // 큰 이미지 카드 (이미지 있을 때)
+ // 큰 이미지 카드 (이미지 있을 때) - 직접 img
  const cardInner = hasImage
- ? `<div style="position:relative;width:100%">
- <div style="width:100%;aspect-ratio:1;overflow:hidden;border-radius:4px;background:#f3f4f6;display:flex;align-items:center;justify-content:center">${bigThumb}</div>
- ${typeBadge ? `<div style="position:absolute;top:2px;left:2px">${typeBadge}</div>` : ''}
- ${displayText ? `<div style="font-size:9px;color:var(--text2);margin-top:2px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical">${displayText}</div>` : ''}
- </div>`
- : `<div style="display:flex;align-items:center;gap:3px">${typeBadge}<span style="font-size:10px;line-height:1.3">${displayText || '게시물'}</span></div>`;
+ ? `<div style="position:relative;width:100%;aspect-ratio:1;border-radius:4px;overflow:hidden;background:#f3f4f6"><img src="${p.image_url}" style="width:100%;height:100%;object-fit:cover;display:block" referrerpolicy="no-referrer" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#e5e7eb,#d1d5db)'"/>${typeBadge ? `<div style="position:absolute;top:2px;left:2px;z-index:1">${typeBadge}</div>` : ''}</div>${displayText ? `<div style="font-size:9px;color:var(--text2);margin-top:1px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;padding:0 1px">${displayText}</div>` : ''}`
+ : `<div style="display:flex;align-items:center;gap:3px;padding:2px 3px">${typeBadge}<span style="font-size:10px;line-height:1.3">${displayText || '게시물'}</span></div>`;
 
  return p.link
- ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab;padding:3px;margin-bottom:3px" ${dragAttrs} title="드래그해서 날짜 이동 (클릭=인스타 열기)">${cardInner}</a>`
- : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})" style="cursor:grab;padding:3px;margin-bottom:3px" ${dragAttrs} title="드래그해서 날짜 이동">${cardInner}</div>`;
+ ? `<a href="${p.link.startsWith('http')?p.link:'https://'+p.link}" target="_blank" class="cal-post-dot published" onclick="event.stopPropagation()" style="text-decoration:none;display:block;cursor:grab;padding:1px;margin-bottom:2px;border:none;background:transparent" ${dragAttrs} title="드래그해서 날짜 이동">${cardInner}</a>`
+ : `<div class="cal-post-dot published" onclick="event.stopPropagation();openInstaPostEdit(${p.id})" style="cursor:grab;padding:1px;margin-bottom:2px;border:none;background:transparent" ${dragAttrs} title="드래그해서 날짜 이동">${cardInner}</div>`;
  }).filter(h => h).join('');
 
- // 예약글 (회색) — 드래그앤드롭 추가
+ // 예약글 (회색) — 드래그앤드롭 + 컴팩트
  const schsFiltered = schs.filter(p => (p.title||p.content||'').trim() || p.post_type || p.image_url);
  const schHtml = schsFiltered.slice(0,2).map(p => {
  const typeBadge = p.post_type && typeColors[p.post_type]
- ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 4px;border-radius:3px;font-size:9px;font-weight:600;margin-right:3px">${p.post_type}</span>`
+ ? `<span style="display:inline-block;background:${typeColors[p.post_type]};color:#374151;padding:0 3px;border-radius:3px;font-size:9px;font-weight:600;margin-right:2px;line-height:1.4">${p.post_type}</span>`
  : '';
  const fullText = (p.title || p.content || '').trim();
  if (!typeBadge && !fullText && !p.image_url) return '';
  const t = fullText.slice(0, 14);
- const hasImage = p.image_url && String(p.image_url).trim() && p.image_url !== 'null';
- const thumb = hasImage ? `<span style="display:inline-block;vertical-align:middle;margin-right:3px">${buildMediaThumb(p, 18)}</span>` : '';
- return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" style="cursor:grab"
+ return `<div class="cal-post-dot scheduled" onclick="event.stopPropagation();openInstaScheduleEdit(${p.id})" style="cursor:grab;padding:2px 3px;margin-bottom:2px;font-size:10px"
  draggable="true" ondragstart="instaPostDragStart(event, ${p.id}, 'schedule')" ondragend="instaPostDragEnd(event)"
- title="드래그해서 날짜 이동 (예약 글) · 클릭=수정">${thumb}${typeBadge}<span style="vertical-align:middle">${t}${fullText.length>14?'...':''}</span></div>`;
+ title="드래그해서 날짜 이동 (예약 글) · 클릭=수정">${typeBadge}${t}${fullText.length>14?'...':''}</div>`;
  }).filter(h => h).join('');
 
  const moreCount = (pubsFiltered.length >2 ? pubsFiltered.length-2 : 0) + (schsFiltered.length >2 ? schsFiltered.length-2 : 0);
@@ -2864,20 +2850,32 @@ async function instaPostDrop(e, newDateKey, cell) {
  showToast('데이터를 찾을 수 없어요');
  return;
  }
- const oldDate = String(target.date || target.scheduled_date || '');
+ const [yStr, mStr, dStr] = newDateKey.split('-');
+ const newY = parseInt(yStr), newM = parseInt(mStr), newD = parseInt(dStr);
+ const oldDate = kind === 'schedule'
+ ? `${target.year}-${String((target.month||0)+1).padStart(2,'0')}-${String(target.day||0).padStart(2,'0')}`
+ : String(target.date || '');
  if (oldDate === newDateKey) return;
 
- // Supabase 업데이트
- const tableName = kind === 'schedule' ? 'insta_scheduled_posts' : 'insta_posts';
- const dateField = kind === 'schedule' ? 'scheduled_date' : 'date';
-
  try {
- const { error } = await sb.from(tableName).update({ [dateField]: newDateKey }).eq('id', id);
+ if (kind === 'schedule') {
+ // 예약글: year/month/day 분리 컬럼
+ const { error } = await sb.from('insta_scheduled_posts').update({
+ year: newY,
+ month: newM - 1, // 0-based 저장
+ day: newD
+ }).eq('id', id);
  if (error) throw error;
-
  // 메모리 업데이트
- target[dateField] = newDateKey;
- if (kind === 'post' && target.date !== undefined) target.date = newDateKey;
+ target.year = newY;
+ target.month = newM - 1;
+ target.day = newD;
+ } else {
+ // 발행글: date 컬럼
+ const { error } = await sb.from('insta_posts').update({ date: newDateKey }).eq('id', id);
+ if (error) throw error;
+ target.date = newDateKey;
+ }
 
  showToast(` ${oldDate} → ${newDateKey} 이동됨`);
 

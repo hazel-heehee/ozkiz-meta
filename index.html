@@ -335,6 +335,7 @@ table.resizable th .col-resizer:active{
  </button> <button class="nav-item" onclick="goPage('persona',this)"> <span class="nav-icon">◉</span>브랜드 가이드
  </button> <button class="nav-item" onclick="goPage('feedback',this)"> <span class="nav-icon"></span>글 피드백
  </button> </div> <!-- ━━━ 참고자료 (양 채널 공통, 하단 고정) ━━━ --> <div style="margin-top:auto"> <div class="sidebar-divider"></div> <div class="sidebar-section">참고자료</div> <button class="nav-item" onclick="goPage('kindergarten',this)"> <span class="nav-icon"></span>유치원 일정
+ </button> <button class="nav-item" onclick="goPage('api-usage',this)"> <span class="nav-icon">$</span>API 사용 현황
  </button> <a href="https://www.instagram.com/ozkiz_official/" target="_blank" id="channelLink" class="nav-item" style="text-decoration:none;margin-bottom:4px"> <span class="nav-icon" style="font-size:14px">⎋</span> <span id="channelLinkText">내 인스타 바로가기</span> <span style="margin-left:auto;font-size:11px;color:var(--text3)">↗</span> </a> <div class="api-status-bar" onclick="openModal()"> <span class="status-dot" id="sidebarDot"></span> <span id="sidebarStatus">API 키 설정</span> </div> </div>
 </nav>
 
@@ -353,7 +354,7 @@ table.resizable th .col-resizer:active{
  </div> </div> </div> </div> </div> <!-- ⑦ 글 피드백 --> <div class="page" id="page-feedback"> <div class="page-top"> <div class="page-title">글 피드백</div> </div> <div style="padding:20px 28px"> <!-- 안내 --> <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:start;gap:12px"> <div style="font-size:22px"></div> <div style="flex:1;font-size:12px;color:#92400e;line-height:1.6"> <b>발행한 글을 AI가 분석해서 강점·약점·개선글을 제안해줍니다.</b><br>참여율 기준 정렬되어 있어요. 글을 선택하면 AI 피드백 + 개선글 3개를 생성합니다.
  </div> </div> <!-- 발행글 리스트 --> <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:16px"> <!-- 좌측: 글 리스트 --> <div style="background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:600px;overflow-y:auto"> <div style="padding:12px 14px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"> <div style="font-size:12px;font-weight:600">발행한 글 (참여율 순)</div> <select id="feedbackSort" onchange="renderFeedbackList()" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit"> <option value="engagement">참여율 순</option> <option value="views">조회수 순</option> <option value="recent">최신 순</option> </select> </div> <div id="feedbackPostList"> <div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">데이터 불러오는 중...</div> </div> </div> <!-- 우측: 선택된 글의 피드백 --> <div> <div id="feedbackEmpty" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:60px 24px;text-align:center"> <div style="font-size:36px;margin-bottom:12px">←</div> <div style="font-weight:600;margin-bottom:6px">왼쪽에서 글을 선택해주세요</div> <div style="font-size:12px;color:var(--text3);line-height:1.6">AI가 글을 분석해서 강점·약점·개선글을<br>제안해드립니다
  </div> </div> <div id="feedbackDetail" style="display:none"> <!-- 선택된 원본 글 --> <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px"> <div style="font-size:11px;color:var(--text3);margin-bottom:6px">원본 글</div> <div id="feedbackOriginal" style="font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:10px"></div> <div style="display:flex;gap:10px;font-size:11px;color:var(--text2);padding-top:8px;border-top:1px solid var(--border)"> <span id="feedbackStats"></span> </div> </div> <!-- AI 분석 버튼 --> <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"> <button class="btn btn-primary btn-sm" onclick="runFeedbackAnalysis('gemini')" id="feedbackAnalyzeBtnGemini" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none">Gemini로 분석</button> <button class="btn btn-primary btn-sm" onclick="runFeedbackAnalysis('claude')" id="feedbackAnalyzeBtnClaude" style="background:linear-gradient(135deg,#a855f7,#7c3aed);border:none">Claude로 분석</button> <button class="btn btn-primary btn-sm" onclick="runImproveGenerate('gemini')" id="feedbackImproveBtnGemini" disabled style="background:linear-gradient(135deg,#ec4899,#f59e0b);border:none">Gemini 개선글</button> <button class="btn btn-primary btn-sm" onclick="runImproveGenerate('claude')" id="feedbackImproveBtnClaude" disabled style="background:linear-gradient(135deg,#d946ef,#a855f7);border:none">Claude 개선글</button> </div> <!-- AI 분석 결과 --> <div id="feedbackAnalysisResult" style="display:none;background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px"> <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">AI 분석 결과</div> <div id="feedbackAnalysisBody" style="font-size:13px;line-height:1.7;white-space:pre-wrap"></div> </div> <!-- 개선글 결과 --> <div id="feedbackImproveResult" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px"> <div style="font-size:11px;color:#92400e;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">AI 개선글 제안</div> <div id="feedbackImproveBody" style="font-size:13px;line-height:1.7;white-space:pre-wrap"></div> <div style="display:flex;gap:8px;margin-top:10px"> <button class="btn btn-ghost btn-sm" onclick="copyImproveResult()">복사</button> <button class="btn btn-ghost btn-sm" onclick="saveFeedbackToHistory()">저장 기록에 저장</button> </div> </div> </div> </div> </div> </div> </div> <!-- ⑦ 저장 기록 --> <div class="page" id="page-history"> <div class="page-top"> <div class="page-title">저장 기록</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="clearAllHistory()">전체 삭제</button> </div> </div> <div id="historyContainer"> <div style="text-align:center;padding:60px 20px;color:var(--text3);font-size:13px">저장된 항목이 없습니다.<br>콘텐츠 생성 후 저장 버튼을 눌러보세요.</div> </div> </div> <!-- ⑦ 유치원 일정 --> <div class="page" id="page-kindergarten"> <div class="page-top"> <div class="page-title">유치원 일정</div> <div class="page-actions"> <button class="btn btn-primary btn-sm" onclick="openKgAddModal()">+ 일정 추가</button> <button class="btn btn-ghost btn-sm" onclick="loadKindergartenEvents()">↻ 새로고침</button> </div> </div> <div class="content-area"> <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#075985"> <b>유치원 연간 일정을 미리 등록해두면 AI 자동 기획에 활용됩니다.</b><br> • 운동회, 소풍, 졸업식, 입학식, 학부모 참여일 등<br> • 주간 자동 기획 시 그 주 일정 자동 매칭 → 맞춤 콘텐츠 추천<br> • 한 번 입력하면 계속 사용됨 (Supabase에 저장)
- </div> <!-- 카테고리별 필터 --> <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="kgCategoryFilter"> <button onclick="filterKgCategory('all')" class="kg-cat-btn active" data-cat="all" style="padding:5px 12px;border:1px solid var(--border);background:#111;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">전체</button> <button onclick="filterKgCategory('행사')" class="kg-cat-btn" data-cat="행사" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">행사</button> <button onclick="filterKgCategory('소풍')" class="kg-cat-btn" data-cat="소풍" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">소풍/현장학습</button> <button onclick="filterKgCategory('체육')" class="kg-cat-btn" data-cat="체육" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">체육/운동회</button> <button onclick="filterKgCategory('학사')" class="kg-cat-btn" data-cat="학사" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">학사일정</button> <button onclick="filterKgCategory('휴원')" class="kg-cat-btn" data-cat="휴원" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">휴원/방학</button> <button onclick="filterKgCategory('기타')" class="kg-cat-btn" data-cat="기타" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">기타</button> </div> <div id="kgEventsList"> <div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">불러오는 중...</div> </div> </div> </div> <!-- ━━━━━━━━━━ 인스타그램 페이지들 (1단계: 골격만, 다음 단계에서 기능 채움) ━━━━━━━━━━ --> <div class="page active" id="page-insta-dashboard"> <div class="page-top"> <div class="page-title">인사이트</div> <div class="page-actions"> <button class="btn btn-primary btn-sm" onclick="openInstaPostNew()">+ 게시물 추가</button> <button class="btn btn-ghost btn-sm" onclick="loadInstaPosts(true)">↻ 새로고침</button> </div> </div> <div class="content-area"> <!-- 주간 보고 --> <div id="instaWeeklyReport" style="background:linear-gradient(135deg,#fef3c7 0%,#fce7f3 100%);border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:14px"> <!-- 헤더 (클릭 가능) --> <div onclick="toggleWeeklyReport('instagram')" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;cursor:pointer;user-select:none"> <span style="font-weight:700">주간 보고</span> <span style="color:var(--text2);font-size:11px" id="instaWeekRange">계산 중...</span> <span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,0.6);padding:2px 6px;border-radius:3px">금~목</span> <span style="margin-left:auto;display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()"> <button onclick="copyWeeklyReport('instagram')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px" title="전체 주간 보고를 텍스트로 복사">텍스트 복사</button> <button onclick="openWeekGoalModal('instagram')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px">목표 설정</button> <button onclick="runWeekAIAnalysis('instagram', 'gemini')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none" title="Gemini로 분석">Gemini</button> <button onclick="runWeekAIAnalysis('instagram', 'claude')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#a855f7,#7c3aed);border:none" title="Claude로 분석">Claude</button> </span> </div> <!-- 펼침 영역 --> <div id="instaWeeklyContent" style="margin-top:8px"> <!-- 메트릭 2줄 표시 --> <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"> <!-- 팔로워 (목표 있음) --> <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:10px 12px"> <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px">팔로워 증가 (목표 있음)</div> <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px"> <span>목표 <b id="instaWeekGoal" style="color:#1e40af">100</b>명/일</span> <span style="color:var(--text3)">→</span> <span>실제 <b id="instaWeekActual" style="font-size:15px">-</b>명/일</span> <span id="instaWeekStatus" style="font-weight:700;margin-left:auto">-</span> </div> <!-- 가로 막대그래프 --> <div style="font-size:10px;color:var(--text3);margin-bottom:2px;display:flex;justify-content:space-between"> <span>목표 대비 진행률</span> <span id="instaWeekProgressPct">-</span> </div> <div style="width:100%;height:14px;background:#f3f4f6;border-radius:7px;overflow:hidden;position:relative;border:1px solid #e5e7eb"> <!-- 목표 라인 (100%) --> <div style="position:absolute;left:0;top:0;height:100%;width:100%;background:linear-gradient(90deg,transparent,transparent 99%,#1e40af 99%);"></div> <!-- 실제 진행 막대 --> <div id="instaWeekProgressBar" style="height:100%;background:linear-gradient(90deg,#f59e0b,#10b981);width:0%;transition:width 0.6s ease;border-radius:7px"></div> </div> </div> <!-- 조회수 (참고용, 목표 없음) --> <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:10px 12px"> <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px">조회수 (참고)</div> <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px"> <span>총 <b id="instaWeekViews" style="font-size:15px;color:#3b82f6">-</b>회</span> <span style="color:var(--text3)">·</span> <span style="font-size:12px;color:var(--text2)">일평균 <b id="instaWeekViewsAvg">-</b>회</span> <span style="font-size:11px;color:var(--text3);margin-left:auto" id="instaWeekViewsPosts">- 게시물</span> </div> <!-- 지난주 대비 막대 --> <div style="font-size:10px;color:var(--text3);margin-bottom:2px;display:flex;justify-content:space-between"> <span>지난주 대비</span> <span id="instaWeekViewsTrendPct">-</span> </div> <div style="width:100%;height:14px;background:#f3f4f6;border-radius:7px;overflow:hidden;border:1px solid #e5e7eb"> <div id="instaWeekViewsTrendBar" style="height:100%;background:linear-gradient(90deg,#60a5fa,#3b82f6);width:0%;transition:width 0.6s ease;border-radius:7px"></div> </div> </div> </div> <div id="instaWeekAIResult" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #fcd34d;font-size:13px;line-height:1.7"></div> <!-- 사용자 메모 (토글) --> <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #fcd34d"> <div onclick="toggleWeekNote('instagram')" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer;user-select:none"> <div style="font-size:12px;font-weight:600;color:#92400e"> <span id="instaWeekNoteArrow" style="display:inline-block;transition:transform 0.2s">▼</span>나의 주간 메모 <span style="color:var(--text3);font-weight:400;font-size:10px">(자동 저장 · 클릭해서 펼치기)</span> </div> <span id="instaWeekNoteStatus" style="font-size:10px;color:var(--text3)"></span> </div> <div id="instaWeekNoteContent"> <textarea id="instaWeekNote" placeholder="예: 이번주 매장 오픈 이벤트로 팔로워 증가. 다음주는 신상 라인 집중 예정. 댓글 응답률 떨어진 점 개선 필요. 자유롭게 길게 작성하세요!"
+ </div> <!-- 카테고리별 필터 --> <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="kgCategoryFilter"> <button onclick="filterKgCategory('all')" class="kg-cat-btn active" data-cat="all" style="padding:5px 12px;border:1px solid var(--border);background:#111;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">전체</button> <button onclick="filterKgCategory('행사')" class="kg-cat-btn" data-cat="행사" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">행사</button> <button onclick="filterKgCategory('소풍')" class="kg-cat-btn" data-cat="소풍" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">소풍/현장학습</button> <button onclick="filterKgCategory('체육')" class="kg-cat-btn" data-cat="체육" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">체육/운동회</button> <button onclick="filterKgCategory('학사')" class="kg-cat-btn" data-cat="학사" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">학사일정</button> <button onclick="filterKgCategory('휴원')" class="kg-cat-btn" data-cat="휴원" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">휴원/방학</button> <button onclick="filterKgCategory('기타')" class="kg-cat-btn" data-cat="기타" style="padding:5px 12px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">기타</button> </div> <div id="kgEventsList"> <div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">불러오는 중...</div> </div> </div> </div> <!-- ━━━━━━━━━━ API 사용 현황 페이지 ━━━━━━━━━━ --> <div class="page" id="page-api-usage"> <div class="page-top"> <div class="page-title">API 사용 현황</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="loadApiUsage()">↻ 새로고침</button> </div> </div> <div class="content-area"> <!-- 안내 --> <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#075985"> <b>참고용 — 이번 달 API 사용 현황입니다.</b><br>· <b>Apify</b>: 실시간 정확 (공식 API)<br>· <b>Gemini / Claude</b>: 사이트에서 호출한 것만 카운트 (GitHub Actions 자체 호출은 제외) </div> <!-- Apify Token 입력 (없을 때만) --> <div id="apifyTokenSetup" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:14px"> <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px">Apify Token 입력 필요</div> <div style="font-size:11px;color:#78350f;margin-bottom:10px;line-height:1.6">Apify 계정 → Settings → Integrations → API token에서 복사<br><a href="https://console.apify.com/settings/integrations" target="_blank" style="color:#1e40af">https://console.apify.com/settings/integrations ↗</a></div> <div style="display:flex;gap:6px"> <input type="password" id="apifyTokenInput" placeholder="apify_api_..." style="flex:1;padding:6px 10px;border:1px solid #fcd34d;border-radius:6px;font-size:12px;font-family:inherit"/> <button class="btn btn-primary btn-sm" onclick="saveApifyToken()">저장</button> </div> </div> <!-- 메인 카드들 --> <div id="apiUsageMain"> <!-- 통합 합계 카드 --> <div style="background:linear-gradient(135deg,#ddd6fe 0%,#fce7f3 100%);border:1px solid #a5b4fc;border-radius:12px;padding:18px 20px;margin-bottom:14px"> <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px"> <div> <div style="font-size:11px;color:#4338ca;font-weight:600;margin-bottom:2px">이번 달 합계 (참고)</div> <div style="font-size:28px;font-weight:700;color:#312e81" id="apiTotalCost">$ -</div> </div> <div style="text-align:right"> <div style="font-size:11px;color:#4338ca" id="apiMonthLabel">2026-06</div> <div style="font-size:10px;color:#6366f1;margin-top:2px" id="apiLastUpdated">-</div> </div> </div> </div> <!-- 각 API 카드 --> <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px"> <!-- Apify --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px"> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"> <div style="font-size:12px;font-weight:700;color:#16a34a">Apify</div> <span style="font-size:10px;color:var(--text3);background:#dcfce7;color:#166534;padding:2px 6px;border-radius:10px">실시간</span> </div> <div style="font-size:22px;font-weight:700" id="apifyMonthlyCost">$ -</div> <div style="font-size:11px;color:var(--text3);margin-top:4px" id="apifyDetail">불러오는 중...</div> <div style="margin-top:10px;width:100%;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden"> <div id="apifyUsageBar" style="height:100%;background:linear-gradient(90deg,#10b981,#22c55e);width:0%;transition:width 0.6s ease"></div> </div> <div style="font-size:10px;color:var(--text3);margin-top:4px" id="apifyPlan">-</div> </div> <!-- Gemini --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px"> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"> <div style="font-size:12px;font-weight:700;color:#3b82f6">Gemini API</div> <span style="font-size:10px;color:var(--text3);background:#dbeafe;color:#1e40af;padding:2px 6px;border-radius:10px">추정</span> </div> <div style="font-size:22px;font-weight:700" id="geminiMonthlyCost">$ -</div> <div style="font-size:11px;color:var(--text3);margin-top:4px" id="geminiDetail">불러오는 중...</div> </div> <!-- Claude --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px"> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"> <div style="font-size:12px;font-weight:700;color:#a855f7">Claude API</div> <span style="font-size:10px;color:var(--text3);background:#f3e8ff;color:#6b21a8;padding:2px 6px;border-radius:10px">추정</span> </div> <div style="font-size:22px;font-weight:700" id="claudeMonthlyCost">$ -</div> <div style="font-size:11px;color:var(--text3);margin-top:4px" id="claudeDetail">불러오는 중...</div> </div> </div> <!-- 일별 사용 추이 (최근 30일) --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px"> <div style="font-size:13px;font-weight:700;margin-bottom:10px">최근 30일 호출 횟수 (Gemini + Claude)</div> <div id="apiDailyChart" style="display:flex;align-items:flex-end;gap:3px;height:120px;padding:4px 0;border-bottom:1px solid var(--border)"></div> <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px"> <span id="apiDailyOldLabel">30일 전</span> <span id="apiDailyNewLabel">오늘</span> </div> </div> <!-- 기능별 사용 (오늘 ~ 이번 달) --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px"> <div style="font-size:13px;font-weight:700;margin-bottom:10px">이번 달 기능별 사용</div> <div id="apiByFeature" style="font-size:12px"> <div style="text-align:center;padding:20px;color:var(--text3)">데이터 없음</div> </div> </div> </div> </div> </div> <!-- ━━━━━━━━━━ 인스타그램 페이지들 (1단계: 골격만, 다음 단계에서 기능 채움) ━━━━━━━━━━ --> <div class="page active" id="page-insta-dashboard"> <div class="page-top"> <div class="page-title">인사이트</div> <div class="page-actions"> <button class="btn btn-primary btn-sm" onclick="openInstaPostNew()">+ 게시물 추가</button> <button class="btn btn-ghost btn-sm" onclick="loadInstaPosts(true)">↻ 새로고침</button> </div> </div> <div class="content-area"> <!-- 주간 보고 --> <div id="instaWeeklyReport" style="background:linear-gradient(135deg,#fef3c7 0%,#fce7f3 100%);border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:14px"> <!-- 헤더 (클릭 가능) --> <div onclick="toggleWeeklyReport('instagram')" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;cursor:pointer;user-select:none"> <span style="font-weight:700">주간 보고</span> <span style="color:var(--text2);font-size:11px" id="instaWeekRange">계산 중...</span> <span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,0.6);padding:2px 6px;border-radius:3px">금~목</span> <span style="margin-left:auto;display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()"> <button onclick="copyWeeklyReport('instagram')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px" title="전체 주간 보고를 텍스트로 복사">텍스트 복사</button> <button onclick="openWeekGoalModal('instagram')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px">목표 설정</button> <button onclick="runWeekAIAnalysis('instagram', 'gemini')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none" title="Gemini로 분석">Gemini</button> <button onclick="runWeekAIAnalysis('instagram', 'claude')" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;background:linear-gradient(135deg,#a855f7,#7c3aed);border:none" title="Claude로 분석">Claude</button> </span> </div> <!-- 펼침 영역 --> <div id="instaWeeklyContent" style="margin-top:8px"> <!-- 메트릭 2줄 표시 --> <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"> <!-- 팔로워 (목표 있음) --> <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:10px 12px"> <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px">팔로워 증가 (목표 있음)</div> <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px"> <span>목표 <b id="instaWeekGoal" style="color:#1e40af">100</b>명/일</span> <span style="color:var(--text3)">→</span> <span>실제 <b id="instaWeekActual" style="font-size:15px">-</b>명/일</span> <span id="instaWeekStatus" style="font-weight:700;margin-left:auto">-</span> </div> <!-- 가로 막대그래프 --> <div style="font-size:10px;color:var(--text3);margin-bottom:2px;display:flex;justify-content:space-between"> <span>목표 대비 진행률</span> <span id="instaWeekProgressPct">-</span> </div> <div style="width:100%;height:14px;background:#f3f4f6;border-radius:7px;overflow:hidden;position:relative;border:1px solid #e5e7eb"> <!-- 목표 라인 (100%) --> <div style="position:absolute;left:0;top:0;height:100%;width:100%;background:linear-gradient(90deg,transparent,transparent 99%,#1e40af 99%);"></div> <!-- 실제 진행 막대 --> <div id="instaWeekProgressBar" style="height:100%;background:linear-gradient(90deg,#f59e0b,#10b981);width:0%;transition:width 0.6s ease;border-radius:7px"></div> </div> </div> <!-- 조회수 (참고용, 목표 없음) --> <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:10px 12px"> <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px">조회수 (참고)</div> <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px"> <span>총 <b id="instaWeekViews" style="font-size:15px;color:#3b82f6">-</b>회</span> <span style="color:var(--text3)">·</span> <span style="font-size:12px;color:var(--text2)">일평균 <b id="instaWeekViewsAvg">-</b>회</span> <span style="font-size:11px;color:var(--text3);margin-left:auto" id="instaWeekViewsPosts">- 게시물</span> </div> <!-- 지난주 대비 막대 --> <div style="font-size:10px;color:var(--text3);margin-bottom:2px;display:flex;justify-content:space-between"> <span>지난주 대비</span> <span id="instaWeekViewsTrendPct">-</span> </div> <div style="width:100%;height:14px;background:#f3f4f6;border-radius:7px;overflow:hidden;border:1px solid #e5e7eb"> <div id="instaWeekViewsTrendBar" style="height:100%;background:linear-gradient(90deg,#60a5fa,#3b82f6);width:0%;transition:width 0.6s ease;border-radius:7px"></div> </div> </div> </div> <div id="instaWeekAIResult" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #fcd34d;font-size:13px;line-height:1.7"></div> <!-- 사용자 메모 (토글) --> <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #fcd34d"> <div onclick="toggleWeekNote('instagram')" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer;user-select:none"> <div style="font-size:12px;font-weight:600;color:#92400e"> <span id="instaWeekNoteArrow" style="display:inline-block;transition:transform 0.2s">▼</span>나의 주간 메모 <span style="color:var(--text3);font-weight:400;font-size:10px">(자동 저장 · 클릭해서 펼치기)</span> </div> <span id="instaWeekNoteStatus" style="font-size:10px;color:var(--text3)"></span> </div> <div id="instaWeekNoteContent"> <textarea id="instaWeekNote" placeholder="예: 이번주 매장 오픈 이벤트로 팔로워 증가. 다음주는 신상 라인 집중 예정. 댓글 응답률 떨어진 점 개선 필요. 자유롭게 길게 작성하세요!"
  onfocus="this.style.borderColor='#f59e0b';this.style.background='#fff'"
  onblur="saveWeekNote('instagram', this)"
  style="width:100%;padding:12px;border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.7;background:rgba(255,255,255,0.7);outline:none;resize:vertical;min-height:200px"></textarea> </div> </div> </div><!-- /instaWeeklyContent --> </div> <!-- 기간 필터 --> <div class="filter-bar" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap"> <span style="font-size:12px;color:var(--text2);font-weight:600">기간 필터</span> <input type="date" id="instaFilterStart" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 10px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text);outline:none" onchange="applyInstaFilter()"/> <span style="color:var(--text3);font-size:12px">~</span> <input type="date" id="instaFilterEnd" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 10px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text);outline:none" onchange="applyInstaFilter()"/> <button class="btn btn-ghost btn-sm" onclick="setInstaQuick(7)">7일</button> <button class="btn btn-ghost btn-sm" onclick="setInstaQuick(30)">30일</button> <button class="btn btn-ghost btn-sm" onclick="setInstaQuick(90)">90일</button> <button class="btn btn-ghost btn-sm" onclick="clearInstaFilter()">전체</button> <span id="instaFilterLabel" style="font-size:11px;color:var(--text3);margin-left:8px"></span> </div> <!-- 통계 카드 --> <div class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px"> <div class="stat-card"> <div class="stat-label">최신 팔로워</div> <div class="stat-val" id="insta-dash-follower">—</div> <div class="stat-change" id="insta-dash-follower-change">불러오는 중...</div> </div> <div class="stat-card"> <div class="stat-label">평균 참여율</div> <div class="stat-val" id="insta-dash-engagement">—</div> <div class="stat-change" id="insta-dash-engagement-change">불러오는 중...</div> </div> <div class="stat-card"> <div class="stat-label">총 게시물 수</div> <div class="stat-val" id="insta-dash-count">—</div> <div class="stat-change" id="insta-dash-count-change">불러오는 중...</div> </div> <div class="stat-card"> <div class="stat-label">평균 저장</div> <div class="stat-val" id="insta-dash-saves">—</div> <div class="stat-change">게시물당</div> </div> <div class="stat-card"> <div class="stat-label">평균 공유</div> <div class="stat-val" id="insta-dash-shares">—</div> <div class="stat-change">게시물당</div> </div> </div> <!-- 팔로워 추이 + 조회수 추이 (2분할) --> <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px"> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px"> <div style="font-size:13px;font-weight:700;margin-bottom:10px">팔로워 추이</div> <div style="position:relative;height:260px;width:100%"> <canvas id="instaFollowerChart"></canvas> </div> </div> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"> <div style="font-size:13px;font-weight:700">조회수 추이</div> <select id="instaViewsMetric" onchange="drawInstaViewsChart()" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;background:#fff"> <option value="views">조회수</option> <option value="reach">도달</option> <option value="likes">좋아요</option> <option value="saves">저장</option> </select> </div> <div style="position:relative;height:260px;width:100%"> <canvas id="instaViewsChart"></canvas> </div> </div> </div> <!-- 콘텐츠 캘린더 --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px"> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px"> <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"> <div style="font-size:13px;font-weight:700">콘텐츠 캘린더</div> <span id="instaRecentCount" style="font-size:11px;color:var(--text3)"></span> <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;padding:3px 8px;background:#f9fafb;border-radius:5px;user-select:none"> <input type="checkbox" id="instaRecentIgnoreFilter" onchange="toggleInstaRecentFilter()" style="cursor:pointer"/> <span>기간 필터 무시 <span style="color:var(--text3)">(전체 보기)</span></span> </label> </div> <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px"> <button id="instaRecentViewTable" onclick="switchInstaRecentView('table')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">표</button> <button id="instaRecentViewCal" onclick="switchInstaRecentView('cal')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">캘린더</button> </div> </div> <!-- 표 뷰 --> <div id="instaRecentTableView" style="overflow-x:auto"> <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px"> <thead style="background:#f8fafc"> <tr style="border-bottom:1px solid var(--border)"> <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">일자</th> <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">타입</th> <th style="text-align:center;padding:8px 6px;font-size:11px;color:var(--text3);font-weight:600;width:60px">미디어</th> <th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">글</th> <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">팔로워</th> <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">조회수</th> <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">도달</th> <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">좋아요</th> <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">저장</th> <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">공유</th> <th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--text3);font-weight:600">참여율</th> </tr> </thead> <tbody id="instaRecentBody"> <tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">데이터 불러오는 중...</td></tr> </tbody> </table> </div> <!-- 캘린더 뷰 --> <div id="instaRecentCalView" style="display:none"> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"> <span id="instaRecentCalTitle" style="font-size:15px;font-weight:700"></span> <div style="display:flex;gap:2px"> <button onclick="changeInstaRecentMonth(-1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit">←</button> <button onclick="goToInstaRecentToday()" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">오늘</button> <button onclick="changeInstaRecentMonth(1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit">→</button> </div> </div> <div class="cal-grid" id="instaRecentCalGrid"></div> </div> </div> </div> </div> <div class="page" id="page-insta-calendar"> <div class="page-top"> <div class="page-title">콘텐츠 캘린더</div> <div class="page-actions"></div> </div> <div class="content-area"> <!-- 데이터 상태 안내 --> <div id="instaCalDataInfo" style="display:none;background:#eff6ff;border-left:3px solid #3b82f6;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6"></div> <!-- 다가오는 유치원 일정 (콘텐츠 미리 준비 유도) --> <div id="instaUpcomingKgEvents" style="display:none;background:linear-gradient(135deg,#eff6ff 0%,#f5f3ff 100%);border:1px solid #c7d2fe;border-radius:10px;padding:10px 14px;margin-bottom:14px"></div> <!-- 월 네비게이션 한 줄 --> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px"> <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"> <span id="instaCalTitle" style="font-size:18px;font-weight:700;letter-spacing:-.3px"></span> <div style="display:flex;gap:2px"> <button onclick="changeInstaMonth(-1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;font-family:inherit">←</button> <button onclick="goToInstaToday()" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">오늘</button> <button onclick="changeInstaMonth(1)" style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;font-family:inherit">→</button> </div> </div> <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"> <div style="display:inline-flex;background:var(--surface3);border-radius:8px;padding:2px"> <button id="instaViewModeCal" onclick="switchInstaCalView('cal')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">캘린더</button> <button id="instaViewModeList" onclick="switchInstaCalView('list')" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">표</button> </div> <button class="btn btn-primary btn-sm" onclick="openInstaPostNew()">+ 게시물 추가</button> <button id="instaSyncBtn" onclick="syncInstaPostsFromApify()" class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#3b82f6);color:#fff;border:none" title="Apify로 최신 인스타 게시물 자동 수집">인스타 동기화
@@ -4283,6 +4284,229 @@ async function loadInstaHashtags() {
  }
 }
 
+// ─── API 사용 현황 ───
+// Gemini 2.5 Flash 가격 (입력 $0.10/M, 출력 $0.40/M)
+const GEMINI_INPUT_PER_M = 0.10;
+const GEMINI_OUTPUT_PER_M = 0.40;
+// Claude Sonnet 4 가격 (대략 입력 $3/M, 출력 $15/M)
+const CLAUDE_INPUT_PER_M = 3.00;
+const CLAUDE_OUTPUT_PER_M = 15.00;
+
+// 호출 로그 저장 (Gemini/Claude 호출 후 호출)
+async function logApiUsage(provider, feature, tokensIn, tokensOut) {
+ try {
+ let costEstimate = 0;
+ if (provider === 'gemini') {
+ costEstimate = (tokensIn * GEMINI_INPUT_PER_M + tokensOut * GEMINI_OUTPUT_PER_M) / 1000000;
+ } else if (provider === 'claude') {
+ costEstimate = (tokensIn * CLAUDE_INPUT_PER_M + tokensOut * CLAUDE_OUTPUT_PER_M) / 1000000;
+ }
+ await sb.from('api_usage_log').insert({
+ provider,
+ feature: feature || 'unknown',
+ tokens_in: tokensIn || 0,
+ tokens_out: tokensOut || 0,
+ cost_estimate: costEstimate
+ });
+ } catch (e) {
+ console.warn('logApiUsage:', e.message);
+ }
+}
+
+async function loadApiUsage() {
+ const now = new Date();
+ const monthLabel = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+ const monthEl = document.getElementById('apiMonthLabel');
+ if (monthEl) monthEl.textContent = monthLabel;
+ const lastUpdated = document.getElementById('apiLastUpdated');
+ if (lastUpdated) lastUpdated.textContent = `갱신: ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+ // Apify 사용량 조회
+ await loadApifyUsage();
+
+ // Gemini/Claude DB 로그 조회
+ await loadAiUsageLogs();
+}
+
+async function loadApifyUsage() {
+ const token = localStorage.getItem('apify_token') || '';
+ const setup = document.getElementById('apifyTokenSetup');
+ const apifyDetail = document.getElementById('apifyDetail');
+ const apifyCost = document.getElementById('apifyMonthlyCost');
+ const apifyPlan = document.getElementById('apifyPlan');
+ const apifyBar = document.getElementById('apifyUsageBar');
+
+ if (!token) {
+ if (setup) setup.style.display = 'block';
+ if (apifyDetail) apifyDetail.textContent = 'Token 입력 필요';
+ if (apifyCost) apifyCost.textContent = '- ';
+ return;
+ }
+ if (setup) setup.style.display = 'none';
+
+ try {
+ // 사용자 정보 + 사용량 가져오기
+ const res = await fetch(`https://api.apify.com/v2/users/me?token=${token}`);
+ if (!res.ok) throw new Error(`HTTP ${res.status}`);
+ const data = await res.json();
+ const user = data.data || data;
+
+ // 다양한 응답 구조 처리
+ const monthlyUsage = user.monthlyUsageUsd
+                       || user.monthlyServiceUsageUsd
+                       || user.currentMonthlyUsageUsd
+                       || (user.usage && user.usage.monthlyUsageUsd)
+                       || 0;
+ const planName = (user.plan && (user.plan.id || user.plan.name)) || user.planId || 'Free';
+
+ if (apifyCost) apifyCost.textContent = `$ ${Number(monthlyUsage).toFixed(2)}`;
+ if (apifyDetail) apifyDetail.textContent = `${planName} 플랜 · 이번 달`;
+ if (apifyPlan) apifyPlan.textContent = `계정: ${user.username || user.email || '연결됨'}`;
+
+ // 프리 플랜 기준 ($5)으로 막대그래프
+ const limit = (planName.toLowerCase().includes('free')) ? 5 : 100;
+ const pct = Math.min(100, (Number(monthlyUsage) / limit) * 100);
+ if (apifyBar) apifyBar.style.width = pct + '%';
+ if (pct > 80 && apifyBar) apifyBar.style.background = 'linear-gradient(90deg,#ef4444,#dc2626)';
+
+ // 합계 업데이트
+ window._apifyMonthlyCost = Number(monthlyUsage);
+ updateTotalCost();
+ } catch (err) {
+ console.warn('Apify usage:', err.message);
+ if (apifyDetail) apifyDetail.textContent = `오류: ${err.message}`;
+ if (apifyCost) apifyCost.textContent = '- ';
+ }
+}
+
+async function loadAiUsageLogs() {
+ const now = new Date();
+ const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+ try {
+ const { data, error } = await sb
+ .from('api_usage_log')
+ .select('*')
+ .gte('called_at', monthStart)
+ .order('called_at', { ascending: false });
+ if (error) throw error;
+
+ const logs = data || [];
+
+ // Gemini / Claude 합계
+ let geminiCost = 0, geminiCount = 0, geminiTokens = 0;
+ let claudeCost = 0, claudeCount = 0, claudeTokens = 0;
+ const byFeature = {};
+
+ logs.forEach(log => {
+ if (log.provider === 'gemini') {
+ geminiCost += Number(log.cost_estimate) || 0;
+ geminiCount++;
+ geminiTokens += (log.tokens_in || 0) + (log.tokens_out || 0);
+ } else if (log.provider === 'claude') {
+ claudeCost += Number(log.cost_estimate) || 0;
+ claudeCount++;
+ claudeTokens += (log.tokens_in || 0) + (log.tokens_out || 0);
+ }
+ // 기능별
+ const key = log.feature || 'unknown';
+ if (!byFeature[key]) byFeature[key] = { count: 0, cost: 0, providers: new Set() };
+ byFeature[key].count++;
+ byFeature[key].cost += Number(log.cost_estimate) || 0;
+ byFeature[key].providers.add(log.provider);
+ });
+
+ document.getElementById('geminiMonthlyCost').textContent = `$ ${geminiCost.toFixed(4)}`;
+ document.getElementById('geminiDetail').textContent = `${geminiCount}회 호출 · ${(geminiTokens/1000).toFixed(1)}K 토큰`;
+ document.getElementById('claudeMonthlyCost').textContent = `$ ${claudeCost.toFixed(4)}`;
+ document.getElementById('claudeDetail').textContent = `${claudeCount}회 호출 · ${(claudeTokens/1000).toFixed(1)}K 토큰`;
+
+ window._aiCost = geminiCost + claudeCost;
+ updateTotalCost();
+
+ // 최근 30일 막대그래프
+ renderApiDailyChart(logs);
+
+ // 기능별 표시
+ renderApiByFeature(byFeature);
+ } catch (e) {
+ console.error('loadAiUsageLogs:', e);
+ document.getElementById('geminiDetail').textContent = `로그 로드 실패 (api_usage_log 테이블 확인)`;
+ document.getElementById('claudeDetail').textContent = `로그 로드 실패`;
+ }
+}
+
+function renderApiDailyChart(logs) {
+ const container = document.getElementById('apiDailyChart');
+ if (!container) return;
+
+ const now = new Date();
+ const days = [];
+ for (let i = 29; i >= 0; i--) {
+ const d = new Date(now);
+ d.setDate(d.getDate() - i);
+ days.push(d.toISOString().slice(0,10));
+ }
+ const oldLabel = document.getElementById('apiDailyOldLabel');
+ const newLabel = document.getElementById('apiDailyNewLabel');
+ if (oldLabel) oldLabel.textContent = `${new Date(days[0]).getMonth()+1}/${new Date(days[0]).getDate()}`;
+ if (newLabel) newLabel.textContent = `${new Date(days[29]).getMonth()+1}/${new Date(days[29]).getDate()}`;
+
+ const counts = {};
+ days.forEach(d => counts[d] = 0);
+ logs.forEach(log => {
+ const d = (log.called_at || '').slice(0, 10);
+ if (counts[d] !== undefined) counts[d]++;
+ });
+
+ const max = Math.max(1, ...Object.values(counts));
+ container.innerHTML = days.map(d => {
+ const c = counts[d];
+ const h = (c / max) * 100;
+ return `<div style="flex:1;height:${Math.max(1, h)}%;background:${c > 0 ? 'linear-gradient(180deg,#a855f7,#3b82f6)' : '#e5e7eb'};border-radius:2px 2px 0 0;min-height:1px" title="${d}: ${c}회"></div>`;
+ }).join('');
+}
+
+function renderApiByFeature(byFeature) {
+ const container = document.getElementById('apiByFeature');
+ if (!container) return;
+ const entries = Object.entries(byFeature).sort((a,b) => b[1].count - a[1].count);
+ if (!entries.length) {
+ container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3)">이번 달 사용 내역 없음</div>`;
+ return;
+ }
+ container.innerHTML = entries.map(([feature, info]) => `
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--border)">
+ <div>
+ <span style="font-weight:600">${feature}</span>
+ <span style="color:var(--text3);font-size:11px;margin-left:6px">${[...info.providers].join(', ')}</span>
+ </div>
+ <div style="text-align:right">
+ <div style="font-weight:600">${info.count}회</div>
+ <div style="font-size:10px;color:var(--text3)">$ ${info.cost.toFixed(4)}</div>
+ </div>
+ </div>
+ `).join('');
+}
+
+function updateTotalCost() {
+ const total = (window._apifyMonthlyCost || 0) + (window._aiCost || 0);
+ const el = document.getElementById('apiTotalCost');
+ if (el) el.textContent = `$ ${total.toFixed(2)}`;
+}
+
+function saveApifyToken() {
+ const input = document.getElementById('apifyTokenInput');
+ const token = (input.value || '').trim();
+ if (!token) { alert('Token을 입력하세요'); return; }
+ if (!token.startsWith('apify_api_')) {
+ if (!confirm('Apify Token은 보통 "apify_api_"로 시작합니다.\n이대로 저장할까요?')) return;
+ }
+ localStorage.setItem('apify_token', token);
+ input.value = '';
+ loadApifyUsage();
+}
+
 // ─── 스레드 해시태그 분석 ───
 let threadHashtagsList = [];
 let threadHashtagAnalysisData = [];
@@ -5842,6 +6066,7 @@ function goPage(name, btn) {
  if (name === 'content') { updateFormatChips(); suggestMissingMix(); }
  if (name === 'kindergarten') loadKindergartenEvents();
  if (name === 'thread-hashtags') { loadThreadHashtags(); loadThreadHashtagAnalysis(); }
+ if (name === 'api-usage') loadApiUsage();
  // 인스타 페이지
  if (name === 'insta-dashboard') {
  // 인사이트 진입 시 토글 상태 복원

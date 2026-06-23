@@ -2968,9 +2968,11 @@ async function renderInstaCalListView() {
  style="${baseInput};font-size:var(--fs-xs)" ${focusHandlers}/>`;
 
  // 숫자 input 헬퍼
- const numIn = (field, val, color, bg) => `<input type="number" value="${val||''}" placeholder="0"
- onchange="updateInstaPostCell(${r.id},'${field}',this.value,this)" onclick="event.stopPropagation()"
- style="${baseInput};text-align:right;color:${color||'var(--text)'};${bg?'background:transparent':''}" ${focusHandlers}/>`;
+ const numIn = (field, val, color, bg) => `<input type="text" inputmode="numeric" value="${val ? Number(val).toLocaleString() : ''}" placeholder="0"
+ onchange="updateInstaPostCell(${r.id},'${field}',this.value.replace(/,/g,''),this)" onclick="event.stopPropagation()"
+ onfocus="this.value=this.value.replace(/,/g,'');this.style.borderColor='#3b82f6'"
+ onblur="const n=parseInt(this.value.replace(/[^0-9-]/g,''))||0;this.value=n?n.toLocaleString():'';this.style.borderColor='transparent'"
+ style="${baseInput};text-align:right;color:${color||'var(--text)'};${bg?'background:transparent':''}"/>`;
 
  rows.push(`
  <tr style="border-bottom:1px solid var(--border);cursor:default" data-post-id="${r.id}" data-date="${dateKey}" draggable="true"
@@ -3283,7 +3285,7 @@ async function updateInstaPostCell(id, field, value, inputEl) {
 
  // 숫자 필드 변환
  let val = value;
- const numFields = ['views','reach','likes','comments','saves','shares','reposts','profile_visits','ext_links','follows','unfollows'];
+ const numFields = ['views','reach','likes','comments','saves','shares','reposts','profile_visits','ext_links','follows','unfollows','post_follows'];
  if (numFields.includes(field)) {
  val = parseInt(String(value).replace(/[^0-9-]/g, '')) || 0;
  }
@@ -5211,7 +5213,7 @@ function renderThreadHashtagAnalysis() {
  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
  <div>
  <div style="font-size:var(--fs-lg);font-weight:700">#${a.hashtag_keyword}</div>
- <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:2px">측정: ${a.date} · 게시물 ${a.total_posts}개 · 댓글 ${a.total_comments}개</div>
+ <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:2px">측정: ${a.date} · 게시물 ${(a.total_posts||0).toLocaleString()}개 · 댓글 ${(a.total_comments||0).toLocaleString()}개</div>
  </div>
  <div style="background:${overallColor}15;color:${overallColor};padding:6px 14px;border-radius:16px;font-size:var(--fs-sm);font-weight:700">
  전체 톤: ${sent.overall_sentiment || '분석 중'}
@@ -5275,28 +5277,126 @@ function renderThreadHashtagAnalysis() {
 
  <!-- 게시물 리스트 (펼침) -->
  <details>
- <summary style="cursor:pointer;font-size:var(--fs-sm);color:var(--text2);padding:6px 0;font-weight:600">상위 ${posts.length}개 게시물 보기</summary>
- <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
- ${posts.map(p => `
- <div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#f8fafc">
+ <summary style="cursor:pointer;font-size:var(--fs-sm);color:var(--text2);padding:6px 0;font-weight:600">상위 ${posts.length}개 게시물 보기 · 정렬/선택해서 레퍼런스로 이동</summary>
+ <div style="margin-top:8px">
+ <!-- 정렬 + 액션 바 -->
+ <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f1f5f9;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+ <span style="font-size:var(--fs-xs);color:var(--text2);font-weight:600">정렬</span>
+ <select onchange="sortHashtagPosts('${a.hashtag_keyword}', this.value)" id="htsort-${a.hashtag_keyword}" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;cursor:pointer">
+ <option value="rank">기본(순위)</option>
+ <option value="likes_desc">좋아요 ↓</option>
+ <option value="likes_asc">좋아요 ↑</option>
+ <option value="replies_desc">댓글 ↓</option>
+ <option value="replies_asc">댓글 ↑</option>
+ <option value="reposts_desc">리포스트 ↓</option>
+ <option value="reposts_asc">리포스트 ↑</option>
+ </select>
+ <label style="display:flex;align-items:center;gap:4px;font-size:var(--fs-xs);color:var(--text2);cursor:pointer"><input type="checkbox" onchange="toggleAllHashtagPosts('${a.hashtag_keyword}', this.checked)" style="cursor:pointer"/> 전체 선택</label>
+ <button onclick="moveSelectedHashtagPostsToRef('${a.hashtag_keyword}')" style="margin-left:auto;background:#ec4899;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:var(--fs-xs);font-weight:600;cursor:pointer">선택 게시물 → 스레드 레퍼런스</button>
+ </div>
+ <div id="htposts-${a.hashtag_keyword}" style="display:flex;flex-direction:column;gap:8px">
+ ${renderHashtagPostCards(posts, a.hashtag_keyword)}
+ </div>
+ </div>
+ </details>
+ </div>
+ `;
+ }).join('');
+}
+
+// 해시태그 게시물 카드들 렌더 (정렬/선택 재사용)
+function renderHashtagPostCards(posts, keyword) {
+ return posts.map((p, i) => `
+ <div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#f8fafc;display:flex;gap:10px;align-items:start">
+ <input type="checkbox" class="htpost-check" data-keyword="${keyword}" data-idx="${i}" style="margin-top:3px;cursor:pointer;flex-shrink:0"/>
+ <div style="flex:1;min-width:0">
  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
  <div style="font-size:var(--fs-xs);font-weight:600;color:var(--text2)">${p.rank}위 · @${p.author||'?'}</div>
- ${p.url ? `<a href="${p.url}" target="_blank" style="font-size:var(--fs-xs);color:#3b82f6;text-decoration:none">스레드 열기 ↗</a>` : ''}
+ ${p.url ? `<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="font-size:var(--fs-xs);color:#3b82f6;text-decoration:none">스레드 열기 ↗</a>` : ''}
  </div>
  <div style="font-size:var(--fs-sm);color:var(--text);line-height:1.5;margin-bottom:6px">${(p.text||'').replace(/</g, '&lt;')}</div>
- <div style="font-size:var(--fs-xs);color:var(--text3)">💛 ${p.likes||0} · 💬 ${p.replies||0} · 🔁 ${p.reposts||0}</div>
+ <div style="font-size:var(--fs-xs);color:var(--text3)">💛 ${(p.likes||0).toLocaleString()} · 💬 ${(p.replies||0).toLocaleString()} · 🔁 ${(p.reposts||0).toLocaleString()}</div>
  ${p.top_comments && p.top_comments.length ? `
  <div style="margin-top:6px;padding-left:10px;border-left:2px solid #e5e7eb">
  ${p.top_comments.slice(0,3).map(c => `<div style="font-size:var(--fs-xs);color:var(--text2);line-height:1.4;margin-top:3px">└ @${c.author||'?'}: ${(c.text||'').replace(/</g, '&lt;').substring(0, 100)}</div>`).join('')}
  </div>
  ` : ''}
  </div>
- `).join('')}
  </div>
- </details>
- </div>
- `;
- }).join('');
+ `).join('');
+}
+
+// 해시태그 게시물 정렬
+function sortHashtagPosts(keyword, mode) {
+ // 최신 결과 찾기
+ const latest = {};
+ threadHashtagAnalysisData.forEach(d => { if (!latest[d.hashtag_keyword] || d.date > latest[d.hashtag_keyword].date) latest[d.hashtag_keyword] = d; });
+ const rec = latest[keyword];
+ if (!rec) return;
+ let posts = [...(rec.posts_data || [])];
+ const cmp = (field, dir) => (x,y) => dir==='asc' ? (x[field]||0)-(y[field]||0) : (y[field]||0)-(x[field]||0);
+ if (mode === 'rank') posts.sort((x,y) => (x.rank||0)-(y.rank||0));
+ else if (mode === 'likes_desc') posts.sort(cmp('likes','desc'));
+ else if (mode === 'likes_asc') posts.sort(cmp('likes','asc'));
+ else if (mode === 'replies_desc') posts.sort(cmp('replies','desc'));
+ else if (mode === 'replies_asc') posts.sort(cmp('replies','asc'));
+ else if (mode === 'reposts_desc') posts.sort(cmp('reposts','desc'));
+ else if (mode === 'reposts_asc') posts.sort(cmp('reposts','asc'));
+ const container = document.getElementById('htposts-' + keyword);
+ if (container) container.innerHTML = renderHashtagPostCards(posts, keyword);
+ // 정렬된 순서를 임시 저장 (이동 시 인덱스 매칭용)
+ window.__htSortedPosts = window.__htSortedPosts || {};
+ window.__htSortedPosts[keyword] = posts;
+}
+
+function toggleAllHashtagPosts(keyword, checked) {
+ document.querySelectorAll(`.htpost-check[data-keyword="${keyword}"]`).forEach(cb => cb.checked = checked);
+}
+
+// 선택한 해시태그 게시물을 스레드 레퍼런스(refs)로 이동
+async function moveSelectedHashtagPostsToRef(keyword) {
+ const checks = [...document.querySelectorAll(`.htpost-check[data-keyword="${keyword}"]:checked`)];
+ if (!checks.length) { showToast('이동할 게시물을 선택하세요'); return; }
+ // 현재 표시 순서(정렬 반영) 기준으로 게시물 가져오기
+ const latest = {};
+ threadHashtagAnalysisData.forEach(d => { if (!latest[d.hashtag_keyword] || d.date > latest[d.hashtag_keyword].date) latest[d.hashtag_keyword] = d; });
+ const sorted = (window.__htSortedPosts && window.__htSortedPosts[keyword]) || (latest[keyword]?.posts_data || []);
+ const today = new Date().toISOString().split('T')[0];
+ const rows = checks.map(cb => {
+ const p = sorted[parseInt(cb.dataset.idx)];
+ if (!p) return null;
+ const content = p.text || '';
+ const firstSentence = content.split(/[\n.!?]/)[0].trim().slice(0, 60);
+ return {
+ date: today,
+ tag: keyword,
+ link: p.url || '',
+ views: 0,
+ first_sentence: firstSentence,
+ content,
+ likes: p.likes || 0,
+ comments: p.replies || 0,
+ reposts: p.reposts || 0,
+ shares: 0,
+ keyword: keyword,
+ point: `해시태그 분석에서 이동 · @${p.author||'?'} · ${p.rank}위`,
+ has_image: false, has_video: false, has_music: false,
+ image_url: '', video_url: ''
+ };
+ }).filter(Boolean);
+ if (!rows.length) { showToast('이동할 게시물이 없어요'); return; }
+ try {
+ const { error } = await sb.from('refs').insert(rows);
+ if (error) throw error;
+ showToast(`${rows.length}개 게시물을 스레드 레퍼런스로 옮겼어요`);
+ // 체크 해제
+ checks.forEach(cb => cb.checked = false);
+ // 레퍼런스 데이터 새로고침 (다음 진입 시 반영)
+ if (typeof loadReferences === 'function') loadReferences(true);
+ } catch (e) {
+ console.error('moveSelectedHashtagPostsToRef:', e);
+ showToast('이동 실패: ' + e.message);
+ }
 }
 
 function renderInstaHashtags() {
@@ -6020,8 +6120,7 @@ function renderInstaCompetitorTable() {
  onkeydown="competitorTabNav(event, this)"
  onfocus="this.value=this.value.replace(/,/g,'');this.style.borderColor='#3b82f6';this.style.background='#fff'"
  onblur="const n=parseInt(this.value.replace(/[^0-9-]/g,''))||0;this.value=n?n.toLocaleString():'';this.style.borderColor='transparent';this.style.background='transparent'"
- style="width:70px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:var(--fs-xs);font-family:inherit;text-align:right;background:transparent;outline:none"/> </td> <td style="padding:2px;text-align:center;background:${cellBg};color:${changeColor};font-size:var(--fs-xs);font-weight:600"> ${change !== 0 ? `<span style="background:${changeBg};padding:1px 4px;border-radius:3px">${changeSign}${Math.abs(change).toLocaleString()}</span>` : '<span style="color:var(--text3)">—</span>'}
- </td> <td style="padding:2px;text-align:center;background:${cellBg}"> <input type="number" step="0.01" value="${engagement || ''}" placeholder=""
+ style="width:70px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:var(--fs-xs);font-family:inherit;text-align:right;background:transparent;outline:none"/> </td> <td style="padding:2px;text-align:center;background:${cellBg};color:${changeColor};font-size:var(--fs-xs);font-weight:600;white-space:nowrap"> ${change !== 0 ? `<span style="background:${changeBg};padding:1px 4px;border-radius:3px;white-space:nowrap;display:inline-block">${changeSign}${Math.abs(change).toLocaleString()}</span>` : '<span style="color:var(--text3)">—</span>'}</td> <td style="padding:2px;text-align:center;background:${cellBg}"> <input type="number" step="0.01" value="${engagement || ''}" placeholder=""
  onchange="saveCompetitorCell('${dateKey}', '${c.username}', 'engagement', this.value, this)"
  onkeydown="competitorTabNav(event, this)"
  style="width:50px;padding:3px;border:1px solid transparent;border-radius:3px;font-size:var(--fs-xs);font-family:inherit;text-align:right;background:transparent;outline:none"

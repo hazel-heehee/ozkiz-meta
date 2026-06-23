@@ -371,7 +371,7 @@ table.resizable th .col-resizer:active{
  </button> <button class="nav-item" onclick="goPage('calendar',this)"> <span class="nav-icon">▦</span>콘텐츠 캘린더
  </button> <div class="sidebar-divider"></div> <div class="sidebar-section">탐색</div> <button class="nav-item" onclick="goPage('trend',this)"> <span class="nav-icon">↗</span>스레드 레퍼런스
  </button> <button class="nav-item" onclick="goPage('thread-hashtags',this)"> <span class="nav-icon">#</span>해시태그 분석
- </button> <div class="sidebar-divider"></div> <div class="sidebar-section">AI 도구</div> <button class="nav-item" onclick="goPage('content',this)"> <span class="nav-icon"></span>콘텐츠 생성
+ </button> <div class="sidebar-divider"></div> <div class="sidebar-section">AI 도구</div> <button class="nav-item" onclick="goPage('draft',this)"> <span class="nav-icon">✎</span>시안 생성기</button> <button class="nav-item" onclick="goPage('content',this)"> <span class="nav-icon"></span>콘텐츠 생성
  </button> <button class="nav-item" onclick="goPage('persona',this)"> <span class="nav-icon">◉</span>브랜드 가이드
  </button> <button class="nav-item" onclick="goPage('feedback',this)"> <span class="nav-icon"></span>글 피드백
  </button> </div> <!-- ━━━ 참고자료 (양 채널 공통, 하단 고정) ━━━ --> <div style="margin-top:auto"> <div class="sidebar-divider"></div> <div class="sidebar-section">참고자료</div> <button class="nav-item" onclick="goPage('kindergarten',this)"> <span class="nav-icon"></span>유치원 일정
@@ -388,7 +388,110 @@ table.resizable th .col-resizer:active{
  </div> </div> </div> </div> <!-- ③ 콘텐츠 생성 (프롬프트 생성기) --> <div class="page" id="page-content"> <div class="page-top"><div class="page-title">AI 프롬프트 생성기</div></div> <div class="content-area"> <div class="tool-layout"> <!-- LEFT: options --> <div> <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:18px;font-size:var(--fs-sm);color:var(--text2);line-height:1.6">옵션을 선택하면 AI에 입력할 프롬프트가 자동으로 만들어져요.<br> <b>복사 → ChatGPT/Claude/Gemini에 붙여넣기</b>해서 사용하세요!
  </div> <!-- 콘텐츠 믹스 추천 (이번 주 미발행 카테고리) --> <div id="mixSuggestionBox" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:var(--fs-sm);line-height:1.5"> <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"> <span style="font-size:var(--fs-base)"></span> <b style="color:#92400e">이번 주 추천</b> </div> <div id="mixSuggestionText" style="color:#78350f"></div> </div> <!-- 콘텐츠 믹스 --> <div class="section-label" style="display:flex;align-items:center;gap:6px">콘텐츠 믹스
  <button onclick="openInfoModal('mix')" style="background:none;border:none;cursor:pointer;color:#6b7280;font-size:var(--fs-sm);padding:0;line-height:1" title="콘텐츠 믹스 가이드">ⓘ</button> </div> <div class="chip-row" style="margin-bottom:8px"> <button class="chip mix-chip on" data-g="mix" data-mix="authority" onclick="pickMixChip(this)">권위 구축</button> <button class="chip mix-chip" data-g="mix" data-mix="engagement" onclick="pickMixChip(this)">참여 유도</button> <button class="chip mix-chip" data-g="mix" data-mix="lead" onclick="pickMixChip(this)">리드 생성</button> <button class="chip mix-chip" data-g="mix" data-mix="promo" onclick="pickMixChip(this)">전환·홍보</button> </div> <!-- 세부 포맷 (믹스 선택에 따라 동적 변경) --> <div class="section-label">세부 포맷</div> <div class="chip-row" id="formatChips"> <!-- JS가 동적 채움 --> </div> <!-- CTA 목표 --> <div class="section-label">CTA 목표</div> <div class="chip-row" style="margin-bottom:16px"> <button class="chip cta-chip on" data-g="cta" data-cta="save" onclick="pickChip(this)">정보성 (저장)</button> <button class="chip cta-chip" data-g="cta" data-cta="comment" onclick="pickChip(this)">토론 (댓글)</button> <button class="chip cta-chip" data-g="cta" data-cta="share" onclick="pickChip(this)">↗ 공유 (공유)</button> </div> <!-- 발행 월 --> <div class="section-label">발행 월 <span style="font-size:var(--fs-xs);font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(복수 선택 가능)</span></div> <div class="chip-row" id="monthChips"> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">1월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">2월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">3월</button> <button class="chip month-chip on" data-g="month" onclick="toggleMonth(this)">4월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">5월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">6월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">7월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">8월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">9월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">10월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">11월</button> <button class="chip month-chip" data-g="month" onclick="toggleMonth(this)">12월</button> </div> <!-- 시즌 · 테마 --> <div class="section-label">시즌 · 테마 <span style="font-size:var(--fs-xs);font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(복수 선택 가능)</span></div> <div class="chip-row" id="themeChips"> <button class="chip" data-g="theme" onclick="toggleTheme(this)">봄꽃놀이</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">신학기</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">등원</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">어린이날</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">여름방학</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">봄방학</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">겨울방학</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">크리스마스</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">주말</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">설날</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">추석</button> <button class="chip" data-g="theme" onclick="toggleTheme(this)">졸업</button> </div> <!-- 추가 요청 --> <div class="section-label">추가 요청 <span style="font-size:var(--fs-xs);font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(선택)</span></div> <textarea class="ai-input" id="contentExtra" rows="3" placeholder="예: 봄꽃놀이 코디 3종 소개, 어린이날 선물 아이디어, 참고할 텍스트 붙여넣기..." style="margin-bottom:18px"></textarea> <div style="display:flex;gap:8px"> <button class="btn btn-primary" onclick="buildPrompt()">프롬프트 생성</button> <button class="btn btn-ghost btn-sm" onclick="clearGen('content')">초기화</button> </div> </div> <!-- RIGHT: result --> <div style="position:sticky;top:24px"> <div class="section-label">생성된 프롬프트</div> <div class="result-box" id="rb-content" style="min-height:320px;font-family:'Courier New',monospace;font-size:var(--fs-sm);white-space:pre-wrap;line-height:1.6"> <div style="text-align:center;padding:60px 20px;font-family:inherit"> <div style="font-size:var(--fs-3xl);margin-bottom:12px"></div> <div style="color:var(--text);font-weight:600;font-size:var(--fs-base);margin-bottom:6px">AI 프롬프트 생성 준비</div> <div style="color:var(--text3);font-size:var(--fs-sm);line-height:1.6">왼쪽에서 콘텐츠 믹스 유형과 세부 포맷, 발행 월 등을<br>선택한 후 <b>프롬프트 생성</b>버튼을 눌러주세요
- </div> </div> </div> <!-- 액션 버튼 --> <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap" id="ra-content"> <button class="btn btn-primary btn-sm" onclick="copyPromptAndOpen('chatgpt')">복사 + ChatGPT 열기</button> <button class="btn btn-primary btn-sm" onclick="copyPromptAndOpen('claude')">복사 + Claude 열기</button> <button class="btn btn-primary btn-sm" onclick="copyPromptAndOpen('gemini')">복사 + Gemini 열기</button> </div> <div style="display:flex;gap:8px;margin-top:8px"> <button class="btn btn-ghost btn-sm" onclick="copyRes('content')">복사만</button> <button class="btn btn-ghost btn-sm" onclick="saveHist('content')">저장 기록에 저장</button> </div> </div> </div> </div> </div> <!-- ⑤ 트렌드 분석 (레퍼런스 누적) --> <div class="page" id="page-trend"> <div class="page-top"> <div class="page-title">스레드 레퍼런스</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="loadReferences(true)">↻ 새로고침</button> <button class="btn btn-ghost btn-sm" onclick="exportRefCSV()">CSV 다운로드</button> </div> </div> <div style="padding:20px 28px"> <!-- 필터 영역 --> <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px"> <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text)">필터</div> <div style="display:flex;gap:8px;align-items:center"> <span style="font-size:var(--fs-xs);color:var(--text2)">조건 결합:</span> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="radio" name="refFilterMode" value="and" checked onchange="applyRefFiltersFromInput()" style="margin:0"/>AND (모두 만족)</label> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="radio" name="refFilterMode" value="or" onchange="applyRefFiltersFromInput()" style="margin:0"/>OR (하나라도)</label> <button class="btn btn-ghost btn-sm" onclick="resetRefFilters()" style="font-size:var(--fs-xs);padding:4px 10px">초기화</button> </div> </div> <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"> <!-- 날짜 범위 --> <div> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">기록일자 범위</div> <div style="display:flex;gap:4px;align-items:center"> <input type="date" id="refFilterDateFrom" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);flex:1;font-family:inherit"/> <span style="font-size:var(--fs-xs);color:var(--text3)">~</span> <input type="date" id="refFilterDateTo" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);flex:1;font-family:inherit"/> </div> </div> <!-- 미디어 --> <div> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">미디어 첨부</div> <div style="display:flex;gap:8px;align-items:center;padding:6px 0"> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="checkbox" id="refFilterImage" onchange="applyRefFiltersFromInput()" style="margin:0"/>이미지</label> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="checkbox" id="refFilterVideo" onchange="applyRefFiltersFromInput()" style="margin:0"/>영상</label> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="checkbox" id="refFilterTextOnly" onchange="applyRefFiltersFromInput()" style="margin:0"/>텍스트만</label> </div> </div> <!-- 수치 임계값 --> <div> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">수치 이상</div> <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap"> <select id="refFilterMetric" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit"> <option value="">(선택)</option> <option value="views">조회수</option> <option value="likes">좋아요</option> <option value="comments">댓글</option> <option value="reposts">리포스트</option> <option value="shares">공유</option> </select> <input type="number" id="refFilterMinValue" placeholder="100" oninput="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);width:80px;font-family:inherit"/> <span style="font-size:var(--fs-xs);color:var(--text2)">이상</span> </div> </div> <!-- 키워드 검색 --> <div style="grid-column:1/-1"> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">글/키워드 검색</div> <input type="text" id="refFilterText" placeholder="검색어를 입력하세요 (글 내용, 키워드, 댓글내용에서 찾음)" oninput="applyRefFiltersFromInput()" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit"/> </div> </div> </div> <!-- 누적 통계 + 페이지 크기 선택 --> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px"> <div style="display:flex;gap:16px;font-size:var(--fs-sm);color:var(--text2)"> <span><b id="refCount" style="color:var(--text)">0</b>개 표시 중 (전체 <span id="refTotalCount">0</span>개)</span> <span>·</span> <span>총 조회수 <b id="refTotalViews" style="color:var(--text)">0</b></span> <span>·</span> <span>평균 좋아요 <b id="refAvgLikes" style="color:var(--text)">0</b></span> </div> <div style="display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);color:var(--text3)"> <span>페이지당</span> <select onchange="changeRefPageSize(this.value)" id="refPageSizeSelect" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);font-family:inherit;cursor:pointer"> <option value="30">30개</option> <option value="50">50개</option> <option value="100">100개</option> </select> </div> </div> <!-- 누적 표 --> <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff"> <table style="width:100%;border-collapse:collapse;font-size:var(--fs-sm);min-width:1200px"> <thead style="background:#f8fafc"> <tr style="border-bottom:1px solid var(--border)"> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('date')">기록일자 <span id="sort-date"></span></th> <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px;cursor:pointer;user-select:none" onclick="sortRefs('media')">미디어 <span id="sort-media"></span></th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:240px;cursor:pointer;user-select:none" onclick="sortRefs('content')">글 <span id="sort-content"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('views')">조회수 <span id="sort-views"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('likes')">좋아요 <span id="sort-likes"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('comments')">댓글 <span id="sort-comments"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('reposts')">리포스트 <span id="sort-reposts"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('shares')">공유 <span id="sort-shares"></span></th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('keyword')">키워드 <span id="sort-keyword"></span></th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:200px">댓글내용</th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2)">URL</th> <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:130px">액션</th> </tr> </thead> <tbody id="refTableBody"> <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">Supabase에서 데이터 불러오는 중...</td></tr> </tbody> </table> </div> <!-- 페이지네이션 컨트롤 --> <div id="refPaginationControls"></div> </div> </div> <!-- ⑥ 스레드 해시태그 분석 --> <div class="page" id="page-thread-hashtags"> <div class="page-top"> <div class="page-title">해시태그 분석</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="loadThreadHashtagAnalysis()">↻ 새로고침</button> </div> </div> <div style="padding:20px 28px"> <!-- 안내 --> <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 16px;margin-bottom:18px;font-size:var(--fs-sm);color:#075985;line-height:1.6"> <b>스레드에서 키워드를 검색해서 상위 10개 게시물의 댓글까지 감성 분석합니다.</b><br>아래 키워드 추가 후 GitHub Actions에서 <b>"Analyze Thread Hashtags"</b> 워크플로우를 수동으로 실행해주세요. 결과는 자동으로 표시됩니다. </div> <!-- 키워드 관리 --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px"> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"> <div style="font-size:var(--fs-sm);font-weight:700">분석할 키워드</div> <div style="display:flex;gap:6px;align-items:center"> <input type="text" id="newThreadHashtag" placeholder="예: 육아, 아동복" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit;width:160px" onkeydown="if(event.key==='Enter') addThreadHashtag()"/> <button class="btn btn-primary btn-sm" onclick="addThreadHashtag()">+ 추가</button> </div> </div> <div id="threadHashtagsList" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px"> <span style="color:var(--text3);font-size:var(--fs-sm);padding:4px 0">불러오는 중...</span> </div> </div> <!-- 분석 결과 -->  <div id="threadAnalysisResults"> <div style="text-align:center;padding:40px;color:var(--text3);font-size:var(--fs-sm)">아직 분석 결과가 없어요. GitHub Actions에서 워크플로우를 실행하세요!</div> </div> </div> </div> <!-- ⑥ 페르소나 분석 --> <div class="page" id="page-persona"> <div class="page-top"> <div class="page-title">브랜드 가이드</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="resetBrandGuide()" style="color:var(--text3)">기본값으로 복원</button> <button class="btn btn-primary btn-sm" onclick="saveBrandGuide()">저장</button> </div> </div> <div style="padding:20px 28px;max-width:900px"> <!-- 안내 --> <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:start;gap:12px"> <div style="font-size:var(--fs-xl)">◉</div> <div style="flex:1;font-size:var(--fs-sm);color:#1e40af;line-height:1.6"> <b>오즈키즈 브랜드의 톤·스타일을 명문화해둡니다.</b><br>여기에 작성한 내용이 <b>콘텐츠 생성</b>시 AI 프롬프트에 자동으로 포함돼서, 매번 일관된 브랜드 보이스로 콘텐츠가 만들어져요.
+ </div> </div> </div> <!-- 액션 버튼 --> <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap" id="ra-content"> <button class="btn btn-primary btn-sm" onclick="copyPromptAndOpen('chatgpt')">복사 + ChatGPT 열기</button> <button class="btn btn-primary btn-sm" onclick="copyPromptAndOpen('claude')">복사 + Claude 열기</button> <button class="btn btn-primary btn-sm" onclick="copyPromptAndOpen('gemini')">복사 + Gemini 열기</button> </div> <div style="display:flex;gap:8px;margin-top:8px"> <button class="btn btn-ghost btn-sm" onclick="copyRes('content')">복사만</button> <button class="btn btn-ghost btn-sm" onclick="saveHist('content')">저장 기록에 저장</button> </div> </div> </div> </div> </div>
+
+<!-- ✎ 시안 생성기 (ThreadSight 구조 기반, 내 데이터 자동 연결) -->
+<div class="page" id="page-draft">
+  <div class="page-top">
+    <div class="page-title">시안 생성기</div>
+    <div class="page-actions">
+      <button class="btn btn-ghost btn-sm" onclick="loadDraftData(true)">↻ 내 데이터 새로고침</button>
+    </div>
+  </div>
+  <div style="padding:20px 28px;max-width:1100px">
+
+    <!-- ThreadSight 요약 (참고용) -->
+    <details style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;margin-bottom:18px">
+      <summary style="cursor:pointer;padding:14px 16px;font-size:var(--fs-sm);font-weight:700;color:var(--text);list-style:none">📌 이 도구의 원리 (ThreadSight 구조 요약) — 펼쳐보기</summary>
+      <div style="padding:0 16px 16px;font-size:var(--fs-sm);color:var(--text2);line-height:1.7">
+        <p style="margin:0 0 10px"><b>콘텐츠가 아니라 "구조"를 가져온다.</b> 남의 프롬프트를 복사하면 남의 톤이 나와요. 모든 고효율 스레드 프롬프트는 아래 5단계 뼈대를 공유합니다.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1e40af;padding:3px 9px;border-radius:6px;font-weight:600">DATA — 내 실제 수치</span>
+          <span style="background:#f3e8ff;color:#7c3aed;padding:3px 9px;border-radius:6px;font-weight:600">LENS — 전문가 관점</span>
+          <span style="background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:6px;font-weight:600">TASK — 단 하나의 작업</span>
+          <span style="background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:6px;font-weight:600">RULES — 브랜드 제약</span>
+          <span style="background:#fee2e2;color:#b91c1c;padding:3px 9px;border-radius:6px;font-weight:600">SHAPE — 출력 형식</span>
+        </div>
+        <p style="margin:0 0 6px"><b>핵심은 DATA.</b> ThreadSight는 이 단계를 자기네 유료 MCP로 채우라고 하지만, 우리는 이미 Supabase에 발행 글·레퍼런스 데이터가 다 있어요. 그래서 ThreadSight MCP 없이, 이 생성기가 <b>내 실제 데이터를 DATA 단계에 자동으로 넣어줍니다.</b> 같은 뼈대, 내 수치, 아무도 못 만드는 결과물.</p>
+        <p style="margin:6px 0 0;color:var(--text3);font-size:var(--fs-xs)">구조 0(콜드스타트)는 데이터 없이 니치 레퍼런스만으로, 1~7번은 내 발행 글·레퍼런스를 끌어와 작동합니다.</p>
+      </div>
+    </details>
+
+    <div class="tool-layout" style="display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start">
+
+      <!-- LEFT: 옵션 -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;position:sticky;top:16px">
+
+        <!-- 데이터 현황 -->
+        <div id="draftDataStatus" style="font-size:var(--fs-xs);color:var(--text3);background:#f8fafc;border-radius:6px;padding:8px 10px;margin-bottom:14px;line-height:1.5">내 데이터 불러오는 중...</div>
+
+        <!-- 구조 선택 -->
+        <div style="font-size:var(--fs-xs);color:var(--text2);font-weight:700;margin-bottom:5px">① 구조 선택</div>
+        <select id="draftStructure" onchange="onDraftStructureChange()" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit;background:#fff;margin-bottom:6px"></select>
+        <div id="draftStructureDesc" style="font-size:var(--fs-xs);color:var(--text3);line-height:1.5;margin-bottom:14px;min-height:32px"></div>
+
+        <!-- 데이터 소스 -->
+        <div style="font-size:var(--fs-xs);color:var(--text2);font-weight:700;margin-bottom:5px">② 어떤 내 데이터를 쓸까요</div>
+        <select id="draftDataSource" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit;background:#fff;margin-bottom:14px">
+          <option value="top_posts">내 상위 발행 글 (참여순)</option>
+          <option value="references">레퍼런스 (저장한 바이럴 글)</option>
+          <option value="both">둘 다</option>
+          <option value="none">안 씀 (콜드스타트 / 직접 붙여넣기)</option>
+        </select>
+
+        <!-- 콜드스타트 붙여넣기 (조건부) -->
+        <div id="draftColdWrap" style="display:none;margin-bottom:14px">
+          <div style="font-size:var(--fs-xs);color:var(--text2);font-weight:700;margin-bottom:5px">니치 바이럴 글 붙여넣기</div>
+          <textarea id="draftColdPaste" rows="4" placeholder="내 분야의 잘 된 스레드 글 5~10개를 붙여넣으세요 (한 줄에 하나씩, 또는 빈 줄로 구분)" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.5;font-family:inherit;resize:vertical"></textarea>
+        </div>
+
+        <!-- 키워드/주제 -->
+        <div style="font-size:var(--fs-xs);color:var(--text2);font-weight:700;margin-bottom:5px">③ 키워드 / 주제</div>
+        <input type="text" id="draftKeyword" placeholder="예: 봄 등원룩, 신학기 준비, 워킹맘 아침" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit;margin-bottom:14px"/>
+
+        <!-- 추가 지시 -->
+        <div style="font-size:var(--fs-xs);color:var(--text2);font-weight:700;margin-bottom:5px">④ 추가 요청 <span style="color:var(--text3);font-weight:400">(선택)</span></div>
+        <textarea id="draftExtra" rows="2" placeholder="예: 댓글 유도형으로, 이모지 적게, 어린이날 시즌 느낌" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.5;font-family:inherit;resize:vertical;margin-bottom:8px"></textarea>
+
+        <!-- 시안 개수 -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <span style="font-size:var(--fs-xs);color:var(--text2);font-weight:700">시안 개수</span>
+          <select id="draftCount" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit;background:#fff">
+            <option value="3">3개</option>
+            <option value="5" selected>5개</option>
+            <option value="7">7개</option>
+          </select>
+        </div>
+
+        <!-- 생성 버튼 -->
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" id="draftBtnGemini" onclick="runDraft('gemini')" style="flex:1">⚡ Gemini로 생성</button>
+          <button class="btn btn-primary btn-sm" id="draftBtnClaude" onclick="runDraft('claude')" style="flex:1;background:#7c3aed;border-color:#7c3aed">◆ Claude로 생성</button>
+        </div>
+        <div style="font-size:var(--fs-2xs,11px);color:var(--text3);margin-top:8px;line-height:1.5">생성한 시안은 카드별로 복사하거나 예약 글로 저장할 수 있어요.</div>
+      </div>
+
+      <!-- RIGHT: 결과 -->
+      <div>
+        <div id="draftPromptPreview" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px">
+          <details>
+            <summary style="cursor:pointer;font-size:var(--fs-xs);font-weight:700;color:var(--text2)">실제로 AI에 보낸 프롬프트 보기</summary>
+            <pre id="draftPromptText" style="white-space:pre-wrap;font-size:var(--fs-xs);color:var(--text2);line-height:1.5;margin:10px 0 0;font-family:inherit"></pre>
+          </details>
+        </div>
+        <div id="draftResult">
+          <div style="text-align:center;padding:60px 20px;color:var(--text3);font-size:var(--fs-sm);border:1px dashed var(--border);border-radius:10px;line-height:1.7">
+            왼쪽에서 구조와 키워드를 고르고<br><b>생성</b> 버튼을 눌러보세요.<br>
+            <span style="font-size:var(--fs-xs)">내 발행 글·레퍼런스 데이터가 자동으로 반영된 스레드 시안이 나와요.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ 트렌드 분석 (레퍼런스 누적) --> <div class="page" id="page-trend"> <div class="page-top"> <div class="page-title">스레드 레퍼런스</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="loadReferences(true)">↻ 새로고침</button> <button class="btn btn-ghost btn-sm" onclick="exportRefCSV()">CSV 다운로드</button> </div> </div> <div style="padding:20px 28px"> <!-- 필터 영역 --> <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px"> <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text)">필터</div> <div style="display:flex;gap:8px;align-items:center"> <span style="font-size:var(--fs-xs);color:var(--text2)">조건 결합:</span> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="radio" name="refFilterMode" value="and" checked onchange="applyRefFiltersFromInput()" style="margin:0"/>AND (모두 만족)</label> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="radio" name="refFilterMode" value="or" onchange="applyRefFiltersFromInput()" style="margin:0"/>OR (하나라도)</label> <button class="btn btn-ghost btn-sm" onclick="resetRefFilters()" style="font-size:var(--fs-xs);padding:4px 10px">초기화</button> </div> </div> <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"> <!-- 날짜 범위 --> <div> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">기록일자 범위</div> <div style="display:flex;gap:4px;align-items:center"> <input type="date" id="refFilterDateFrom" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);flex:1;font-family:inherit"/> <span style="font-size:var(--fs-xs);color:var(--text3)">~</span> <input type="date" id="refFilterDateTo" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);flex:1;font-family:inherit"/> </div> </div> <!-- 미디어 --> <div> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">미디어 첨부</div> <div style="display:flex;gap:8px;align-items:center;padding:6px 0"> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="checkbox" id="refFilterImage" onchange="applyRefFiltersFromInput()" style="margin:0"/>이미지</label> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="checkbox" id="refFilterVideo" onchange="applyRefFiltersFromInput()" style="margin:0"/>영상</label> <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-sm)"><input type="checkbox" id="refFilterTextOnly" onchange="applyRefFiltersFromInput()" style="margin:0"/>텍스트만</label> </div> </div> <!-- 수치 임계값 --> <div> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">수치 이상</div> <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap"> <select id="refFilterMetric" onchange="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit"> <option value="">(선택)</option> <option value="views">조회수</option> <option value="likes">좋아요</option> <option value="comments">댓글</option> <option value="reposts">리포스트</option> <option value="shares">공유</option> </select> <input type="number" id="refFilterMinValue" placeholder="100" oninput="applyRefFiltersFromInput()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);width:80px;font-family:inherit"/> <span style="font-size:var(--fs-xs);color:var(--text2)">이상</span> </div> </div> <!-- 키워드 검색 --> <div style="grid-column:1/-1"> <div style="font-size:var(--fs-xs);color:var(--text2);margin-bottom:4px;font-weight:600">글/키워드 검색</div> <input type="text" id="refFilterText" placeholder="검색어를 입력하세요 (글 내용, 키워드, 댓글내용에서 찾음)" oninput="applyRefFiltersFromInput()" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit"/> </div> </div> </div> <!-- 누적 통계 + 페이지 크기 선택 --> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px"> <div style="display:flex;gap:16px;font-size:var(--fs-sm);color:var(--text2)"> <span><b id="refCount" style="color:var(--text)">0</b>개 표시 중 (전체 <span id="refTotalCount">0</span>개)</span> <span>·</span> <span>총 조회수 <b id="refTotalViews" style="color:var(--text)">0</b></span> <span>·</span> <span>평균 좋아요 <b id="refAvgLikes" style="color:var(--text)">0</b></span> </div> <div style="display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);color:var(--text3)"> <span>페이지당</span> <select onchange="changeRefPageSize(this.value)" id="refPageSizeSelect" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);font-family:inherit;cursor:pointer"> <option value="30">30개</option> <option value="50">50개</option> <option value="100">100개</option> </select> </div> </div> <!-- 누적 표 --> <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff"> <table style="width:100%;border-collapse:collapse;font-size:var(--fs-sm);min-width:1200px"> <thead style="background:#f8fafc"> <tr style="border-bottom:1px solid var(--border)"> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('date')">기록일자 <span id="sort-date"></span></th> <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:60px;cursor:pointer;user-select:none" onclick="sortRefs('media')">미디어 <span id="sort-media"></span></th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:240px;cursor:pointer;user-select:none" onclick="sortRefs('content')">글 <span id="sort-content"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('views')">조회수 <span id="sort-views"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('likes')">좋아요 <span id="sort-likes"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('comments')">댓글 <span id="sort-comments"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('reposts')">리포스트 <span id="sort-reposts"></span></th> <th style="padding:10px;text-align:right;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('shares')">공유 <span id="sort-shares"></span></th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);cursor:pointer;user-select:none" onclick="sortRefs('keyword')">키워드 <span id="sort-keyword"></span></th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2);min-width:200px">댓글내용</th> <th style="padding:10px;text-align:left;font-weight:600;color:var(--text2)">URL</th> <th style="padding:10px;text-align:center;font-weight:600;color:var(--text2);width:130px">액션</th> </tr> </thead> <tbody id="refTableBody"> <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">Supabase에서 데이터 불러오는 중...</td></tr> </tbody> </table> </div> <!-- 페이지네이션 컨트롤 --> <div id="refPaginationControls"></div> </div> </div> <!-- ⑥ 스레드 해시태그 분석 --> <div class="page" id="page-thread-hashtags"> <div class="page-top"> <div class="page-title">해시태그 분석</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="loadThreadHashtagAnalysis()">↻ 새로고침</button> </div> </div> <div style="padding:20px 28px"> <!-- 안내 --> <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 16px;margin-bottom:18px;font-size:var(--fs-sm);color:#075985;line-height:1.6"> <b>스레드에서 키워드를 검색해서 상위 10개 게시물의 댓글까지 감성 분석합니다.</b><br>아래 키워드 추가 후 GitHub Actions에서 <b>"Analyze Thread Hashtags"</b> 워크플로우를 수동으로 실행해주세요. 결과는 자동으로 표시됩니다. </div> <!-- 키워드 관리 --> <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px"> <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"> <div style="font-size:var(--fs-sm);font-weight:700">분석할 키워드</div> <div style="display:flex;gap:6px;align-items:center"> <input type="text" id="newThreadHashtag" placeholder="예: 육아, 아동복" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);font-family:inherit;width:160px" onkeydown="if(event.key==='Enter') addThreadHashtag()"/> <button class="btn btn-primary btn-sm" onclick="addThreadHashtag()">+ 추가</button> </div> </div> <div id="threadHashtagsList" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px"> <span style="color:var(--text3);font-size:var(--fs-sm);padding:4px 0">불러오는 중...</span> </div> </div> <!-- 분석 결과 -->  <div id="threadAnalysisResults"> <div style="text-align:center;padding:40px;color:var(--text3);font-size:var(--fs-sm)">아직 분석 결과가 없어요. GitHub Actions에서 워크플로우를 실행하세요!</div> </div> </div> </div> <!-- ⑥ 페르소나 분석 --> <div class="page" id="page-persona"> <div class="page-top"> <div class="page-title">브랜드 가이드</div> <div class="page-actions"> <button class="btn btn-ghost btn-sm" onclick="resetBrandGuide()" style="color:var(--text3)">기본값으로 복원</button> <button class="btn btn-primary btn-sm" onclick="saveBrandGuide()">저장</button> </div> </div> <div style="padding:20px 28px;max-width:900px"> <!-- 안내 --> <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:start;gap:12px"> <div style="font-size:var(--fs-xl)">◉</div> <div style="flex:1;font-size:var(--fs-sm);color:#1e40af;line-height:1.6"> <b>오즈키즈 브랜드의 톤·스타일을 명문화해둡니다.</b><br>여기에 작성한 내용이 <b>콘텐츠 생성</b>시 AI 프롬프트에 자동으로 포함돼서, 매번 일관된 브랜드 보이스로 콘텐츠가 만들어져요.
  내용을 수정하면 <b>저장</b>버튼을 꼭 눌러주세요.
  </div> </div> <!-- 6개 가이드 카드 --> <div style="display:flex;flex-direction:column;gap:14px"> <!-- 프로필 --> <div style="background:#fff;border:1px solid var(--border);border-left:3px solid #3b82f6;border-radius:8px;padding:14px 16px"> <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"> <span style="font-size:var(--fs-lg)"></span> <span style="font-size:var(--fs-sm);font-weight:700;color:#3b82f6;text-transform:uppercase;letter-spacing:.05em">브랜드 프로필</span> </div> <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:6px">우리 계정이 어떤 사람·브랜드로 보이고 싶은가</div> <textarea id="bg-profile" rows="3" placeholder="예: 15년 제조 경력의 아동복 브랜드 마케터..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.6;font-family:inherit;resize:vertical;min-height:70px"></textarea> </div> <!-- 오디언스 --> <div style="background:#fff;border:1px solid var(--border);border-left:3px solid #16a34a;border-radius:8px;padding:14px 16px"> <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"> <span style="font-size:var(--fs-lg)"></span> <span style="font-size:var(--fs-sm);font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.05em">타겟 오디언스</span> </div> <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:6px">누가 우리 글을 좋아하고 반응하는지</div> <textarea id="bg-audience" rows="3" placeholder="예: 0~10세 자녀를 둔 2030 엄마들..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.6;font-family:inherit;resize:vertical;min-height:70px"></textarea> </div> <!-- 후크 --> <div style="background:#fff;border:1px solid var(--border);border-left:3px solid #dc2626;border-radius:8px;padding:14px 16px"> <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"> <span style="font-size:var(--fs-lg)"></span> <span style="font-size:var(--fs-sm);font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.05em">글 후크 (관심 유도)</span> </div> <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:6px">첫 줄/도입부에서 자주 쓰는 패턴</div> <textarea id="bg-hook" rows="3" placeholder="예: 공감형 질문 (-아니에요?), 발견형 ('우연히 알게 됐는데...'), 정보형 ('알고 보면 OOO 차이가...')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.6;font-family:inherit;resize:vertical;min-height:70px"></textarea> </div> <!-- 스타일 --> <div style="background:#fff;border:1px solid var(--border);border-left:3px solid #7c3aed;border-radius:8px;padding:14px 16px"> <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"> <span style="font-size:var(--fs-lg)"></span> <span style="font-size:var(--fs-sm);font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.05em">글쓰기 스타일</span> </div> <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:6px">말투, 어휘, 문장 길이, 이모지 사용</div> <textarea id="bg-style" rows="3" placeholder="예: 따뜻하고 친근한 엄마 친구 같은 말투..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.6;font-family:inherit;resize:vertical;min-height:70px"></textarea> </div> <!-- CTA --> <div style="background:#fff;border:1px solid var(--border);border-left:3px solid #ea580c;border-radius:8px;padding:14px 16px"> <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"> <span style="font-size:var(--fs-lg)"></span> <span style="font-size:var(--fs-sm);font-weight:700;color:#ea580c;text-transform:uppercase;letter-spacing:.05em">CTA 패턴 (행동 유도)</span> </div> <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:6px">글 마지막에 어떤 행동을 유도하는지</div> <textarea id="bg-cta" rows="3" placeholder="예: 공감 댓글 유도, 저장·스크랩 유도, 주변 엄마들에게 공유 유도..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.6;font-family:inherit;resize:vertical;min-height:70px"></textarea> </div> <!-- 주제 --> <div style="background:#fff;border:1px solid var(--border);border-left:3px solid #0891b2;border-radius:8px;padding:14px 16px"> <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"> <span style="font-size:var(--fs-lg)"></span> <span style="font-size:var(--fs-sm);font-weight:700;color:#0891b2;text-transform:uppercase;letter-spacing:.05em">주제 & 패턴</span> </div> <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:6px">자주 다루는 주제와 콘텐츠 패턴</div> <textarea id="bg-topics" rows="3" placeholder="예: 시즌별 아동복 추천, 워킹맘 일상, 회사 제조 이야기..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);line-height:1.6;font-family:inherit;resize:vertical;min-height:70px"></textarea> </div> </div> <!-- 안내 --> <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-top:20px;display:flex;align-items:start;gap:10px"> <div style="font-size:var(--fs-lg)"></div> <div style="font-size:var(--fs-sm);color:#15803d;line-height:1.5"> <b>저장된 브랜드 가이드는 콘텐츠 생성에 자동 적용됩니다.</b><br>콘텐츠 생성 탭에서 프롬프트 만들 때 위 내용이 자동으로 AI에게 전달돼요.
  </div> </div> </div> </div> </div> <!-- ⑦ 글 피드백 --> <div class="page" id="page-feedback"> <div class="page-top"> <div class="page-title">글 피드백</div> </div> <div style="padding:20px 28px"> <!-- 안내 --> <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:start;gap:12px"> <div style="font-size:var(--fs-xl)"></div> <div style="flex:1;font-size:var(--fs-sm);color:#92400e;line-height:1.6"> <b>발행한 글을 AI가 분석해서 강점·약점·개선글을 제안해줍니다.</b><br>참여율 기준 정렬되어 있어요. 글을 선택하면 AI 피드백 + 개선글 3개를 생성합니다.
@@ -6740,6 +6843,7 @@ function goPage(name, btn) {
  if (name === 'persona') renderBrandGuide();
  if (name === 'feedback') renderFeedbackList();
  if (name === 'content') { updateFormatChips(); suggestMissingMix(); }
+ if (name === 'draft') initDraftPage();
  if (name === 'kindergarten') loadKindergartenEvents();
  if (name === 'thread-hashtags') { loadThreadHashtags(); loadThreadHashtagAnalysis(); }
  if (name === 'api-usage') loadApiUsage();
@@ -9265,6 +9369,322 @@ async function callClaudeAPI(prompt, maxTokens = 1500) {
  }
  const data = await res.json();
  return data.content?.[0]?.text || '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// ✎ 시안 생성기 — ThreadSight 구조(DATA→LENS→TASK→RULES→SHAPE) 기반
+//   ThreadSight MCP 대신 내 Supabase 데이터(posts/references)를 DATA에 자동 연결
+// ═══════════════════════════════════════════════════════════
+
+// 8개 구조 정의 (ThreadSight 0~7번)
+const DRAFT_STRUCTURES = {
+  cold: {
+    name: '0. 콜드 스타트 (데이터 없이 시작)',
+    desc: '아직 내 성과 데이터가 부족할 때. 내 분야 바이럴 글을 모델링해서 내 톤으로 다시 씁니다.',
+    needsData: false,
+    lens: '콘텐츠가 왜 퍼지는지 분석하는 스레드 전략가',
+    task: (kw) => `붙여넣은 바이럴 글들의 공통 패턴(훅 유형, 구조, 길이, 감정)을 먼저 짚고, "${kw}" 주제로 그 패턴을 적용한 오즈키즈 시안을 써줘.`,
+    rules: '그들의 말투가 아니라 오즈키즈 말투로. 단어가 아니라 구조를 가져와.',
+    shape: '먼저 1~2줄로 패턴 요약, 그다음 시안들.'
+  },
+  winner: {
+    name: '1. 위너 마이닝 (내 검증된 훅 확장)',
+    desc: '이미 통했던 내 글의 훅 패턴을 역설계해서 같은 모양으로 새 시안을 만듭니다.',
+    needsData: true,
+    lens: '내 글이 왜 퍼지는지 연구하는 스레드 고스트라이터',
+    task: (kw) => `내 상위 글들의 훅(첫 줄) 패턴을 역설계하고, "${kw}" 주제로 새 시안을 써줘. 각 시안은 서로 다른 앵글로.`,
+    rules: '내 말투로. 뻔한 첫 줄 금지. 각 시안이 어떤 과거 승자를 닮았는지 한 줄로 태그.',
+    shape: '시안 리스트, 각각 [닮은 패턴] 태그 포함.'
+  },
+  repurpose: {
+    name: '2. 원 투 메니 (검증 자산 재구성)',
+    desc: '가장 잘 된 글 하나를 핵심 메시지는 유지하며 여러 포맷으로 변주합니다.',
+    needsData: true,
+    lens: '리퍼포징 에디터',
+    task: (kw) => `내 최고 성과 글의 핵심 메시지를 유지하면서 ${kw ? `"${kw}" 앵글을 더해 ` : ''}서로 다른 포맷으로 다시 만들어줘.`,
+    rules: '내 말투 유지. 각 버전은 독립적으로 성립해야 함.',
+    shape: '스토리텔링 / 리스티클 / 컨트래리언 버전 등 서로 다른 포맷으로.'
+  },
+  mirror: {
+    name: '3. 미러 (데이터가 말하는 나)',
+    desc: '내 데이터가 실제로 보여주는 페르소나를 진단하고, 그에 맞는 시안을 제안합니다.',
+    needsData: true,
+    lens: '내 의도가 아니라 데이터만 읽는 브랜드 전략가',
+    task: (kw) => `내 글 이력이 실제로 보여주는 페르소나를 짧게 진단하고, 그 강점을 살린 "${kw}" 시안을 써줘.`,
+    rules: '내 실제 수치를 근거로. 보여주는 모습과 도달하려는 대상의 간극을 짚어줘.',
+    shape: '페르소나 한 줄 진단 → 그에 맞는 시안들.'
+  },
+  reply: {
+    name: '5. 리플라이 마이닝 (댓글에서 기회 발굴)',
+    desc: '반복되는 질문/반응을 시장 신호로 보고, 그 수요를 겨냥한 시안을 만듭니다.',
+    needsData: true,
+    lens: '여러 브랜드를 키워본 비즈니스 멘토 (직설적이되 따뜻하게)',
+    task: (kw) => `내 글에서 사람들이 반복해서 관심 갖는 지점을 추정하고, ${kw ? `"${kw}" 관련해 ` : ''}그 수요를 정면으로 겨냥한 시안을 써줘.`,
+    rules: '증상이 아니라 근본 수요. 직설적이되 오즈키즈 톤 유지.',
+    shape: '포착한 수요 한 줄 → 그걸 겨냥한 시안들.'
+  },
+  funnel: {
+    name: '7. 퍼널 (인지→고려→전환 매핑)',
+    desc: '시안을 구매 여정 단계에 매핑해서 좋아요가 아니라 고객으로 쌓이게 합니다.',
+    needsData: true,
+    lens: '풀퍼널 콘텐츠 전략가',
+    task: (kw) => `"${kw}" 주제로 TOFU(인지)→MOFU(고려)→BOFU(전환) 각 단계에 맞는 시안을 써주고, 어떻게 자연스럽게 이어지는지 설명해줘.`,
+    rules: '내 말투로. 노골적 판매 금지, 자연스러운 다음 단계 CTA.',
+    shape: '각 시안에 [TOFU]/[MOFU]/[BOFU] 단계 태그.'
+  },
+  free: {
+    name: '자유 (브랜드 톤 + 키워드만)',
+    desc: '구조 없이 브랜드 가이드와 키워드만으로 가볍게 시안을 뽑습니다.',
+    needsData: false,
+    lens: '오즈키즈 스레드 콘텐츠 라이터',
+    task: (kw) => `"${kw}" 주제로 스크롤을 멈추게 하는 오즈키즈 스레드 시안을 써줘.`,
+    rules: '브랜드 톤 유지. 서로 다른 훅·앵글로.',
+    shape: '바로 시안 리스트.'
+  }
+};
+
+let draftPosts = [];      // 내 발행 글 (posts)
+let draftDataLoaded = false;
+
+function initDraftPage(){
+  // 구조 셀렉트 채우기 (한 번만)
+  const sel = document.getElementById('draftStructure');
+  if (sel && !sel.options.length){
+    Object.entries(DRAFT_STRUCTURES).forEach(([k,v])=>{
+      const o = document.createElement('option'); o.value=k; o.textContent=v.name; sel.appendChild(o);
+    });
+    onDraftStructureChange();
+  }
+  // 레퍼런스 로드(공용 함수 재사용)
+  if (typeof loadReferences === 'function' && (!references || !references.length)) loadReferences();
+  // 발행 글 로드
+  loadDraftData();
+}
+
+function onDraftStructureChange(){
+  const k = document.getElementById('draftStructure').value;
+  const s = DRAFT_STRUCTURES[k];
+  document.getElementById('draftStructureDesc').textContent = s ? s.desc : '';
+  // 콜드/자유 구조면 데이터 소스 기본을 'none'으로 제안
+  const ds = document.getElementById('draftDataSource');
+  if (s && !s.needsData && k==='cold') ds.value='none';
+  toggleColdPaste();
+}
+
+function toggleColdPaste(){
+  const v = document.getElementById('draftDataSource').value;
+  document.getElementById('draftColdWrap').style.display = (v==='none') ? 'block' : 'none';
+}
+document.addEventListener('change', e=>{ if(e.target && e.target.id==='draftDataSource') toggleColdPaste(); });
+
+async function loadDraftData(force){
+  const statusEl = document.getElementById('draftDataStatus');
+  if (draftDataLoaded && !force){ renderDraftStatus(); return; }
+  try{
+    if (statusEl) statusEl.textContent='내 발행 글 불러오는 중...';
+    const { data, error } = await sb.from('posts')
+      .select('date,type,category,text,views,likes,comments,reposts,shares,follows')
+      .order('date',{ascending:false}).limit(300);
+    if (error) throw error;
+    draftPosts = (data||[]).filter(p=>p.text && p.text.trim());
+    draftDataLoaded = true;
+  }catch(e){
+    console.error('loadDraftData error:', e);
+    if (statusEl) statusEl.textContent='발행 글 로드 실패: '+e.message;
+    return;
+  }
+  renderDraftStatus();
+}
+
+function postEngagement(p){
+  return (p.likes||0)+(p.comments||0)*2+(p.reposts||0)*2+(p.shares||0)*2;
+}
+
+function renderDraftStatus(){
+  const statusEl = document.getElementById('draftDataStatus');
+  if (!statusEl) return;
+  const nPosts = draftPosts.length;
+  const nRefs = (typeof references!=='undefined' && references) ? references.length : 0;
+  statusEl.innerHTML = `연결된 내 데이터 · 발행 글 <b style="color:var(--text)">${nPosts}</b>개 · 레퍼런스 <b style="color:var(--text)">${nRefs}</b>개`;
+}
+
+// 데이터 소스 → DATA 블록 텍스트로 변환
+function buildDataBlock(source){
+  let lines = [];
+  const topPosts = [...draftPosts].sort((a,b)=>postEngagement(b)-postEngagement(a)).slice(0,8);
+  const topRefs = (typeof references!=='undefined' && references)
+    ? [...references].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8) : [];
+
+  if (source==='top_posts' || source==='both'){
+    if (topPosts.length){
+      lines.push('[내 상위 발행 글 — 참여 높은 순]');
+      topPosts.forEach((p,i)=>{
+        lines.push(`${i+1}) (조회 ${p.views||0}/♥${p.likes||0}/댓글 ${p.comments||0}/공유 ${(p.shares||0)+(p.reposts||0)})${p.category?` [${p.category}]`:''}\n   ${(p.text||'').replace(/\s+/g,' ').slice(0,220)}`);
+      });
+    } else {
+      lines.push('[내 발행 글 데이터 없음 — 브랜드 톤만 참고]');
+    }
+  }
+  if (source==='references' || source==='both'){
+    if (topRefs.length){
+      lines.push('\n[내가 저장한 레퍼런스 — 조회 높은 순]');
+      topRefs.forEach((r,i)=>{
+        lines.push(`${i+1}) (조회 ${r.views||0}/♥${r.likes||0})${r.keyword?` [${r.keyword}]`:''}${r.point?` ※${r.point}`:''}\n   ${(r.firstSentence?r.firstSentence+' / ':'')+(r.content||'').replace(/\s+/g,' ').slice(0,200)}`);
+      });
+    } else if (source==='references') {
+      lines.push('[레퍼런스 데이터 없음]');
+    }
+  }
+  if (source==='none'){
+    const paste = (document.getElementById('draftColdPaste').value||'').trim();
+    if (paste) lines.push('[직접 붙여넣은 니치 바이럴 글]\n'+paste);
+    else lines.push('[참고 데이터 없음 — 브랜드 가이드만으로 작성]');
+  }
+  return lines.join('\n');
+}
+
+function buildBrandBlock(){
+  const p = currentPersona || {};
+  return `[오즈키즈 브랜드 가이드]
+- 브랜드: ${p.profile||''}
+- 타깃: ${p.audience||''}
+- 훅 스타일: ${p.hook||''}
+- 문체: ${p.style||''}
+- CTA: ${p.cta||''}`;
+}
+
+function buildDraftPrompt(){
+  const k = document.getElementById('draftStructure').value;
+  const s = DRAFT_STRUCTURES[k];
+  const kw = (document.getElementById('draftKeyword').value||'').trim();
+  const extra = (document.getElementById('draftExtra').value||'').trim();
+  const count = document.getElementById('draftCount').value;
+  const source = document.getElementById('draftDataSource').value;
+
+  const dataBlock = buildDataBlock(source);
+  const brandBlock = buildBrandBlock();
+
+  // DATA → LENS → TASK → RULES → SHAPE
+  const prompt = `너는 오즈키즈(아동복 브랜드)의 스레드 콘텐츠를 쓰는 전문가야. 아래 구조에 따라 작업해줘.
+
+# DATA (내 실제 데이터)
+${dataBlock}
+
+${brandBlock}
+
+# LENS
+${s.lens}로서 행동해.
+
+# TASK
+${s.task(kw||'(키워드 미지정)')}
+시안은 정확히 ${count}개 만들어줘.${extra?`\n추가 요청: ${extra}`:''}
+
+# RULES
+${s.rules}
+- 광고 톤·판매 톤 금지. 진짜 엄마 친구처럼.
+- 스레드 글 1개는 3~6줄로 짧게. 첫 줄(훅)에서 스크롤을 멈추게.
+- 각 시안은 서로 다른 훅·앵글로.
+
+# SHAPE
+${s.shape}
+반드시 아래 JSON 형식으로만 응답해. 다른 설명·마크다운·코드펜스 없이 JSON 배열만:
+[
+  {"hook":"첫 줄(훅)","content":"본문 전체(훅 포함, 줄바꿈 \\n 포함)","tag":"이 시안의 앵글/단계/닮은패턴 한 줄","cta":"댓글유도 등 CTA 유형"}
+]`;
+  return prompt;
+}
+
+async function runDraft(provider){
+  if (provider==='claude' && !claudeApiKey){ showToast('Claude API 키를 먼저 설정해주세요'); openModal(); return; }
+  if (provider==='gemini' && !apiKey){ showToast('Gemini API 키를 먼저 설정해주세요'); openModal(); return; }
+  const kw = (document.getElementById('draftKeyword').value||'').trim();
+  const k = document.getElementById('draftStructure').value;
+  if (!kw && k!=='mirror' && k!=='repurpose'){ showToast('키워드/주제를 입력해주세요'); return; }
+
+  const btnG = document.getElementById('draftBtnGemini');
+  const btnC = document.getElementById('draftBtnClaude');
+  const btn = provider==='claude'?btnC:btnG;
+  const origLabel = btn.textContent;
+  btnG.disabled=true; btnC.disabled=true; btn.textContent='생성 중...';
+
+  const prompt = buildDraftPrompt();
+  // 프롬프트 미리보기
+  document.getElementById('draftPromptPreview').style.display='block';
+  document.getElementById('draftPromptText').textContent = prompt;
+
+  const resultEl = document.getElementById('draftResult');
+  resultEl.innerHTML = `<div style="text-align:center;padding:50px;color:var(--text3);font-size:var(--fs-sm)">${provider==='claude'?'Claude':'Gemini'}가 시안을 쓰는 중...</div>`;
+
+  try{
+    let raw;
+    if (provider==='claude') raw = await callClaudeAPI(prompt, 4000);
+    else raw = await callGeminiAPI(prompt, 4000, 1.0);
+    console.log('시안 생성 응답:', raw);
+
+    // JSON 추출
+    let jsonStr = raw.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+    const s = jsonStr.indexOf('['), e = jsonStr.lastIndexOf(']');
+    if (s!==-1 && e!==-1) jsonStr = jsonStr.slice(s, e+1);
+    let drafts;
+    try{ drafts = JSON.parse(jsonStr); }
+    catch(_){ drafts = JSON.parse(jsonStr.replace(/,(\s*[}\]])/g,'$1')); }
+    if (!Array.isArray(drafts) || !drafts.length) throw new Error('시안을 만들지 못했어요. 다시 시도해주세요.');
+
+    renderDrafts(drafts, provider);
+    // API 사용 로그 (있으면)
+    if (typeof logApiUsage==='function'){ try{ logApiUsage(provider==='claude'?'claude':'gemini','draft_generate'); }catch(_){}}
+  }catch(err){
+    console.error(err);
+    resultEl.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;color:#b91c1c;font-size:var(--fs-sm);line-height:1.6">생성 실패: ${err.message}<br><span style="color:var(--text3);font-size:var(--fs-xs)">F12 콘솔에서 원본 응답을 확인할 수 있어요.</span></div>`;
+  }finally{
+    btnG.disabled=false; btnC.disabled=false; btn.textContent=origLabel;
+  }
+}
+
+function renderDrafts(drafts, provider){
+  window.__lastDrafts = drafts;
+  const badge = provider==='claude'
+    ? '<span style="background:#7c3aed;color:#fff;padding:2px 8px;border-radius:5px;font-size:var(--fs-xs);font-weight:600">Claude</span>'
+    : '<span style="background:#2563eb;color:#fff;padding:2px 8px;border-radius:5px;font-size:var(--fs-xs);font-weight:600">Gemini</span>';
+  const cards = drafts.map((d,i)=>{
+    const content = (d.content||d.hook||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cid = 'draftCard'+i;
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="background:#f1f5f9;color:#334155;padding:2px 8px;border-radius:5px;font-size:var(--fs-xs);font-weight:700">시안 ${i+1}</span>
+        ${d.tag?`<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:5px;font-size:var(--fs-xs)">${(d.tag||'').replace(/</g,'&lt;')}</span>`:''}
+        ${d.cta?`<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:5px;font-size:var(--fs-xs)">CTA: ${(d.cta||'').replace(/</g,'&lt;')}</span>`:''}
+      </div>
+      <div id="${cid}" style="white-space:pre-wrap;line-height:1.65;font-size:var(--fs-sm);color:var(--text);background:#fafafa;border-radius:6px;padding:12px 14px">${content}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-ghost btn-sm" onclick="copyDraftCard('${cid}')">복사</button>
+        <button class="btn btn-ghost btn-sm" onclick="saveDraftAsScheduled(${i})">예약 글로 저장</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('draftResult').innerHTML =
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:var(--fs-sm);font-weight:700;color:var(--text)">${badge} 시안 ${drafts.length}개 생성 완료</div>`+cards;
+}
+
+function copyDraftCard(cid){
+  const el = document.getElementById(cid);
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText).then(()=>showToast('복사했어요'));
+}
+
+async function saveDraftAsScheduled(idx){
+  const d = (window.__lastDrafts||[])[idx];
+  const text = d ? (d.content||d.hook||'') : '';
+  if (!text){ showToast('내용이 비어있어요'); return; }
+  try{
+    const today = new Date().toISOString().slice(0,10);
+    const { error } = await sb.from('posts').insert({ date: today, text: text, category:'', type:'' });
+    if (error) throw error;
+    showToast('발행 게시물에 저장했어요 (콘텐츠 캘린더에서 확인)');
+  }catch(e){
+    console.error(e);
+    showToast('저장 실패: '+e.message);
+  }
 }
 
 // ── 브랜드 가이드 (수동 입력형)

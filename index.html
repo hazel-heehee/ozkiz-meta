@@ -5053,12 +5053,12 @@ async function syncThreadsViaGitHub() {
       const link = _threadNormalizeLink(post.url || post.postUrl || post.link);
       if (!link) continue;
       const text = post.text || post.caption || '';
-      const likes = post.likes || post.likeCount || post.like_count || 0;
-      const replies = post.replies?.length || post.replyCount || post.reply_count || post.comments || post.commentCount || 0;
-      const reposts = post.reposts || post.repostCount || post.repost_count || 0;
-      const quotes = post.quotes || post.quoteCount || post.quote_count || 0;
-      const shares = post.shares || post.shareCount || post.share_count || 0;
-      const views = post.views || post.viewCount || post.view_count || 0;
+      const likes = post.likeCount ?? post.likes ?? post.like_count ?? 0;
+      const replies = (Array.isArray(post.replies) ? post.replies.length : 0) || post.replyCount || post.reply_count || post.comments || post.commentCount || 0;
+      const reposts = post.repostCount ?? post.reposts ?? post.repost_count ?? 0;
+      const quotes = post.quoteCount ?? post.quotes ?? post.quote_count ?? 0;
+      const shares = post.shareCount ?? post.shares ?? post.share_count ?? 0;
+      // ⚠️ 이 Actor는 조회수(views)를 제공하지 않음 → 동기화로 건드리지 않고 기존값(수동 입력) 보존
       const image_url = _threadExtractImage(post);
       const ts = post.timestamp || post.publishedAt || post.published_at || post.takenAt || post.createdAt;
       const date = ts ? new Date(ts).toISOString().slice(0,10) : today;
@@ -5066,7 +5066,8 @@ async function syncThreadsViaGitHub() {
       const { data: existing, error: selErr } = await sb.from('posts').select('id, text, image_url').eq('link', link).maybeSingle();
       if (selErr) { console.warn('🧵 조회 실패:', link, selErr.message); }
       if (existing) {
-        const update = { likes, reposts, quotes, views, comments: replies, replies, last_synced: today };
+        // views는 의도적으로 제외 (수동 입력값 보존)
+        const update = { likes, reposts, quotes, comments: replies, replies, last_synced: today };
         if (shares > 0) update.shares = shares;
         if (!existing.text && text) update.text = text;
         if (image_url && !existing.image_url) update.image_url = image_url;
@@ -5074,7 +5075,8 @@ async function syncThreadsViaGitHub() {
         if (error) { failed++; console.warn('🧵 업데이트 실패:', link, error.message); }
         else updated++;
       } else {
-        const insertData = { link, text, date, likes, reposts, quotes, views, comments: replies, replies, last_synced: today,
+        // 신규: views는 넣지 않음 (나중에 수동 입력)
+        const insertData = { link, text, date, likes, reposts, quotes, comments: replies, replies, last_synced: today,
           ...(shares > 0 ? { shares } : {}), ...(image_url ? { image_url } : {}) };
         const { error } = await sb.from('posts').insert(insertData);
         if (error) { failed++; console.warn('🧵 삽입 실패:', link, error.message, insertData); }

@@ -4979,16 +4979,20 @@ async function syncThreadsViaGitHub() {
   showToast('Apify에서 스레드 게시물 수집 중... (1-3분 소요)');
 
   try {
+    // 1단계: Actor 실행
+    console.log('🧵 [스레드 동기화] Actor 실행 시작:', APIFY_THREAD_ACTOR);
     const runResp = await fetch(`https://api.apify.com/v2/acts/${APIFY_THREAD_ACTOR}/runs?token=${apifyApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'posts', usernames: [THREAD_USERNAME], maxPosts: THREAD_RESULTS_LIMIT })
     });
-    if (!runResp.ok) { const t = await runResp.text(); throw new Error(`Actor 실행 실패: ${t.slice(0,200)}`); }
+    if (!runResp.ok) { const t = await runResp.text(); console.error('🧵 Actor 실행 실패 응답:', t); throw new Error(`Actor 실행 실패: ${t.slice(0,200)}`); }
     const runData = await runResp.json();
     const runId = runData.data.id;
     const datasetId = runData.data.defaultDatasetId;
+    console.log('🧵 Run 시작됨:', runId, '| dataset:', datasetId);
 
+    // 2단계: 완료 폴링
     let status = runData.data.status, pollCount = 0;
     const MAX_POLL = 72; // 72 × 5초 = 6분
     while (status === 'READY' || status === 'RUNNING') {
@@ -4997,31 +5001,51 @@ async function syncThreadsViaGitHub() {
       if (pollCount > MAX_POLL) throw new Error('타임아웃 (6분 초과)');
       const sResp = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apifyApiKey}`);
       status = (await sResp.json()).data.status;
+      console.log(`🧵 Run 상태: ${status} (${pollCount*5}초)`);
       if (btn) btn.innerHTML = `⏳ 수집 중 (${pollCount*5}초)...`;
     }
     if (status !== 'SUCCEEDED') throw new Error(`Actor 실패: ${status}`);
 
+    // 3단계: 데이터셋
     if (btn) btn.innerHTML = '데이터 가져오는 중...';
     const itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyApiKey}&clean=true&format=json`);
     if (!itemsResp.ok) throw new Error('데이터셋 로드 실패');
     const items = await itemsResp.json();
+    console.log(`🧵 수신 항목: ${items.length}개`);
+    if (items.length > 0) {
+      console.log('🧵 첫 항목 키들:', Object.keys(items[0]).join(', '));
+      console.log('🧵 첫 항목 전체:', items[0]);
+    } else {
+      console.warn('🧵 ⚠️ 수신된 항목이 0개입니다. Actor input(mode/usernames/maxPosts) 또는 계정명을 확인하세요.');
+    }
 
+    // 4단계: Supabase 저장
     if (btn) btn.innerHTML = 'Supabase에 저장 중...';
     const today = new Date().toISOString().slice(0,10);
 
+    // 4-1) 프로필 팔로워 → followers 테이블
     const profileItem = items.find(i => i.type === 'profile' || i._type === 'PROFILE' || i.itemType === 'profile' || i.username === THREAD_USERNAME);
     if (profileItem) {
       const followers = profileItem.followers || profileItem.followerCount || profileItem.followers_count || profileItem.followerCounts;
+      console.log('🧵 프로필 항목 발견. 팔로워:', followers);
       if (typeof followers === 'number' && followers > 0) {
-        try { await sb.from('followers').upsert({ date: today, count: followers }, { onConflict: 'date' }); } catch(_){}
+        const { error: fErr } = await sb.from('followers').upsert({ date: today, count: followers }, { onConflict: 'date' });
+        if (fErr) console.warn('🧵 팔로워 저장 실패:', fErr.message);
+        else console.log('🧵 ✓ 팔로워 저장됨:', followers);
+      } else {
+        console.warn('🧵 ⚠️ 프로필에 팔로워 수치 없음. 프로필 키들:', Object.keys(profileItem).join(', '));
       }
+    } else {
+      console.warn('🧵 ⚠️ 프로필 항목을 못 찾음 (type=profile 등). 팔로워 누락됨.');
     }
 
+    // 4-2) 게시물 upsert
     const postItems = items.filter(i =>
       (i.type === 'post' || i._type === 'POST' || i.itemType === 'post' || i.text || i.caption) &&
       (i.url || i.postUrl || i.link)
     );
-    let inserted = 0, updated = 0;
+    console.log(`🧵 게시물 후보: ${postItems.length}개`);
+    let inserted = 0, updated = 0, failed = 0;
     for (const post of postItems) {
       const link = _threadNormalizeLink(post.url || post.postUrl || post.link);
       if (!link) continue;
@@ -5036,30 +5060,37 @@ async function syncThreadsViaGitHub() {
       const ts = post.timestamp || post.publishedAt || post.published_at || post.takenAt || post.createdAt;
       const date = ts ? new Date(ts).toISOString().slice(0,10) : today;
 
-      const { data: existing } = await sb.from('posts').select('id, text, image_url').eq('link', link).maybeSingle();
+      const { data: existing, error: selErr } = await sb.from('posts').select('id, text, image_url').eq('link', link).maybeSingle();
+      if (selErr) { console.warn('🧵 조회 실패:', link, selErr.message); }
       if (existing) {
         const update = { likes, reposts, quotes, views, comments: replies, replies, last_synced: today };
         if (shares > 0) update.shares = shares;
         if (!existing.text && text) update.text = text;
         if (image_url && !existing.image_url) update.image_url = image_url;
         const { error } = await sb.from('posts').update(update).eq('id', existing.id);
-        if (!error) updated++;
+        if (error) { failed++; console.warn('🧵 업데이트 실패:', link, error.message); }
+        else updated++;
       } else {
         const insertData = { link, text, date, likes, reposts, quotes, views, comments: replies, replies, last_synced: today,
           ...(shares > 0 ? { shares } : {}), ...(image_url ? { image_url } : {}) };
         const { error } = await sb.from('posts').insert(insertData);
-        if (!error) inserted++;
+        if (error) { failed++; console.warn('🧵 삽입 실패:', link, error.message, insertData); }
+        else inserted++;
       }
     }
+    console.log(`🧵 ✅ 저장 결과 — 신규 ${inserted} / 업데이트 ${updated} / 실패 ${failed}`);
 
+    // 5단계: 화면 갱신
     if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
     await loadSheetData(true);
-    showToast(`동기화 완료 · 신규 ${inserted}개 / 업데이트 ${updated}개`);
+    if (failed > 0) showToast(`동기화 완료(일부 실패) · 신규 ${inserted} / 업데이트 ${updated} / 실패 ${failed} — F12 콘솔 확인`);
+    else if (inserted + updated === 0) showToast('동기화됐지만 저장된 게시물이 0개예요 — F12 콘솔의 "첫 항목 키들"을 확인해주세요');
+    else showToast(`동기화 완료 · 신규 ${inserted}개 / 업데이트 ${updated}개`);
     if (typeof logApiUsage === 'function') { try { logApiUsage('apify','thread_sync'); } catch(_){} }
   } catch (e) {
-    console.error('스레드 동기화 오류:', e);
+    console.error('🧵 스레드 동기화 오류:', e);
     if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
-    showToast('동기화 실패: ' + e.message);
+    showToast('동기화 실패: ' + e.message + ' (F12 콘솔 확인)');
   }
 }
 

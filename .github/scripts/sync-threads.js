@@ -128,13 +128,13 @@ async function main() {
     if (!link) continue;
 
     const text = post.text || post.caption || '';
-    const likes = post.likes || post.likeCount || post.like_count || 0;
-    const replies = post.replies?.length || post.replyCount || post.reply_count ||
+    const likes = post.likeCount ?? post.likes ?? post.like_count ?? 0;
+    const replies = (Array.isArray(post.replies) ? post.replies.length : 0) || post.replyCount || post.reply_count ||
                     post.comments || post.commentCount || 0;
-    const reposts = post.reposts || post.repostCount || post.repost_count || 0;
-    const quotes = post.quotes || post.quoteCount || post.quote_count || 0;
-    const shares = post.shares || post.shareCount || post.share_count || 0;
-    const views = post.views || post.viewCount || post.view_count || 0;
+    const reposts = post.repostCount ?? post.reposts ?? post.repost_count ?? 0;
+    const quotes = post.quoteCount ?? post.quotes ?? post.quote_count ?? 0;
+    const shares = post.shareCount ?? post.shares ?? post.share_count ?? 0;
+    // ⚠️ 이 Actor는 조회수(views)를 제공하지 않음 → 동기화로 건드리지 않고 기존값(수동 입력) 보존
     const image_url = extractImageUrl(post);
     const timestamp = post.timestamp || post.publishedAt || post.published_at ||
                        post.takenAt || post.createdAt;
@@ -147,8 +147,8 @@ async function main() {
       .maybeSingle();
 
     if (existing) {
-      // 인사이트 + image_url 갱신 (이미지 없으면 기존 유지)
-      const update = { likes, reposts, quotes, views, last_synced: today };
+      // 인사이트 + image_url 갱신 (views는 제외 — 수동 입력값 보존)
+      const update = { likes, reposts, quotes, last_synced: today };
       if (shares > 0) update.shares = shares;
       if (replies !== undefined) { update.replies = replies; update.comments = replies; }
       if (!existing.text && text) update.text = text;
@@ -162,10 +162,10 @@ async function main() {
         console.log(`  ↻ ${(text || link).substring(0, 40)}... 💛${likes} 💬${replies} 🔁${reposts}${image_url?' 🖼️':''}`);
       }
     } else {
-      // 신규
+      // 신규 (views 제외 — 나중에 수동 입력)
       const insertData = {
         link, text, date,
-        likes, reposts, quotes, views,
+        likes, reposts, quotes,
         last_synced: today,
         ...(shares > 0 ? { shares } : {}),
         ...(replies !== undefined ? { replies, comments: replies } : {}),

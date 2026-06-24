@@ -150,7 +150,7 @@ async function main() {
       // 인사이트 + image_url 갱신 (이미지 없으면 기존 유지)
       const update = { likes, reposts, quotes, views, last_synced: today };
       if (shares > 0) update.shares = shares;
-      if (replies !== undefined) update.replies = replies;
+      if (replies !== undefined) { update.replies = replies; update.comments = replies; }
       if (!existing.text && text) update.text = text;
       // 이미지 URL이 새로 있고 기존엔 없으면 추가
       if (image_url && !existing.image_url) update.image_url = image_url;
@@ -168,7 +168,7 @@ async function main() {
         likes, reposts, quotes, views,
         last_synced: today,
         ...(shares > 0 ? { shares } : {}),
-        ...(replies !== undefined ? { replies } : {}),
+        ...(replies !== undefined ? { replies, comments: replies } : {}),
         ...(image_url ? { image_url } : {})
       };
       const { error } = await sb.from('posts').insert(insertData);

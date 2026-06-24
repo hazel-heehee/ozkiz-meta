@@ -3884,6 +3884,9 @@ function openInstaWeeklyPlanModal() {
 const APIFY_INSTA_ACTOR = 'apify~instagram-scraper'; // apify/instagram-scraper (URL 형식)
 const INSTA_USERNAME = 'ozkiz_official';
 const INSTA_RESULTS_LIMIT = 30; // 최근 30개 게시물
+const APIFY_THREAD_ACTOR = 'automation-lab~threads-scraper';
+const THREAD_USERNAME = 'ozkiz_official';
+const THREAD_RESULTS_LIMIT = 25; // 최근 25개 게시물
 
 async function syncInstaPostsFromApify() {
  // API 키 확인
@@ -4945,25 +4948,119 @@ async function loadInstaHashtags() {
 }
 
 // ─── 스레드 Apify 동기화 (GitHub Actions 트리거) ───
-function syncThreadsViaGitHub() {
- const url = 'https://github.com/hazel-heehee/ozkiz-meta/actions/workflows/sync-threads.yml';
- const msg = `Apify 동기화 워크플로우를 실행합니다.
+// 스레드 즉시 동기화 — 브라우저에서 직접 Apify 호출 (인스타 방식)
+// 자동 동기화(KST 23:45 GitHub Actions)는 그대로 유지됨
+function _threadNormalizeLink(url){
+  if (!url) return null;
+  let link = String(url).split('?')[0].replace('threads.net','threads.com');
+  if (!link.endsWith('/')) link += '/';
+  return link;
+}
+function _threadExtractImage(post){
+  if (post.images && post.images.length > 0) return typeof post.images[0] === 'string' ? post.images[0] : (post.images[0].url || post.images[0].src || '');
+  if (post.mediaUrls && post.mediaUrls.length > 0) return post.mediaUrls[0];
+  if (post.media && Array.isArray(post.media) && post.media.length > 0) return post.media[0].url || post.media[0].src || post.media[0].image_url || '';
+  if (post.attachments && Array.isArray(post.attachments) && post.attachments.length > 0) return post.attachments[0].url || post.attachments[0].image_url || '';
+  return post.imageUrl || post.image_url || post.mediaUrl || post.displayUrl || post.thumbnail || '';
+}
 
-새 탭에 열리는 GitHub Actions 페이지에서:
-1. 오른쪽 위 "Run workflow" 클릭
-2. "Run workflow" 다시 클릭
-3. 5-15분 대기
-4. 사이트로 돌아와서 새로고침 (Ctrl+Shift+R)
+async function syncThreadsViaGitHub() {
+  if (!apifyApiKey) {
+    showToast('먼저 Apify API 토큰을 설정해주세요');
+    openModal();
+    setTimeout(() => switchApiProvider('apify'), 100);
+    return;
+  }
+  if (!confirm(`Apify로 스레드 최신 ${THREAD_RESULTS_LIMIT}개 게시물을 동기화할까요?\n\n비용: 약 $0.05\n소요: 1-3분\n\n(매일 KST 23:45에는 자동 실행됩니다)`)) return;
 
-매일 KST 23:45에는 자동 실행되니까 굳이 안 해도 됩니다!
+  const btn = document.querySelector('[onclick="syncThreadsViaGitHub()"]');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ 수집 중...'; }
+  showToast('Apify에서 스레드 게시물 수집 중... (1-3분 소요)');
 
-계속 진행할까요?`;
- if (confirm(msg)) {
- window.open(url, '_blank');
- if (typeof showToast === 'function') {
- showToast('GitHub Actions 페이지가 열렸어요. "Run workflow"를 클릭하세요!');
- }
- }
+  try {
+    const runResp = await fetch(`https://api.apify.com/v2/acts/${APIFY_THREAD_ACTOR}/runs?token=${apifyApiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'posts', usernames: [THREAD_USERNAME], maxPosts: THREAD_RESULTS_LIMIT })
+    });
+    if (!runResp.ok) { const t = await runResp.text(); throw new Error(`Actor 실행 실패: ${t.slice(0,200)}`); }
+    const runData = await runResp.json();
+    const runId = runData.data.id;
+    const datasetId = runData.data.defaultDatasetId;
+
+    let status = runData.data.status, pollCount = 0;
+    const MAX_POLL = 72; // 72 × 5초 = 6분
+    while (status === 'READY' || status === 'RUNNING') {
+      await new Promise(r => setTimeout(r, 5000));
+      pollCount++;
+      if (pollCount > MAX_POLL) throw new Error('타임아웃 (6분 초과)');
+      const sResp = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apifyApiKey}`);
+      status = (await sResp.json()).data.status;
+      if (btn) btn.innerHTML = `⏳ 수집 중 (${pollCount*5}초)...`;
+    }
+    if (status !== 'SUCCEEDED') throw new Error(`Actor 실패: ${status}`);
+
+    if (btn) btn.innerHTML = '데이터 가져오는 중...';
+    const itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyApiKey}&clean=true&format=json`);
+    if (!itemsResp.ok) throw new Error('데이터셋 로드 실패');
+    const items = await itemsResp.json();
+
+    if (btn) btn.innerHTML = 'Supabase에 저장 중...';
+    const today = new Date().toISOString().slice(0,10);
+
+    const profileItem = items.find(i => i.type === 'profile' || i._type === 'PROFILE' || i.itemType === 'profile' || i.username === THREAD_USERNAME);
+    if (profileItem) {
+      const followers = profileItem.followers || profileItem.followerCount || profileItem.followers_count || profileItem.followerCounts;
+      if (typeof followers === 'number' && followers > 0) {
+        try { await sb.from('followers').upsert({ date: today, count: followers }, { onConflict: 'date' }); } catch(_){}
+      }
+    }
+
+    const postItems = items.filter(i =>
+      (i.type === 'post' || i._type === 'POST' || i.itemType === 'post' || i.text || i.caption) &&
+      (i.url || i.postUrl || i.link)
+    );
+    let inserted = 0, updated = 0;
+    for (const post of postItems) {
+      const link = _threadNormalizeLink(post.url || post.postUrl || post.link);
+      if (!link) continue;
+      const text = post.text || post.caption || '';
+      const likes = post.likes || post.likeCount || post.like_count || 0;
+      const replies = post.replies?.length || post.replyCount || post.reply_count || post.comments || post.commentCount || 0;
+      const reposts = post.reposts || post.repostCount || post.repost_count || 0;
+      const quotes = post.quotes || post.quoteCount || post.quote_count || 0;
+      const shares = post.shares || post.shareCount || post.share_count || 0;
+      const views = post.views || post.viewCount || post.view_count || 0;
+      const image_url = _threadExtractImage(post);
+      const ts = post.timestamp || post.publishedAt || post.published_at || post.takenAt || post.createdAt;
+      const date = ts ? new Date(ts).toISOString().slice(0,10) : today;
+
+      const { data: existing } = await sb.from('posts').select('id, text, image_url').eq('link', link).maybeSingle();
+      if (existing) {
+        const update = { likes, reposts, quotes, views, comments: replies, replies, last_synced: today };
+        if (shares > 0) update.shares = shares;
+        if (!existing.text && text) update.text = text;
+        if (image_url && !existing.image_url) update.image_url = image_url;
+        const { error } = await sb.from('posts').update(update).eq('id', existing.id);
+        if (!error) updated++;
+      } else {
+        const insertData = { link, text, date, likes, reposts, quotes, views, comments: replies, replies, last_synced: today,
+          ...(shares > 0 ? { shares } : {}), ...(image_url ? { image_url } : {}) };
+        const { error } = await sb.from('posts').insert(insertData);
+        if (!error) inserted++;
+      }
+    }
+
+    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+    await loadSheetData(true);
+    showToast(`동기화 완료 · 신규 ${inserted}개 / 업데이트 ${updated}개`);
+    if (typeof logApiUsage === 'function') { try { logApiUsage('apify','thread_sync'); } catch(_){} }
+  } catch (e) {
+    console.error('스레드 동기화 오류:', e);
+    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+    showToast('동기화 실패: ' + e.message);
+  }
 }
 
 // ─── API 사용 현황 ───
@@ -7364,7 +7461,7 @@ function weatherIconFor(code) {
 async function fetchWeatherForecast() {
  try {
  // 서울 좌표
- const url = 'https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=7';
+ const url = 'https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=14';
  const res = await fetch(url);
  if (!res.ok) throw new Error('weather http ' + res.status);
  const j = await res.json();
@@ -7382,6 +7479,7 @@ async function fetchWeatherForecast() {
  // 캘린더 다시 그리기 (날씨 반영)
  if (typeof renderInstaCalendar === 'function') renderInstaCalendar();
  if (typeof renderInstaRecentCal === 'function') renderInstaRecentCal();
+ if (typeof renderCalListView === 'function' && typeof calViewMode !== 'undefined' && calViewMode === 'list') renderCalListView();
  } catch (e) {
  console.warn('fetchWeatherForecast:', e);
  }
@@ -7394,9 +7492,16 @@ function ensureWeatherFresh() {
  fetchWeatherForecast();
  }
 }
+// 스레드 표 뷰 전용 날씨 배지 (초록 동그라미 + 날씨 아이콘 + 최고/최저 온도). 오늘~14일만 데이터 있음.
+function threadWeatherBadgeHtml(dateKey) {
+  const w = (window.__weatherCache || {})[dateKey];
+  if (!w) return '';
+  const { icon, label } = weatherIconFor(w.code);
+  return `<div style="display:flex;align-items:center;gap:4px;font-size:var(--fs-2xs);color:var(--text2);margin-top:2px" title="${label} · 최고 ${w.tmax}° / 최저 ${w.tmin}°"><span style="display:inline-block;width:7px;height:7px;background:#16a34a;border-radius:50%;flex-shrink:0"></span><span>${icon}</span><span style="font-weight:600"><span style="color:#dc2626">${w.tmax}°</span>/<span style="color:#2563eb">${w.tmin}°</span></span></div>`;
+}
+
 // 날씨 배지 HTML (파란 동그라미 + 날씨 + 일평균 온도). 데이터 없으면 빈 문자열.
-function weatherBadgeHtml(dateKey) {
- const w = (window.__weatherCache || {})[dateKey];
+function weatherBadgeHtml(dateKey) { const w = (window.__weatherCache || {})[dateKey];
  if (!w) return '';
  const { icon, label } = weatherIconFor(w.code);
  return `<div style="display:flex;align-items:center;gap:4px;font-size:var(--fs-xs);color:#1e40af;font-weight:600;margin-bottom:2px" title="${label} · 최고 ${w.tmax}° / 최저 ${w.tmin}° · 일평균 ${w.tavg}°"><span style="display:inline-block;width:6px;height:6px;background:#3b82f6;border-radius:50%;flex-shrink:0"></span><span>${icon} ${w.tavg}°</span></div>`;
@@ -8126,6 +8231,7 @@ function updateThreadSortIndicators() {
 async function renderCalListView() {
  const body = document.getElementById('calListBody');
  if (!body) return;
+ if (typeof ensureWeatherFresh === 'function') ensureWeatherFresh();
 
  body.innerHTML = `<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">불러오는 중...</td></tr>`;
 
@@ -8207,7 +8313,7 @@ async function renderCalListView() {
  const wd = ['일','월','화','수','목','금','토'][dt.getDay()];
  const isToday = isCurrentMonth && today.getDate() === d;
  const dayColor = dt.getDay() === 0 ? '#dc2626' : dt.getDay() === 6 ? '#2563eb' : 'var(--text2)';
- const dateCell = `<div style="font-size:var(--fs-sm);color:var(--text2)">${calMonth+1}/${d} <span style="color:${dayColor};font-size:var(--fs-xs)">(${wd})</span>${isToday?' <span style="background:#16a34a;color:#fff;padding:1px 4px;border-radius:3px;font-size:var(--fs-2xs);margin-left:2px">오늘</span>':''}</div>`;
+ const dateCell = `<div style="font-size:var(--fs-sm);color:var(--text2)">${calMonth+1}/${d} <span style="color:${dayColor};font-size:var(--fs-xs)">(${wd})</span>${isToday?' <span style="background:#16a34a;color:#fff;padding:1px 4px;border-radius:3px;font-size:var(--fs-2xs);margin-left:2px">오늘</span>':''}</div>${threadWeatherBadgeHtml(dateKey)}`;
 
  if (posts.length === 0) {
  // 게시물 없는 날 — 팔로워만 인라인 입력 (13개 개별 셀로 정렬 유지)
@@ -8236,7 +8342,7 @@ async function renderCalListView() {
  const _wd = _d ? ['일','월','화','수','목','금','토'][_d.getDay()] : '';
  const _isToday = _d && today.getFullYear()===_d.getFullYear() && today.getMonth()===_d.getMonth() && today.getDate()===_d.getDate();
  const _dayColor = _d && _d.getDay()===0 ? '#dc2626' : (_d && _d.getDay()===6 ? '#2563eb' : 'var(--text2)');
- const dateCell = _d ? `<div style="font-size:var(--fs-sm);color:var(--text2)">${_d.getMonth()+1}/${_d.getDate()} <span style="color:${_dayColor};font-size:var(--fs-xs)">(${_wd})</span>${_isToday?' <span style="background:#16a34a;color:#fff;padding:1px 4px;border-radius:3px;font-size:var(--fs-2xs);margin-left:2px">오늘</span>':''}</div>` : '';
+ const dateCell = _d ? `<div style="font-size:var(--fs-sm);color:var(--text2)">${_d.getMonth()+1}/${_d.getDate()} <span style="color:${_dayColor};font-size:var(--fs-xs)">(${_wd})</span>${_isToday?' <span style="background:#16a34a;color:#fff;padding:1px 4px;border-radius:3px;font-size:var(--fs-2xs);margin-left:2px">오늘</span>':''}</div>${threadWeatherBadgeHtml(dateKey)}` : '';
  const followerCount = (followersByDate[dateKey] && followersByDate[dateKey].count) ? followersByDate[dateKey].count : 0;
  const txt = cleanText(r[COL.text]);
  const link = String(r[COL.link]||'').trim();
@@ -8254,7 +8360,7 @@ async function renderCalListView() {
 
  // 팔로워 셀: 첫 게시물 행에만 인라인 입력
  const followerCell = isFirstOfDay
- ? `<input type="number" value="${followerCount || toNum(r[COL.follower]) || ''}" placeholder="0"
+ ? `<input type="number" value="${followerCount || ''}" placeholder="0"
  onchange="saveFollowerCount('${dateKey}', this.value, this)"
  onclick="event.stopPropagation()"
  style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:var(--fs-sm);text-align:right;font-family:inherit;background:#fff"/>`

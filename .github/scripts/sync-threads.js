@@ -9,7 +9,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const APIFY_TOKEN  = process.env.APIFY_TOKEN;
 const TARGET_USERNAME = 'ozkiz_official';
-const MAX_POSTS = 4;
+const MAX_POSTS = 10;
 
 if (!SUPABASE_URL || !SUPABASE_KEY || !APIFY_TOKEN) {
   console.error('❌ 환경 변수 누락');
@@ -114,12 +114,32 @@ async function main() {
   }
 
   // 게시물
-  const postItems = items.filter(i =>
+  let postItems = items.filter(i =>
     (i.type === 'post' || i._type === 'POST' || i.itemType === 'post' || i.text || i.caption) &&
     (i.url || i.postUrl || i.link)
   );
 
-  console.log(`\n📝 게시물 처리: ${postItems.length}개\n`);
+  // 이어단 글(isReply:true)을 원글 캡션에 합치고 별도 항목 제거
+  {
+    const merged = [];
+    let lastParent = null;
+    for (const it of postItems) {
+      if (it.isReply === true && lastParent) {
+        const addText = (it.text || it.caption || '').trim();
+        if (addText) {
+          lastParent.text = ((lastParent.text || lastParent.caption || '').trim() + '\n\n' + addText).trim();
+          if (lastParent.caption !== undefined) lastParent.caption = lastParent.text;
+          lastParent._merged = true;
+        }
+      } else {
+        merged.push(it);
+        lastParent = it;
+      }
+    }
+    postItems = merged;
+  }
+
+  console.log(`\n📝 게시물 처리: ${postItems.length}개 (이어단 글 합친 후)\n`);
 
   let updated = 0, inserted = 0;
 
@@ -159,7 +179,7 @@ async function main() {
       const update = { likes, reposts, quotes, date, last_synced: today };
       if (shares > 0) update.shares = shares;
       if (replies !== undefined) { update.replies = replies; update.comments = replies; }
-      if (!existing.text && text) update.text = text;
+      if (text && (!existing.text || post._merged)) update.text = text;
       // 이미지 URL이 새로 있고 기존엔 없으면 추가
       if (image_url && !existing.image_url) update.image_url = image_url;
 

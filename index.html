@@ -956,6 +956,34 @@ function buildMediaThumb(post, size, channel) {
 }
 
 // ── RENDER DASHBOARD
+// 스레드 최신 팔로워: followers 테이블 기준, 오늘 값 제외 (오늘은 아직 안 끝나 미완성)
+async function updateThreadLatestFollower(firstFollower){
+ const el = document.getElementById('dash-follower');
+ const fc = document.getElementById('dash-follower-change');
+ if (!el) return;
+ try {
+  const today = new Date().toISOString().slice(0,10);
+  const { data, error } = await sb.from('followers')
+    .select('date,count')
+    .neq('date', today)        // 오늘 제외
+    .order('date', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  if (data && data.length && data[0].count > 0) {
+   const latest = data[0].count;
+   el.textContent = latest.toLocaleString();
+   if (fc) {
+    const diff = latest - (firstFollower || 0);
+    fc.textContent = diff >= 0 ? `↑ 기간 내 +${diff.toLocaleString()}명` : `↓ ${Math.abs(diff).toLocaleString()}명`;
+    fc.className = 'stat-change ' + (diff >= 0 ? 'up' : 'down');
+   }
+  } else {
+   el.textContent = '—';
+   if (fc) fc.textContent = '데이터 없음';
+  }
+ } catch(e){ console.warn('updateThreadLatestFollower:', e); }
+}
+
 function renderDashboard(data) {
  // 주간 보고 렌더 (필터와 무관, 항상 금~목 기준)
  try { renderThreadWeeklyReport(); } catch(e) { console.warn('renderThreadWeeklyReport:', e); }
@@ -974,13 +1002,9 @@ function renderDashboard(data) {
  if (!data || !data.length) return;
 
  const latestRow = data[data.length - 1];
- const latestFollower = toNum(latestRow[COL.follower]);
  const firstFollower = toNum(data[0][COL.follower]);
- const followerDiff = latestFollower - firstFollower;
- document.getElementById('dash-follower').textContent = latestFollower.toLocaleString();
- const fc = document.getElementById('dash-follower-change');
- fc.textContent = followerDiff >= 0 ? `↑ 기간 내 +${followerDiff.toLocaleString()}명` : `↓ ${Math.abs(followerDiff).toLocaleString()}명`;
- fc.className = 'stat-change ' + (followerDiff >= 0 ? 'up' : 'down');
+ // 최신 팔로워는 followers 테이블 기준(오늘 제외) — updateThreadLatestFollower()가 비동기로 채움
+ updateThreadLatestFollower(firstFollower);
 
  // 평균 조회수 (현재 필터된 기간 전체 기준)
  // 기간 필터 적용 시: 그 기간의 모든 게시물 평균
@@ -2004,9 +2028,11 @@ function renderInstaDashboard(data) {
  return;
  }
 
- // 최신 팔로워 (음수/0/NULL 제외, 가장 최근 양수 값)
+ // 최신 팔로워 (오늘 값 제외 — 오늘은 아직 안 끝나 미완성. 음수/0/NULL도 제외)
+ const _todayStr = new Date().toISOString().slice(0,10);
  let latestFollower = 0;
  for (let i = instaFollowers.length-1; i >= 0; i--) {
+ if (instaFollowers[i].date === _todayStr) continue;
  if (instaFollowers[i].count >0) {
  latestFollower = instaFollowers[i].count;
  break;
@@ -5060,14 +5086,23 @@ async function syncThreadsViaGitHub() {
       const shares = post.shareCount ?? post.shares ?? post.share_count ?? 0;
       // ⚠️ 이 Actor는 조회수(views)를 제공하지 않음 → 동기화로 건드리지 않고 기존값(수동 입력) 보존
       const image_url = _threadExtractImage(post);
-      const ts = post.timestamp || post.publishedAt || post.published_at || post.takenAt || post.createdAt;
-      const date = ts ? new Date(ts).toISOString().slice(0,10) : today;
+      // 날짜: date 필드(ISO 문자열)를 우선 사용. timestamp는 초 단위 유닉스값이라 ×1000 필요
+      let date = today;
+      if (post.date) {
+        const d = new Date(post.date);
+        if (!isNaN(d)) date = d.toISOString().slice(0,10);
+      } else if (post.timestamp) {
+        const tnum = Number(post.timestamp);
+        const ms = tnum < 1e12 ? tnum * 1000 : tnum; // 10자리(초)면 ×1000
+        const d = new Date(ms);
+        if (!isNaN(d)) date = d.toISOString().slice(0,10);
+      }
 
       const { data: existing, error: selErr } = await sb.from('posts').select('id, text, image_url').eq('link', link).maybeSingle();
       if (selErr) { console.warn('🧵 조회 실패:', link, selErr.message); }
       if (existing) {
-        // views는 의도적으로 제외 (수동 입력값 보존)
-        const update = { likes, reposts, quotes, comments: replies, replies, last_synced: today };
+        // views는 의도적으로 제외 (수동 입력값 보존). date는 갱신해서 과거 오류 교정
+        const update = { likes, reposts, quotes, comments: replies, replies, date, last_synced: today };
         if (shares > 0) update.shares = shares;
         if (!existing.text && text) update.text = text;
         if (image_url && !existing.image_url) update.image_url = image_url;

@@ -1,0 +1,34 @@
+name: Sync Instagram (ozkiz_official)
+
+# 매일 KST 23:50 자동 실행 + 수동 실행 가능
+on:
+  workflow_dispatch:
+  schedule:
+    # KST 23:50 = UTC 14:50 (스레드 동기화와 5분 차이)
+    - cron: '50 14 * * *'
+
+jobs:
+  sync-insta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        working-directory: .github/scripts
+        run: npm install
+
+      - name: Sync Instagram
+        working-directory: .github/scripts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          APIFY_TOKEN:  ${{ secrets.APIFY_TOKEN }}
+        run: node sync-insta.js

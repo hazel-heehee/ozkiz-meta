@@ -9,7 +9,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const APIFY_TOKEN  = process.env.APIFY_TOKEN;
 const TARGET_USERNAME = 'ozkiz_official';
-const MAX_POSTS = 10;
+const MAX_POSTS = 4;
 
 if (!SUPABASE_URL || !SUPABASE_KEY || !APIFY_TOKEN) {
   console.error('❌ 환경 변수 누락');
@@ -136,9 +136,17 @@ async function main() {
     const shares = post.shareCount ?? post.shares ?? post.share_count ?? 0;
     // ⚠️ 이 Actor는 조회수(views)를 제공하지 않음 → 동기화로 건드리지 않고 기존값(수동 입력) 보존
     const image_url = extractImageUrl(post);
-    const timestamp = post.timestamp || post.publishedAt || post.published_at ||
-                       post.takenAt || post.createdAt;
-    const date = timestamp ? new Date(timestamp).toISOString().slice(0, 10) : today;
+    // 날짜: date 필드(ISO 문자열) 우선. timestamp는 초 단위 유닉스값이라 ×1000 필요
+    let date = today;
+    if (post.date) {
+      const d = new Date(post.date);
+      if (!isNaN(d)) date = d.toISOString().slice(0, 10);
+    } else if (post.timestamp) {
+      const tnum = Number(post.timestamp);
+      const ms = tnum < 1e12 ? tnum * 1000 : tnum;
+      const d = new Date(ms);
+      if (!isNaN(d)) date = d.toISOString().slice(0, 10);
+    }
 
     const { data: existing } = await sb
       .from('posts')
@@ -147,8 +155,8 @@ async function main() {
       .maybeSingle();
 
     if (existing) {
-      // 인사이트 + image_url 갱신 (views는 제외 — 수동 입력값 보존)
-      const update = { likes, reposts, quotes, last_synced: today };
+      // 인사이트 + image_url 갱신 (views는 제외 — 수동 입력값 보존). date는 갱신해서 과거 오류 교정
+      const update = { likes, reposts, quotes, date, last_synced: today };
       if (shares > 0) update.shares = shares;
       if (replies !== undefined) { update.replies = replies; update.comments = replies; }
       if (!existing.text && text) update.text = text;

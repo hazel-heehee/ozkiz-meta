@@ -188,7 +188,8 @@ async function main() {
       by_caption: 0,
       by_hashtag: 0,
       by_mention: 0,
-      ranks: []
+      ranks: [],
+      posts: []
     };
 
     posts.slice(0, 30).forEach((post, idx) => {
@@ -200,6 +201,20 @@ async function main() {
         if (m.byHashtag) breakdown.by_hashtag++;
         if (m.byMention) breakdown.by_mention++;
         breakdown.ranks.push(idx + 1);
+        // 순위에 오른 게시물 정보 저장 (화면에서 순위 클릭 → 게시물 열기 + 툴팁)
+        const shortCode = post.shortCode || post.shortcode || post.code || '';
+        const url = post.url || (shortCode ? `https://www.instagram.com/p/${shortCode}/` : '');
+        const matchType = m.byAccount ? '계정' : m.byCaption ? '캡션' : m.byHashtag ? '해시태그' : m.byMention ? '멘션' : '';
+        const cap = (post.caption || '').replace(/\s+/g, ' ').slice(0, 40);
+        breakdown.posts.push({
+          rank: idx + 1,
+          url,
+          owner: post.ownerUsername || post.ownerFullName || '',
+          match_type: matchType,
+          caption_preview: cap,
+          likes: post.likesCount || 0,
+          comments: post.commentsCount || 0
+        });
         if (idx < 9) breakdown.top9_count++;
       }
     });

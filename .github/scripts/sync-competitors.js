@@ -146,6 +146,15 @@ async function main() {
       const sign = followerChange >= 0 ? '+' : '';
       console.log(`✓ ${username}: ${followers.toLocaleString()}명 (${sign}${followerChange.toLocaleString()})`);
       successCount++;
+
+      // ozkiz 본인 팔로워는 insta_followers 테이블에도 저장 (인사이트 캘린더/차트가 읽는 곳)
+      if (username.toLowerCase() === 'ozkiz_official' && followers > 0) {
+        const { error: fe } = await sb
+          .from('insta_followers')
+          .upsert({ date: today, count: followers }, { onConflict: 'date' });
+        if (fe) console.warn(`  ⚠️ insta_followers 저장 실패: ${fe.message}`);
+        else console.log(`  ✓ insta_followers에도 저장됨 (${followers.toLocaleString()})`);
+      }
     }
   }
 

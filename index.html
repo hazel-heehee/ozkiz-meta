@@ -700,6 +700,14 @@ async function loadSheetData(force = false) {
  sheetData = data.slice().reverse();
  console.log(` posts 로드: ${data.length}개 (${Math.round(performance.now()-t0)}ms)`);
 
+ // followers 테이블을 전역 맵으로 로드 (인사이트 표·캘린더가 날짜별 팔로워 공유)
+ try {
+  const { data: fdata } = await sb.from('followers').select('date,count');
+  const fmap = {};
+  (fdata || []).forEach(f => { if (f.count != null) fmap[f.date] = f.count; });
+  window.__threadFollowersByDate = fmap;
+ } catch(e) { window.__threadFollowersByDate = window.__threadFollowersByDate || {}; }
+
  // 첫 로드 시 자동으로 7일 필터 적용 (없으면)
  const fStart = document.getElementById('filterStart');
  const fEnd = document.getElementById('filterEnd');
@@ -1360,7 +1368,8 @@ function drawThreadFollowerChart(data) {
  beginAtZero: false,
  ticks: {
  font: { size: 10 },
- callback: (v) =>v.toLocaleString()
+ precision: 0,
+ callback: (v) => Math.round(v).toLocaleString()
  },
  grid: { color: 'rgba(0,0,0,0.04)' }
  },
@@ -1643,7 +1652,7 @@ function buildPostRow(r) {
  };
 
  return `
- <tr data-post-id="${r.id || ''}" style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openPostFormModalEdit(${r.id || 0})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"> <td style="padding:9px 10px;white-space:nowrap;font-size:var(--fs-sm);color:var(--text2)">${fmtDate(r[COL.date])}</td> <td style="padding:9px 10px;white-space:nowrap"><span style="font-size:var(--fs-xs);padding:2px 7px;border-radius:6px;background:var(--surface3);color:var(--text2)">${r[COL.type]||''}</span></td> <td style="padding:6px;text-align:center">${mediaCell}</td> <td style="padding:9px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-sm)">${txtCell}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r[COL.follower])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600">${nVal(r[COL.views], fmtNum)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--red)">${nVal(r[COL.likes])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r[COL.comments])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r[COL.reposts])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r[COL.shares])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600;color:${engColor}">${engagement >0 ? engagement.toFixed(1)+'%' : dash}</td> </tr>`;
+ <tr data-post-id="${r.id || ''}" style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openPostFormModalEdit(${r.id || 0})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"> <td style="padding:9px 10px;white-space:nowrap;font-size:var(--fs-sm);color:var(--text2)">${fmtDate(r[COL.date])}</td> <td style="padding:9px 10px;white-space:nowrap"><span style="font-size:var(--fs-xs);padding:2px 7px;border-radius:6px;background:var(--surface3);color:var(--text2)">${r[COL.type]||''}</span></td> <td style="padding:6px;text-align:center">${mediaCell}</td> <td style="padding:9px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-sm)">${txtCell}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${(() => { const fd = (window.__threadFollowersByDate||{}); const dk = r[COL.date]; const fv = (dk && fd[dk] != null) ? fd[dk] : r[COL.follower]; return (fv && Number(fv) > 0) ? Number(fv).toLocaleString() : dash; })()}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600">${nVal(r[COL.views], fmtNum)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--red)">${nVal(r[COL.likes])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r[COL.comments])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r[COL.reposts])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r[COL.shares])}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600;color:${engColor}">${engagement >0 ? engagement.toFixed(1)+'%' : dash}</td> </tr>`;
 }
 
 // ── INIT
@@ -3071,7 +3080,7 @@ async function renderInstaCalListView() {
  const ozkizAutoFollowers = (typeof competitorHistory !== 'undefined' && competitorHistory[dateKey]?.['ozkiz_official']?.followers) || 0;
  const isAutoSynced = ozkizAutoFollowers >0 && ozkizAutoFollowers === followerCount;
  const followerCell = isFirstOfDay
- ? `<input type="number" value="${followerCount || r.follower || ''}" placeholder="0"
+ ? `<input type="text" inputmode="numeric" value="${(followerCount || r.follower) ? Number(followerCount || r.follower).toLocaleString() : ''}" placeholder="0"
  onchange="saveInstaFollowerCount('${dateKey}', this.value, this)"
  onclick="event.stopPropagation()"
  title="${isAutoSynced ? ' 경쟁사 추적의 ozkiz_official 자동 동기화 데이터' : '수동 입력'}"
@@ -3159,7 +3168,7 @@ async function renderInstaCalListView() {
  const emptyInput = (val, color, fn) => `<input type="number" value="${val||''}" placeholder="0" onchange="${fn}('${dateKey}', this.value, this)" onclick="event.stopPropagation()" style="width:100%;padding:3px 4px;border:1px solid transparent;border-radius:3px;font-size:var(--fs-xs);text-align:right;font-family:inherit;background:transparent;color:${color};outline:none" onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'" onblur="this.style.borderColor='transparent';this.style.background='transparent'"/>`;
  const ed = '<span style="color:var(--text3)">—</span>';
  rows.push(`
- <tr style="border-bottom:1px solid var(--border);background:#fafafa"> <td style="padding:8px 6px">${dateCell}</td> <td style="padding:8px 4px;text-align:center;color:var(--text3);font-size:var(--fs-xs);font-style:italic">발행 없음</td> <td style="padding:8px 4px;text-align:center">${ed}</td> <td style="padding:8px 4px;text-align:center" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:center">${ed}</td> <td style="padding:8px 4px;color:var(--text3);font-size:var(--fs-xs);font-style:italic"></td> <td style="padding:6px;text-align:right;background:#f9fafb"> <input type="number" value="${followerCount || ''}" placeholder="0" onchange="saveInstaFollowerCount('${dateKey}', this.value, this)" onclick="event.stopPropagation()" style="width:70px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:var(--fs-xs);text-align:right;font-family:inherit;background:#fff"/> </td> <td style="padding:2px;background:#f9fafb" class="col-detail">${emptyInput(dayFollows, '#16a34a', 'saveInstaDailyFollow')}</td> <td style="padding:2px;background:#f9fafb" class="col-detail">${emptyInput(dayUnfollows, 'var(--red)', 'saveInstaDailyUnfollow')}</td> <td style="padding:8px 4px;text-align:right;background:#eff6ff">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#eff6ff" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fef3c7" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fef3c7" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fef3c7" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right" class="col-detail">${ed}</td> <td style="padding:8px 6px;text-align:center"> <button onclick="openInstaPostNewFromDate('${dateKey}')" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:var(--fs-xs);cursor:pointer" title="이 날짜에 추가">+ 글</button> </td> </tr> `);
+ <tr style="border-bottom:1px solid var(--border);background:#fafafa"> <td style="padding:8px 6px">${dateCell}</td> <td style="padding:8px 4px;text-align:center;color:var(--text3);font-size:var(--fs-xs);font-style:italic">발행 없음</td> <td style="padding:8px 4px;text-align:center">${ed}</td> <td style="padding:8px 4px;text-align:center" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:center">${ed}</td> <td style="padding:8px 4px;color:var(--text3);font-size:var(--fs-xs);font-style:italic"></td> <td style="padding:6px;text-align:right;background:#f9fafb"> <input type="text" inputmode="numeric" value="${followerCount ? Number(followerCount).toLocaleString() : ''}" placeholder="0" onchange="saveInstaFollowerCount('${dateKey}', this.value, this)" onclick="event.stopPropagation()" style="width:70px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:var(--fs-xs);text-align:right;font-family:inherit;background:#fff"/> </td> <td style="padding:2px;background:#f9fafb" class="col-detail">${emptyInput(dayFollows, '#16a34a', 'saveInstaDailyFollow')}</td> <td style="padding:2px;background:#f9fafb" class="col-detail">${emptyInput(dayUnfollows, 'var(--red)', 'saveInstaDailyUnfollow')}</td> <td style="padding:8px 4px;text-align:right;background:#eff6ff">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#eff6ff" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fce7f3">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fef3c7" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fef3c7" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right;background:#fef3c7" class="col-detail">${ed}</td> <td style="padding:8px 4px;text-align:right" class="col-detail">${ed}</td> <td style="padding:8px 6px;text-align:center"> <button onclick="openInstaPostNewFromDate('${dateKey}')" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:var(--fs-xs);cursor:pointer" title="이 날짜에 추가">+ 글</button> </td> </tr> `);
  } else {
  posts.forEach((r, idx) => buildPostRow(r, idx === 0));
  }
@@ -3440,7 +3449,7 @@ async function updateInstaPostCell(id, field, value, inputEl) {
 
 // 인스타 팔로워 저장 (일일 총 팔로워 수, 양수만)
 async function saveInstaFollowerCount(dateKey, val, inputEl) {
- const count = parseInt(val);
+ const count = parseInt(String(val).replace(/,/g, ''));
  // 음수/NaN은 저장 안 함 + 에러 표시
  if (isNaN(count) || count < 0) {
  inputEl.style.borderColor = '#dc2626';
@@ -3460,6 +3469,7 @@ async function saveInstaFollowerCount(dateKey, val, inputEl) {
  }
  inputEl.style.borderColor = '#16a34a';
  inputEl.style.background = '#f0fdf4';
+ if (inputEl) inputEl.value = count > 0 ? count.toLocaleString() : '';
  setTimeout(() => { inputEl.style.borderColor = 'var(--border)'; inputEl.style.background = '#fff'; }, 1000);
  // 메모리 갱신
  const idx = instaFollowers.findIndex(f =>f.date === dateKey);
@@ -5065,21 +5075,8 @@ async function syncThreadsViaGitHub() {
     if (btn) btn.innerHTML = 'Supabase에 저장 중...';
     const today = new Date().toISOString().slice(0,10);
 
-    // 4-1) 프로필 팔로워 → followers 테이블
-    const profileItem = items.find(i => i.type === 'profile' || i._type === 'PROFILE' || i.itemType === 'profile' || i.username === THREAD_USERNAME);
-    if (profileItem) {
-      const followers = profileItem.followers || profileItem.followerCount || profileItem.followers_count || profileItem.followerCounts;
-      console.log('🧵 프로필 항목 발견. 팔로워:', followers);
-      if (typeof followers === 'number' && followers > 0) {
-        const { error: fErr } = await sb.from('followers').upsert({ date: today, count: followers }, { onConflict: 'date' });
-        if (fErr) console.warn('🧵 팔로워 저장 실패:', fErr.message);
-        else console.log('🧵 ✓ 팔로워 저장됨:', followers);
-      } else {
-        console.warn('🧵 ⚠️ 프로필에 팔로워 수치 없음. 프로필 키들:', Object.keys(profileItem).join(', '));
-      }
-    } else {
-      console.warn('🧵 ⚠️ 프로필 항목을 못 찾음 (type=profile 등). 팔로워 누락됨.');
-    }
+    // 4-1) 팔로워 저장 안 함 — threads-scraper의 followerCount는 인스타 팔로워 값이라 부정확.
+    //      스레드 팔로워는 캘린더에서 수동 입력으로 관리.
 
     // 4-2) 게시물 upsert
     let postItems = items.filter(i =>
@@ -8427,7 +8424,7 @@ async function renderCalListView() {
  // 게시물 없는 날 — 팔로워만 인라인 입력 (13개 개별 셀로 정렬 유지)
  const ed = '<span style="color:var(--text3)">—</span>';
  rows.push(`
- <tr style="border-bottom:1px solid var(--border);background:#fafafa" data-date="${dateKey}"> <td style="padding:9px 10px">${dateCell}</td> <td style="padding:6px;text-align:center;color:var(--text3)">—</td> <td style="padding:6px;text-align:center;color:var(--text3)">—</td> <td style="padding:9px 10px;color:var(--text3);font-size:var(--fs-sm);font-style:italic">발행 없음</td> <td style="padding:6px 10px;text-align:right"> <input type="number" value="${followerCount || ''}" placeholder="0"
+ <tr style="border-bottom:1px solid var(--border);background:#fafafa" data-date="${dateKey}"> <td style="padding:9px 10px">${dateCell}</td> <td style="padding:6px;text-align:center;color:var(--text3)">—</td> <td style="padding:6px;text-align:center;color:var(--text3)">—</td> <td style="padding:9px 10px;color:var(--text3);font-size:var(--fs-sm);font-style:italic">발행 없음</td> <td style="padding:6px 10px;text-align:right"> <input type="text" inputmode="numeric" value="${followerCount ? Number(followerCount).toLocaleString() : ''}" placeholder="0"
  onchange="saveFollowerCount('${dateKey}', this.value, this)"
  onclick="event.stopPropagation()"
  style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:var(--fs-sm);text-align:right;font-family:inherit;background:#fff"/> </td> <td style="padding:9px 10px;text-align:right">${ed}</td> <td style="padding:9px 10px;text-align:right">${ed}</td> <td style="padding:9px 10px;text-align:right">${ed}</td> <td style="padding:9px 10px;text-align:right">${ed}</td> <td style="padding:9px 10px;text-align:right">${ed}</td> <td style="padding:9px 10px;text-align:right">${ed}</td> <td style="padding:9px 10px;text-align:right">${ed}</td> <td style="padding:9px 10px;text-align:center"> <button onclick="openPostFormModalNew(${d})" style="background:#f3f4f6;color:#374151;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:var(--fs-xs);cursor:pointer" title="이 날짜에 발행글 추가">+ 글</button> </td> </tr> `);
@@ -8468,7 +8465,7 @@ async function renderCalListView() {
 
  // 팔로워 셀: 첫 게시물 행에만 인라인 입력
  const followerCell = isFirstOfDay
- ? `<input type="number" value="${followerCount || ''}" placeholder="0"
+ ? `<input type="text" inputmode="numeric" value="${followerCount ? Number(followerCount).toLocaleString() : ''}" placeholder="0"
  onchange="saveFollowerCount('${dateKey}', this.value, this)"
  onclick="event.stopPropagation()"
  style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:var(--fs-sm);text-align:right;font-family:inherit;background:#fff"/>`
@@ -8483,7 +8480,13 @@ async function renderCalListView() {
 
 // 팔로워 값 저장 (날짜별 upsert)
 async function saveFollowerCount(dateKey, valueStr, inputEl) {
- const count = parseInt(valueStr) || 0;
+ const count = parseInt(String(valueStr).replace(/,/g, '')) || 0;
+ // 전역 맵도 갱신 (인사이트 표와 동기화)
+ if (!window.__threadFollowersByDate) window.__threadFollowersByDate = {};
+ if (count > 0) window.__threadFollowersByDate[dateKey] = count;
+ else delete window.__threadFollowersByDate[dateKey];
+ // 입력칸에 천단위 쉼표 다시 적용
+ if (inputEl) inputEl.value = count > 0 ? count.toLocaleString() : '';
  const orig = inputEl.style.borderColor;
  inputEl.style.borderColor = '#d97706';
 

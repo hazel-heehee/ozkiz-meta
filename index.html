@@ -2039,33 +2039,41 @@ function renderInstaDashboard(data) {
  return;
  }
 
- // 최신 팔로워 (오늘 값 제외 — 오늘은 아직 안 끝나 미완성. 음수/0/NULL도 제외)
+ // 팔로워: insta_followers 테이블(날짜별) 기준. 기간 필터가 있으면 그 범위로 한정.
  const _todayStr = new Date().toISOString().slice(0,10);
- let latestFollower = 0;
- for (let i = instaFollowers.length-1; i >= 0; i--) {
- if (instaFollowers[i].date === _todayStr) continue;
- if (instaFollowers[i].count >0) {
- latestFollower = instaFollowers[i].count;
- break;
- }
- }
- if (!latestFollower) {
- // posts에서 가장 최근 양수 팔로워 값
- for (let i = data.length-1; i >= 0; i--) {
- if (data[i].follower >0) { latestFollower = data[i].follower; break; }
- }
- }
- document.getElementById('insta-dash-follower').textContent = latestFollower >0 ? latestFollower.toLocaleString() : '—';
+ const _fStart = (document.getElementById('instaFilterStart')?.value) || '';
+ const _fEnd = (document.getElementById('instaFilterEnd')?.value) || '';
+ // 기간 내 + 오늘 제외 + 양수, 날짜 오름차순
+ const _followerRows = (instaFollowers || [])
+ .filter(f => f.count > 0 && f.date !== _todayStr)
+ .filter(f => (!_fStart || f.date >= _fStart) && (!_fEnd || f.date <= _fEnd))
+ .sort((a,b) => a.date.localeCompare(b.date));
 
- // 팔로워 증감
- const hasFollowerData = data.filter(r =>r.follower >0);
+ // 최신 팔로워 = 범위 내 마지막 값 (없으면 전체에서 오늘 제외 최신)
+ let latestFollower = 0;
+ if (_followerRows.length) {
+ latestFollower = _followerRows[_followerRows.length - 1].count;
+ } else {
+ for (let i = (instaFollowers||[]).length-1; i >= 0; i--) {
+ if (instaFollowers[i].date === _todayStr) continue;
+ if (instaFollowers[i].count > 0) { latestFollower = instaFollowers[i].count; break; }
+ }
+ }
+ document.getElementById('insta-dash-follower').textContent = latestFollower > 0 ? latestFollower.toLocaleString() : '—';
+
+ // 팔로워 증감 = 범위 내 (마지막 - 처음)
  let followerDiff = 0;
- if (hasFollowerData.length >= 2) {
- followerDiff = (hasFollowerData[hasFollowerData.length-1].follower || 0) - (hasFollowerData[0].follower || 0);
+ if (_followerRows.length >= 2) {
+ followerDiff = _followerRows[_followerRows.length-1].count - _followerRows[0].count;
  }
  const fc = document.getElementById('insta-dash-follower-change');
- fc.textContent = followerDiff >= 0 ? `↑ 기간 내 +${followerDiff.toLocaleString()}명` : `↓ ${Math.abs(followerDiff).toLocaleString()}명`;
+ if (_followerRows.length >= 2) {
+ fc.textContent = followerDiff >= 0 ? `↑ 기간 내 +${followerDiff.toLocaleString()}명` : `↓ 기간 내 ${Math.abs(followerDiff).toLocaleString()}명`;
  fc.className = 'stat-change ' + (followerDiff >= 0 ? 'up' : 'down');
+ } else {
+ fc.textContent = latestFollower > 0 ? '기간 내 비교 데이터 부족' : '데이터 없음';
+ fc.className = 'stat-change';
+ }
 
  // 평균 참여율 = (좋아요+댓글+저장+공유)/도달
  const calcInstaEng = (r) => {
@@ -2079,11 +2087,12 @@ function renderInstaDashboard(data) {
  ? hasEngData.reduce((s,r) =>s + calcInstaEng(r), 0) / hasEngData.length
  : 0;
  document.getElementById('insta-dash-engagement').textContent = avgEng ? avgEng.toFixed(1)+'%' : '—';
- document.getElementById('insta-dash-engagement-change').textContent = `게시물 ${hasEngData.length}개 기준`;
+ document.getElementById('insta-dash-engagement-change').textContent = hasEngData.length ? `도달 입력 ${hasEngData.length}개 기준` : '도달 입력 필요';
 
- // 총 게시물 수
+ // 총 게시물 수 (data = 기간 필터 적용된 게시물)
+ const _hasFilter = !!((document.getElementById('instaFilterStart')?.value) || (document.getElementById('instaFilterEnd')?.value));
  document.getElementById('insta-dash-count').textContent = data.length.toString();
- document.getElementById('insta-dash-count-change').textContent = `누적 ${data.length}개`;
+ document.getElementById('insta-dash-count-change').textContent = _hasFilter ? `기간 내 ${data.length}개` : `전체 ${data.length}개`;
 
  // 평균 저장 / 공유
  const hasSaves = data.filter(r => (r.saves||0) >0);

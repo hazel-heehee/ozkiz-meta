@@ -1,11 +1,11 @@
 name: Sync Threads (ozkiz_official)
 
-# 매일 KST 23:45 자동 실행 + 수동 실행 가능
+# 매일 KST 22:17 자동 실행 + 수동 실행 가능
 on:
   workflow_dispatch:
   schedule:
-    # KST 23:45 = UTC 14:45
-    - cron: '45 14 * * *'
+    # KST 22:17 = UTC 13:17
+    - cron: '17 13 * * *'
 
 jobs:
   sync-threads:

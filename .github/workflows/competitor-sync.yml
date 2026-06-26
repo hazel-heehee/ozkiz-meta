@@ -2,8 +2,8 @@ name: 🔄 Sync Competitor Data Daily
 
 on:
   schedule:
-    # 매일 한국시간 23:59시 (UTC 16:00 전날)
-    - cron: '45 14 * * *'
+    # 매일 KST 22:29 = UTC 13:29
+    - cron: '29 13 * * *'
   workflow_dispatch:  # 수동 실행도 가능
 
 jobs:

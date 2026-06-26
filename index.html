@@ -971,19 +971,26 @@ async function updateThreadLatestFollower(firstFollower){
  if (!el) return;
  try {
   const today = new Date().toISOString().slice(0,10);
-  const { data, error } = await sb.from('followers')
-    .select('date,count')
-    .neq('date', today)        // 오늘 제외
-    .order('date', { ascending: false })
-    .limit(1);
+  const fStart = document.getElementById('filterStart')?.value || '';
+  const fEnd = document.getElementById('filterEnd')?.value || '';
+  // 단일 출처: followers 테이블. 기간 필터 범위 + 오늘 제외 + 양수, 날짜 오름차순
+  let q = sb.from('followers').select('date,count').neq('date', today).gt('count', 0);
+  if (fStart) q = q.gte('date', fStart);
+  if (fEnd) q = q.lte('date', fEnd);
+  const { data, error } = await q.order('date', { ascending: true });
   if (error) throw error;
-  if (data && data.length && data[0].count > 0) {
-   const latest = data[0].count;
+  if (data && data.length) {
+   const latest = data[data.length - 1].count;
    el.textContent = latest.toLocaleString();
    if (fc) {
-    const diff = latest - (firstFollower || 0);
-    fc.textContent = diff >= 0 ? `↑ 기간 내 +${diff.toLocaleString()}명` : `↓ ${Math.abs(diff).toLocaleString()}명`;
-    fc.className = 'stat-change ' + (diff >= 0 ? 'up' : 'down');
+    if (data.length >= 2) {
+     const diff = latest - data[0].count;
+     fc.textContent = diff >= 0 ? `↑ 기간 내 +${diff.toLocaleString()}명` : `↓ 기간 내 ${Math.abs(diff).toLocaleString()}명`;
+     fc.className = 'stat-change ' + (diff >= 0 ? 'up' : 'down');
+    } else {
+     fc.textContent = '기간 내 비교 데이터 부족';
+     fc.className = 'stat-change';
+    }
    }
   } else {
    el.textContent = '—';
@@ -1288,44 +1295,28 @@ function drawThreadFollowerChart(data) {
  const canvas = document.getElementById('threadFollowerChart');
  if (!canvas) return;
 
- // 필터된 data만 사용 (전체 sheetData 아님!)
+ // 필터 범위
  const fStart = document.getElementById('filterStart')?.value || '';
  const fEnd = document.getElementById('filterEnd')?.value || '';
 
- const points = (data || []).map(r => ({
- follower: toNum(r[COL.follower]),
- date: r[COL.date],
- dateObj: toDateObj(r[COL.date])
- })).filter(p => {
- if (!p.follower || !p.dateObj) return false;
- // 기간 필터 추가 보장
- if (fStart && p.date < fStart) return false;
- if (fEnd && p.date >fEnd) return false;
- return true;
- }).sort((a,b) =>a.dateObj - b.dateObj);
+ // 단일 출처: followers 테이블(전역맵 __threadFollowersByDate). 게시물 follower는 안 씀.
+ const fmap = window.__threadFollowersByDate || {};
+ const aggregated = Object.keys(fmap)
+  .filter(d => fmap[d] > 0)
+  .filter(d => (!fStart || d >= fStart) && (!fEnd || d <= fEnd))
+  .sort()
+  .map(d => ({ date: d, follower: fmap[d] }));
 
- if (!points.length) {
- if (threadFollowerChart) { threadFollowerChart.destroy(); threadFollowerChart = null; }
- const ctx = canvas.getContext('2d');
- ctx.clearRect(0, 0, canvas.width, canvas.height);
- ctx.fillStyle = '#9ca3af';
- ctx.font = '12px sans-serif';
- ctx.textAlign = 'center';
- ctx.fillText('선택한 기간에 팔로워 데이터가 없어요', canvas.width/2, canvas.height/2);
- return;
+ if (!aggregated.length) {
+  if (threadFollowerChart) { threadFollowerChart.destroy(); threadFollowerChart = null; }
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('선택한 기간에 팔로워 데이터가 없어요', canvas.width/2, canvas.height/2);
+  return;
  }
-
- // 날짜별 평균 (같은 날 여러 데이터면 평균)
- const byDate = {};
- points.forEach(p => {
- const key = p.date;
- if (!byDate[key]) byDate[key] = [];
- byDate[key].push(p.follower);
- });
- const aggregated = Object.keys(byDate).sort().map(k => ({
- date: k,
- follower: Math.round(byDate[k].reduce((s,v) =>s+v, 0) / byDate[k].length)
- }));
 
  if (threadFollowerChart) threadFollowerChart.destroy();
  threadFollowerChart = new Chart(canvas, {
@@ -2075,19 +2066,19 @@ function renderInstaDashboard(data) {
  fc.className = 'stat-change';
  }
 
- // 평균 참여율 = (좋아요+댓글+저장+공유)/도달
+ // 평균 참여율 = (좋아요+댓글+저장+공유)/조회수
  const calcInstaEng = (r) => {
- const reach = r.reach || 0;
- if (reach === 0) return 0;
+ const views = r.views || 0;
+ if (views === 0) return 0;
  const eng = (r.likes||0) + (r.comments||0) + (r.saves||0) + (r.shares||0);
- return (eng / reach) * 100;
+ return (eng / views) * 100;
  };
- const hasEngData = data.filter(r => (r.reach || 0) >0);
+ const hasEngData = data.filter(r => (r.views || 0) >0);
  const avgEng = hasEngData.length
  ? hasEngData.reduce((s,r) =>s + calcInstaEng(r), 0) / hasEngData.length
  : 0;
  document.getElementById('insta-dash-engagement').textContent = avgEng ? avgEng.toFixed(1)+'%' : '—';
- document.getElementById('insta-dash-engagement-change').textContent = hasEngData.length ? `도달 입력 ${hasEngData.length}개 기준` : '도달 입력 필요';
+ document.getElementById('insta-dash-engagement-change').textContent = hasEngData.length ? `조회수 ${hasEngData.length}개 기준` : '조회수 데이터 필요';
 
  // 총 게시물 수 (data = 기간 필터 적용된 게시물)
  const _hasFilter = !!((document.getElementById('instaFilterStart')?.value) || (document.getElementById('instaFilterEnd')?.value));
@@ -2130,7 +2121,7 @@ function buildInstaPostRow(r) {
  // 미디어 (이미지 우선, 릴스 ▶ 배지)
  const mediaCell = buildMediaThumb(r, 40);
 
- const eng = (r.reach||0) >0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.reach||1) * 100 : 0;
+ const eng = (r.views||0) >0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.views||1) * 100 : 0;
  const engColor = eng >= 10 ? '#16a34a' : eng >= 5 ? '#3b82f6' : 'var(--text2)';
  const dash = '<span style="color:var(--text3)">—</span>';
  const nVal = (v) =>v && v >0 ? v.toLocaleString() : dash;
@@ -2173,14 +2164,7 @@ function drawInstaFollowerChart(data) {
  if (fEnd && f.date >fEnd) return;
  if (!map[f.date]) map[f.date] = f.count;
  });
- // 3) 게시물의 follower 값 (앞 두 소스에 없는 날짜만 보완)
- (data || []).forEach(r => {
- if (!r.date || r.follower == null || r.follower <= 0) return;
- // 필터 적용 (data는 이미 필터된 상태지만 안전하게)
- if (fStart && r.date < fStart) return;
- if (fEnd && r.date >fEnd) return;
- if (!map[r.date]) map[r.date] = r.follower;
- });
+ // (게시물 follower 보완 제거 — 팔로워는 insta_followers 단일 출처로 통일)
  const points = Object.keys(map).sort().map(d => ({ date: d, count: map[d] }));
 
  if (!points.length) {
@@ -3067,7 +3051,7 @@ async function renderInstaCalListView() {
  const linkUrl = link && !link.startsWith('http') ? 'https://' + link : link;
  const imgUrl = String(r.image_url||'').trim();
  const vidUrl = String(r.video_url||'').trim();
- const eng = (r.reach||0) >0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.reach||1) * 100 : 0;
+ const eng = (r.views||0) >0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.views||1) * 100 : 0;
  const engColor = eng >= 10 ? '#16a34a' : eng >= 5 ? '#3b82f6' : 'var(--text2)';
 
  const mediaCell = buildMediaThumb(r, 32);
@@ -3136,7 +3120,7 @@ async function renderInstaCalListView() {
  const col = instaCalSort.col;
  const def = INSTA_CAL_COLS.find(c => c.key === col);
  const getVal = (r) => {
- if (col === 'engagement') return (r.reach||0) >0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.reach||1) : 0;
+ if (col === 'engagement') return (r.views||0) >0 ? ((r.likes||0)+(r.comments||0)+(r.saves||0)+(r.shares||0))/(r.views||1) : 0;
  if (col === 'follower') {
  const dk = String(r.date||'').slice(0,10);
  if (typeof competitorHistory !== 'undefined' && competitorHistory[dk]?.['ozkiz_official']?.followers) return competitorHistory[dk]['ozkiz_official'].followers;

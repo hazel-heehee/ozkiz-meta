@@ -1994,6 +1994,8 @@ async function loadInstaPosts(force = false) {
  .order('date', { ascending: true });
  if (fe) throw fe;
  instaFollowers = followers || [];
+ // 인사이트 표가 날짜별 팔로워를 공유하도록 전역 맵 구성
+ { const m = {}; (instaFollowers || []).forEach(f => { if (f.count != null && f.count > 0) m[f.date] = f.count; }); window.__instaFollowersByDate = m; }
 
  // 첫 로드 시 자동으로 7일 필터 적용 (없으면)
  const fStart = document.getElementById('instaFilterStart');
@@ -2130,7 +2132,7 @@ function buildInstaPostRow(r) {
  : '';
 
  return `
- <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openInstaPostEdit(${r.id})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"> <td style="padding:9px 10px;white-space:nowrap;font-size:var(--fs-sm);color:var(--text2)">${r.date ? r.date.slice(5).replace('-','/') : '—'}</td> <td style="padding:9px 10px;white-space:nowrap">${typeBadge}</td> <td style="padding:6px;text-align:center">${mediaCell}</td> <td style="padding:9px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-sm)">${txtCell}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${nVal(r.follower)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600">${nVal(r.views)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm)">${nVal(r.reach)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--red)">${nVal(r.likes)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm)">${nVal(r.saves)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm)">${nVal(r.shares)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600;color:${engColor}">${eng >0 ? eng.toFixed(1)+'%' : dash}</td> </tr>`;
+ <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openInstaPostEdit(${r.id})" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"> <td style="padding:9px 10px;white-space:nowrap;font-size:var(--fs-sm);color:var(--text2)">${r.date ? r.date.slice(5).replace('-','/') : '—'}</td> <td style="padding:9px 10px;white-space:nowrap">${typeBadge}</td> <td style="padding:6px;text-align:center">${mediaCell}</td> <td style="padding:9px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-sm)">${txtCell}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--text2)">${(() => { const fm = (window.__instaFollowersByDate||{}); const fv = (r.date && fm[r.date] != null) ? fm[r.date] : r.follower; return (fv && Number(fv) > 0) ? Number(fv).toLocaleString() : dash; })()}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600">${nVal(r.views)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm)">${nVal(r.reach)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);color:var(--red)">${nVal(r.likes)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm)">${nVal(r.saves)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm)">${nVal(r.shares)}</td> <td style="padding:9px 10px;text-align:right;font-size:var(--fs-sm);font-weight:600;color:${engColor}">${eng >0 ? eng.toFixed(1)+'%' : dash}</td> </tr>`;
 }
 
 function drawInstaFollowerChart(data) {
@@ -3479,6 +3481,10 @@ async function saveInstaFollowerCount(dateKey, val, inputEl) {
  else instaFollowers.push({ date: dateKey, count });
  instaFollowers.sort((a,b) => a.date.localeCompare(b.date));
  }
+ // 전역 맵도 갱신 (인사이트 표와 동기화)
+ if (!window.__instaFollowersByDate) window.__instaFollowersByDate = {};
+ if (count > 0) window.__instaFollowersByDate[dateKey] = count;
+ else delete window.__instaFollowersByDate[dateKey];
  // 차트 다시 그리기
  if (typeof drawInstaFollowerChart === 'function') drawInstaFollowerChart(instaFilteredData || []);
  } catch (e) {

@@ -92,26 +92,9 @@ async function main() {
     console.log('🔍 첫 항목 키들:', Object.keys(items[0]).join(', '));
   }
 
-  // 프로필 (팔로워)
+  // 팔로워 저장 안 함 — threads-scraper의 followerCount는 인스타 팔로워 값이라 부정확.
+  // 스레드 팔로워는 캘린더에서 수동 입력으로 관리.
   const today = new Date().toISOString().slice(0, 10);
-  let profileSaved = false;
-  const profileItem = items.find(i =>
-    i.type === 'profile' || i._type === 'PROFILE' ||
-    i.itemType === 'profile' || i.username === TARGET_USERNAME
-  );
-
-  if (profileItem) {
-    const followers = profileItem.followers || profileItem.followerCount ||
-                      profileItem.followers_count || profileItem.followerCounts;
-    if (typeof followers === 'number' && followers > 0) {
-      console.log(`👥 프로필: 팔로워 ${followers.toLocaleString()}명`);
-      try {
-        const { error } = await sb.from('followers').upsert({ date: today, count: followers }, { onConflict: 'date' });
-        if (error) console.warn(`  ⚠️ followers 저장 실패: ${error.message}`);
-        else { profileSaved = true; console.log(`  ✓ 팔로워 수 저장됨`); }
-      } catch (e) { console.warn(`  ⚠️ followers 저장 오류: ${e.message}`); }
-    }
-  }
 
   // 게시물
   let postItems = items.filter(i =>
@@ -210,7 +193,7 @@ async function main() {
 
   console.log('\n══════════════════════════════════');
   console.log(`✅ 완료`);
-  console.log(`  · 프로필: ${profileSaved ? '✓' : '⚠️'}`);
+  console.log(`  · 팔로워: 수동 입력 관리 (스크래퍼 미사용)`);
   console.log(`  · 게시물: 신규 ${inserted}개 / 업데이트 ${updated}개`);
   console.log('══════════════════════════════════');
 }

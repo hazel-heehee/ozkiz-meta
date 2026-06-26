@@ -72,10 +72,27 @@ async function main() {
   console.log('🏷️ 1단계: 해시태그 게시물 수 수집...');
   const hashtagPostCounts = {};
 
+  // "588.49 K" / "4.05 M" / "60.1만" 같은 축약 표기를 실제 숫자로 변환
+  const parsePostsCount = (raw) => {
+    if (raw == null) return null;
+    if (typeof raw === 'number') return raw;
+    let s = String(raw).trim().toLowerCase().replace(/,/g, '');
+    let mult = 1;
+    if (s.includes('k')) mult = 1e3;
+    else if (s.includes('m')) mult = 1e6;
+    else if (s.includes('b')) mult = 1e9;
+    else if (s.includes('만')) mult = 1e4;
+    else if (s.includes('억')) mult = 1e8;
+    const num = parseFloat(s.replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) return null;
+    return Math.round(num * mult);
+  };
+
   try {
+    // instagram-hashtag-stats: 해시태그별 총 게시물 수(posts) 제공
     const tagRes = await axios.post(
-      `https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/runs?token=${APIFY_TOKEN}`,
-      { hashtags: hashtags.map(h => h.keyword), resultsLimit: 1 },
+      `https://api.apify.com/v2/acts/apify~instagram-hashtag-stats/runs?token=${APIFY_TOKEN}`,
+      { hashtags: hashtags.map(h => h.keyword) },
       { headers: { 'Content-Type': 'application/json' } }
     );
 
@@ -88,9 +105,12 @@ async function main() {
       const tagDsRes = await axios.get(`https://api.apify.com/v2/datasets/${tagDatasetId}/items?token=${APIFY_TOKEN}&clean=true`);
       const tagItems = tagDsRes.data;
       tagItems.forEach(item => {
-        const name = item.name || item.hashtag || item.tag;
-        const count = item.postsCount || item.mediaCount || item.total || item.posts_count;
-        if (name && typeof count === 'number') {
+        // name은 URL 인코딩될 수 있어 디코드
+        let name = item.name || item.hashtag || item.tag || '';
+        try { name = decodeURIComponent(name); } catch(_) {}
+        // posts("588.49 K")가 정확. postsCount는 부풀려진 값이라 사용 안 함.
+        const count = parsePostsCount(item.posts);
+        if (name && count != null && count > 0) {
           hashtagPostCounts[name] = count;
         }
       });
@@ -142,12 +162,6 @@ async function main() {
     if (!kw) return;
     if (!byHashtag[kw]) byHashtag[kw] = [];
     byHashtag[kw].push(item);
-
-    // fallback: parent data에서 게시물 수
-    if (!hashtagPostCounts[kw] && item.parentData) {
-      const pc = item.parentData.postsCount || item.parentData.mediaCount;
-      if (typeof pc === 'number') hashtagPostCounts[kw] = pc;
-    }
   });
 
   // ─── 3단계: DB 저장 ───

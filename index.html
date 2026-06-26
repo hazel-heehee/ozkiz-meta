@@ -4994,6 +4994,13 @@ ${analysisGuide}
 // ══════════════════════════════════════════════════════════════
 
 let hashtagsList = []; // 해시태그 마스터
+let hashtagSortKey = ''; // 정렬 기준: season/size/keyword/type/search
+let hashtagSortAsc = true; // 오름차순 여부
+function sortHashtags(key) {
+ if (hashtagSortKey === key) hashtagSortAsc = !hashtagSortAsc;
+ else { hashtagSortKey = key; hashtagSortAsc = true; }
+ renderInstaHashtags();
+}
 let hashtagHistory = {}; // { hashtag_id: { 'YYYY-MM-DD': { search_count, exposure_count } } }
 let hashtagDates = []; // 모든 측정 날짜 (정렬됨)
 
@@ -5760,6 +5767,26 @@ async function moveSelectedHashtagPostsToRef(keyword) {
  }
 }
 
+// 검색량 기준 규모 자동 분류
+function autoSizeCategory(searchCount) {
+ const n = Number(searchCount) || 0;
+ if (n >= 10000000) return '천만';   // 1,000만 이상
+ if (n >= 1000000) return '백만';    // 100만 이상
+ if (n >= 10000) return '십만';      // 1만 이상
+ if (n > 0) return '만';             // 1만 미만 (값 있을 때만)
+ return null;                        // 검색량 없으면 분류 안 함
+}
+// 해시태그의 가장 최근 검색량 (날짜 내림차순으로 첫 양수 값)
+function latestSearchCount(hashtagId) {
+ const hist = hashtagHistory[hashtagId] || {};
+ const dates = Object.keys(hist).sort().reverse();
+ for (const d of dates) {
+  const v = hist[d]?.search_count;
+  if (v && v > 0) return v;
+ }
+ return 0;
+}
+
 function renderInstaHashtags() {
  const head = document.getElementById('hashtagTableHead');
  const body = document.getElementById('hashtagTableBody');
@@ -5774,11 +5801,30 @@ function renderInstaHashtags() {
  const filtered = hashtagsList.filter(h => {
  if (!showEnded && h.ended) return false;
  if (fSeason && h.season !== fSeason) return false;
- if (fSize && h.size_category !== fSize) return false;
+ if (fSize && (autoSizeCategory(latestSearchCount(h.id)) || h.size_category) !== fSize) return false;
  if (fType && h.type !== fType) return false;
  if (fSearch && !(h.keyword || '').toLowerCase().includes(fSearch)) return false;
  return true;
  });
+
+ // 정렬 적용
+ if (hashtagSortKey) {
+ const sizeOrd = { '천만':1, '백만':2, '십만':3, '5만':4, '만':5, '천':6 };
+ filtered.sort((a,b) => {
+ let va, vb;
+ if (hashtagSortKey === 'search') { va = latestSearchCount(a.id); vb = latestSearchCount(b.id); }
+ else if (hashtagSortKey === 'size') {
+ va = sizeOrd[autoSizeCategory(latestSearchCount(a.id)) || a.size_category] || 99;
+ vb = sizeOrd[autoSizeCategory(latestSearchCount(b.id)) || b.size_category] || 99;
+ }
+ else if (hashtagSortKey === 'season') { va = a.season||''; vb = b.season||''; }
+ else if (hashtagSortKey === 'keyword') { va = a.keyword||''; vb = b.keyword||''; }
+ else if (hashtagSortKey === 'type') { va = a.type||''; vb = b.type||''; }
+ else { va = 0; vb = 0; }
+ if (typeof va === 'string') { const r = va.localeCompare(vb); return hashtagSortAsc ? r : -r; }
+ return hashtagSortAsc ? va - vb : vb - va;
+ });
+ }
 
  document.getElementById('hashtagResultCount').textContent = `${filtered.length} / ${hashtagsList.length}개 표시`;
 
@@ -5788,7 +5834,7 @@ function renderInstaHashtags() {
  return `${dt.getMonth()+1}/${dt.getDate()}`;
  });
 
- let headHtml = `<tr style="border-bottom:2px solid var(--border)"> <th rowspan="2" style="padding:6px 8px;background:#fef3c7;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:80px">계절</th> <th rowspan="2" style="padding:6px 8px;background:#fce7f3;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:55px">규모</th> <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:left;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:100px;position:sticky;left:0;z-index:5">키워드</th> <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:90px">구분</th> <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:50px">종료</th>`;
+ let headHtml = `<tr style="border-bottom:2px solid var(--border)"> <th rowspan="2" onclick="sortHashtags('season')" style="padding:6px 8px;background:#fef3c7;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:80px;cursor:pointer;user-select:none" title="클릭하면 정렬">계절 ${hashtagSortKey==='season'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" onclick="sortHashtags('size')" style="padding:6px 8px;background:#fce7f3;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:55px;cursor:pointer;user-select:none" title="클릭하면 정렬">규모 ${hashtagSortKey==='size'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" onclick="sortHashtags('keyword')" style="padding:6px 8px;background:#fff;text-align:left;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:100px;position:sticky;left:0;z-index:5;cursor:pointer;user-select:none" title="클릭하면 정렬">키워드 ${hashtagSortKey==='keyword'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" onclick="sortHashtags('type')" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:90px;cursor:pointer;user-select:none" title="클릭하면 정렬">구분 ${hashtagSortKey==='type'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:50px">종료</th>`;
 
  hashtagDates.forEach(d => {
  const dt = new Date(d);
@@ -5815,10 +5861,11 @@ function renderInstaHashtags() {
  filtered.forEach(h => {
  const seasonColor = h.season === '여름-네이버메인' ? '#fef3c7' : h.season === '추가' ? '#e0e7ff' : '#fff';
  const sizeColors = { '천만': '#fecdd3', '백만': '#fed7aa', '십만': '#fef3c7', '5만': '#d1fae5', '만': '#dbeafe', '천': '#e9d5ff' };
- const sizeColor = sizeColors[h.size_category] || '#f3f4f6';
+ const _autoSize = autoSizeCategory(latestSearchCount(h.id)) || h.size_category;
+ const sizeColor = sizeColors[_autoSize] || '#f3f4f6';
  const endedStyle = h.ended ? 'opacity:0.5;text-decoration:line-through' : '';
 
- bodyHtml += `<tr style="border-bottom:1px solid var(--border);${endedStyle}"> <td style="padding:5px 8px;background:${seasonColor};font-size:var(--fs-xs);text-align:center;border-right:1px solid var(--border)">${h.season || '-'}</td> <td style="padding:5px 8px;background:${sizeColor};font-size:var(--fs-xs);text-align:center;font-weight:600;border-right:1px solid var(--border)">${h.size_category || '-'}</td> <td style="padding:5px 8px;background:#fff;font-size:var(--fs-xs);font-weight:600;border-right:2px solid var(--border);position:sticky;left:0;z-index:3"> <a href="https://www.instagram.com/explore/tags/${encodeURIComponent(h.keyword || '')}/" target="_blank" style="color:#1e40af;text-decoration:none" title="인스타에서 해시태그 보기">#${h.keyword || ''}</a> </td> <td style="padding:3px 4px;background:#fff;text-align:center;border-right:1px solid var(--border)"> <select onchange="updateHashtagField(${h.id}, 'type', this.value)" style="width:100%;padding:3px;border:1px solid transparent;border-radius:3px;font-size:var(--fs-xs);font-family:inherit;background:transparent;outline:none"
+ bodyHtml += `<tr style="border-bottom:1px solid var(--border);${endedStyle}"> <td style="padding:5px 8px;background:${seasonColor};font-size:var(--fs-xs);text-align:center;border-right:1px solid var(--border)">${h.season || '-'}</td> <td style="padding:5px 8px;background:${sizeColor};font-size:var(--fs-xs);text-align:center;font-weight:600;border-right:1px solid var(--border)">${_autoSize || '-'}</td> <td style="padding:5px 8px;background:#fff;font-size:var(--fs-xs);font-weight:600;border-right:2px solid var(--border);position:sticky;left:0;z-index:3"> <a href="https://www.instagram.com/explore/tags/${encodeURIComponent(h.keyword || '')}/" target="_blank" style="color:#1e40af;text-decoration:none" title="인스타에서 해시태그 보기">#${h.keyword || ''}</a> </td> <td style="padding:3px 4px;background:#fff;text-align:center;border-right:1px solid var(--border)"> <select onchange="updateHashtagField(${h.id}, 'type', this.value)" style="width:100%;padding:3px;border:1px solid transparent;border-radius:3px;font-size:var(--fs-xs);font-family:inherit;background:transparent;outline:none"
  onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
  onblur="this.style.borderColor='transparent';this.style.background='transparent'"> <option value="" ${!h.type?'selected':''}>-</option> <option value="제품,브랜드" ${h.type==='제품,브랜드'?'selected':''}>제품,브랜드</option> <option value="커뮤니티" ${h.type==='커뮤니티'?'selected':''}>커뮤니티</option> </select> </td> <td style="padding:3px;background:#fff;text-align:center;border-right:2px solid var(--border)"> <input type="checkbox" ${h.ended?'checked':''} onchange="updateHashtagField(${h.id}, 'ended', this.checked)"/> </td>`;
 

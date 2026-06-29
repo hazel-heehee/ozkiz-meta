@@ -2,8 +2,8 @@ name: 🔄 Sync Competitor Data Daily
 
 on:
   schedule:
-    # 매일 KST 22:29 = UTC 13:29
-    - cron: '29 13 * * *'
+    # 매일 KST 20:29 = UTC 11:29
+    - cron: '29 11 * * *'
   workflow_dispatch:  # 수동 실행도 가능
 
 jobs:

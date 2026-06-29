@@ -42,7 +42,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 /* ── SIDEBAR ── */
 .sidebar{width:240px;flex-shrink:0;height:100vh;position:sticky;top:0;display:flex;flex-direction:column;border-right:1px solid var(--border);padding:14px 12px;gap:1px;overflow-y:auto;background:#fff}
 /* 표 헤더 고정: 스크롤해도 컬럼 제목(일자·조회수·좋아요...)이 위에 붙어 보임 */
-table thead th{position:sticky;top:0;z-index:5;background:#f8fafc}
+table thead th{position:sticky !important;top:0;z-index:5;background:#f8fafc}
 #recentTable thead th{background:#fff}
 /* 왼쪽 열 고정(틀 고정): JS가 left값을 셀에 직접 지정. 여기선 배경/레이어만 보장 */
 table.insta-cal-compact td.freeze-col,

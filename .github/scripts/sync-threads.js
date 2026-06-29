@@ -92,9 +92,36 @@ async function main() {
     console.log('🔍 첫 항목 키들:', Object.keys(items[0]).join(', '));
   }
 
-  // 팔로워 저장 안 함 — threads-scraper의 followerCount는 인스타 팔로워 값이라 부정확.
-  // 스레드 팔로워는 캘린더에서 수동 입력으로 관리.
-  const today = new Date().toISOString().slice(0, 10);
+  // KST 기준 오늘 (UTC+9). 자정 근처 실행에도 날짜 안 어긋나게.
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  // ─── 스레드 팔로워 자동 수집 (apify/threads-profile-api-scraper는 진짜 스레드 팔로워 제공) ───
+  try {
+    const profRes = await axios.post(
+      `https://api.apify.com/v2/acts/apify~threads-profile-api-scraper/runs?token=${APIFY_TOKEN}`,
+      { usernames: ['ozkiz_official'] },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    const profRunId = profRes.data.data.id;
+    const profDatasetId = profRes.data.data.defaultDatasetId;
+    const profStatus = await waitForApifyRun(profRunId, 'Profile');
+    if (profStatus === 'SUCCEEDED') {
+      const profDs = await axios.get(`https://api.apify.com/v2/datasets/${profDatasetId}/items?token=${APIFY_TOKEN}&clean=true`);
+      const prof = profDs.data[0];
+      const fc = prof && prof.follower_count;
+      if (fc && fc > 0) {
+        const { error: fe } = await sb.from('followers').upsert({ date: today, count: fc }, { onConflict: 'date' });
+        if (fe) console.warn(`⚠️ 스레드 팔로워 저장 실패: ${fe.message}`);
+        else console.log(`✓ 스레드 팔로워 저장: ${fc.toLocaleString()}명 (${today})`);
+      } else {
+        console.warn('⚠️ 스레드 팔로워 값 없음 — 건너뜀');
+      }
+    } else {
+      console.warn(`⚠️ 프로필 Actor 실패: ${profStatus} — 팔로워 건너뜀`);
+    }
+  } catch (e) {
+    console.warn(`⚠️ 스레드 팔로워 수집 오류: ${e.message} — 건너뜀`);
+  }
 
   // 게시물
   let postItems = items.filter(i =>
@@ -139,16 +166,16 @@ async function main() {
     const shares = post.shareCount ?? post.shares ?? post.share_count ?? 0;
     // ⚠️ 이 Actor는 조회수(views)를 제공하지 않음 → 동기화로 건드리지 않고 기존값(수동 입력) 보존
     const image_url = extractImageUrl(post);
-    // 날짜: date 필드(ISO 문자열) 우선. timestamp는 초 단위 유닉스값이라 ×1000 필요
+    // 날짜: date 필드(ISO 문자열) 우선. timestamp는 초 단위 유닉스값이라 ×1000 필요. 모두 KST(+9h)로 변환
     let date = today;
     if (post.date) {
       const d = new Date(post.date);
-      if (!isNaN(d)) date = d.toISOString().slice(0, 10);
+      if (!isNaN(d)) date = new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
     } else if (post.timestamp) {
       const tnum = Number(post.timestamp);
       const ms = tnum < 1e12 ? tnum * 1000 : tnum;
       const d = new Date(ms);
-      if (!isNaN(d)) date = d.toISOString().slice(0, 10);
+      if (!isNaN(d)) date = new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
     }
 
     const { data: existing } = await sb

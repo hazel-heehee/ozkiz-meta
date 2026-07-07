@@ -9,6 +9,7 @@ const axios = require('axios');
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const APIFY_TOKEN  = process.env.APIFY_TOKEN;
+const GEMINI_KEY   = process.env.GEMINI_API_KEY; // 없으면 감성 분석만 건너뜀
 
 if (!SUPABASE_URL || !SUPABASE_KEY || !APIFY_TOKEN) {
   console.error('❌ 환경 변수 누락');
@@ -53,12 +54,55 @@ async function waitForApifyRun(runId, label) {
   return status;
 }
 
+// ─── Gemini 감성 분석 (분석 대상 해시태그만, 이미 받은 게시물 재활용 = Apify 추가비용 0) ───
+async function analyzeInstaHashtag(keyword, posts) {
+  if (!GEMINI_KEY) return null;
+  const texts = [];
+  posts.slice(0, 10).forEach((p, idx) => {
+    texts.push(`[게시물 ${idx + 1}] @${p.ownerUsername || '?'}: ${(p.caption || '').substring(0, 600)}`);
+    const comments = Array.isArray(p.latestComments) ? p.latestComments : [];
+    comments.slice(0, 8).forEach((c, ci) => {
+      const t = c.text || '';
+      if (t) texts.push(`  댓글 ${ci + 1}: ${t.substring(0, 200)}`);
+    });
+  });
+  const combined = texts.join('\n').substring(0, 8000);
+  const prompt = `다음은 인스타그램에서 "#${keyword}" 해시태그의 상위 게시물과 댓글이야.
+한국 아동복 브랜드 "오즈키즈" 관점에서 분석해줘.
+
+분석 게시물:
+${combined}
+
+다음 JSON 형식으로만 답변해 (다른 텍스트 X, 코드 블록 X):
+{
+  "overall_sentiment": "긍정/부정/중립 중 하나",
+  "sentiment_breakdown": { "positive": 숫자, "negative": 숫자, "neutral": 숫자 },
+  "key_topics": ["주제1", "주제2", "주제3"],
+  "key_insights": "오즈키즈에 도움될 핵심 인사이트 (2-3문장)",
+  "pain_points": ["고민1", "고민2"],
+  "trends": ["트렌드1", "트렌드2"],
+  "recommendation": "콘텐츠 전략 제안 (1-2문장)"
+}`;
+  try {
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000, temperature: 0.3 } }
+    );
+    const text = res.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const m = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    return m ? JSON.parse(m[0]) : { raw_response: text };
+  } catch (err) {
+    console.warn(`  ⚠️ Gemini 분석 실패(#${keyword}): ${err.message}`);
+    return { error: err.message };
+  }
+}
+
 async function main() {
   console.log('🔍 해시태그 자동 측정 시작\n');
 
   const { data: hashtags, error } = await sb
     .from('insta_hashtags')
-    .select('id, keyword')
+    .select('id, keyword, analyze_sentiment')
     .order('sort_order');
 
   if (error) throw new Error('DB 조회 실패: ' + error.message);
@@ -254,6 +298,50 @@ async function main() {
 
     updated++;
     totalExposure += breakdown.exposure_count;
+
+    // ─── 감성 분석 (analyze_sentiment 체크된 해시태그만, 이미 받은 posts 재활용) ───
+    if (h.analyze_sentiment && posts.length > 0) {
+      console.log(`  🤖 #${h.keyword} 감성 분석 중...`);
+      const sentiment = await analyzeInstaHashtag(h.keyword, posts);
+      if (sentiment) {
+        let totalComments = 0;
+        posts.slice(0, 10).forEach(p => {
+          if (Array.isArray(p.latestComments)) totalComments += p.latestComments.length;
+          else if (typeof p.commentsCount === 'number') totalComments += p.commentsCount;
+        });
+        const postsData = posts.slice(0, 10).map((p, idx) => ({
+          rank: idx + 1,
+          url: p.url || (p.shortCode ? `https://www.instagram.com/p/${p.shortCode}/` : ''),
+          author: p.ownerUsername || '',
+          text: (p.caption || '').substring(0, 500),
+          likes: p.likesCount || 0,
+          replies: p.commentsCount || 0,
+          image_url: p.displayUrl || '',
+          timestamp: p.timestamp || null,
+          top_comments: (Array.isArray(p.latestComments) ? p.latestComments.slice(0, 5) : []).map(c => ({
+            text: (c.text || '').substring(0, 200),
+            author: c.ownerUsername || '',
+            likes: c.likesCount || 0
+          }))
+        }));
+        const analysisRow = {
+          hashtag_id: h.id,
+          hashtag_keyword: h.keyword,
+          date: today,
+          total_posts: Math.min(posts.length, 10),
+          total_comments: totalComments,
+          posts_data: postsData,
+          sentiment_summary: sentiment
+        };
+        const { data: exAnal } = await sb.from('insta_hashtag_analysis')
+          .select('id').eq('hashtag_id', h.id).eq('date', today).maybeSingle();
+        let aErr;
+        if (exAnal) { const { error: e } = await sb.from('insta_hashtag_analysis').update(analysisRow).eq('id', exAnal.id); aErr = e; }
+        else { const { error: e } = await sb.from('insta_hashtag_analysis').insert(analysisRow); aErr = e; }
+        if (aErr) console.warn(`  ⚠️ 분석 저장 실패: ${aErr.message}`);
+        else console.log(`  ✓ 감성 분석 저장 (${sentiment.overall_sentiment || '?'})`);
+      }
+    }
 
     const status = breakdown.exposure_count > 0
       ? `✅ ${breakdown.exposure_count} (top9: ${breakdown.top9_count})`

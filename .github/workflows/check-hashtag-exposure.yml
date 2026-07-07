@@ -1,11 +1,11 @@
 name: Check Hashtag Exposure
 
-# 매주 목요일 KST 07:00 자동 실행 + 수동 실행도 가능
+# 매주 수요일 KST 오전 08:17 자동 실행 + 수동 실행도 가능
 on:
   workflow_dispatch:    # 만일을 대비한 수동 실행
   schedule:
-    # 매주 목요일 KST 07:00 = UTC 수요일 22:00
-    - cron: '0 22 * * 3'
+    # 매주 수요일 KST 08:17 = UTC 화요일 23:17
+    - cron: '17 23 * * 2'
 
 jobs:
   check-exposure:
@@ -31,4 +31,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           APIFY_TOKEN:  ${{ secrets.APIFY_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: node check-hashtag-exposure.js

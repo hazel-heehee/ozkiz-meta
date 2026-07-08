@@ -396,9 +396,7 @@ table.resizable th .col-resizer:active{
  </button> <div class="sidebar-divider"></div> <div class="sidebar-section">AI 도구</div> <button class="nav-item" onclick="goPage('draft',this)"> <span class="nav-icon">✎</span>시안 생성기</button> <button class="nav-item" onclick="goPage('content',this)"> <span class="nav-icon"></span>콘텐츠 생성
  </button> <button class="nav-item" onclick="goPage('persona',this)"> <span class="nav-icon">◉</span>브랜드 가이드
  </button> <button class="nav-item" onclick="goPage('feedback',this)"> <span class="nav-icon"></span>글 피드백
- </button> </div> <!-- ━━━ 참고자료 (양 채널 공통, 하단 고정) ━━━ --> <div style="margin-top:auto"> <div class="sidebar-divider"></div> <div class="sidebar-section">참고자료</div> <button class="nav-item" onclick="goPage('kindergarten',this)"> <span class="nav-icon"></span>유치원 일정
- </button> <button class="nav-item" onclick="goPage('api-usage',this)"> <span class="nav-icon">$</span>API 사용 현황
- </button> <a href="https://www.instagram.com/ozkiz_official/" target="_blank" id="channelLink" class="nav-item" style="text-decoration:none;margin-bottom:4px"> <span class="nav-icon" style="font-size:var(--fs-base)">⎋</span> <span id="channelLinkText">내 인스타 바로가기</span> <span style="margin-left:auto;font-size:var(--fs-xs);color:var(--text3)">↗</span> </a> <div class="api-status-bar" onclick="openModal()"> <span class="status-dot" id="sidebarDot"></span> <span id="sidebarStatus">API 키 설정</span> </div> </div>
+ </button> </div> <!-- ━━━ 참고자료 (양 채널 공통, 하단 고정) ━━━ --> <div style="margin-top:auto"> <div class="sidebar-divider"></div> <button class="nav-item" onclick="openRefModal()"> <span class="nav-icon">≡</span>참고자료 </button> <a href="https://www.instagram.com/ozkiz_official/" target="_blank" class="nav-item" style="text-decoration:none;margin-bottom:2px"> <span class="nav-icon" style="font-size:var(--fs-base)">⎋</span> <span>내 인스타 바로가기</span> <span style="margin-left:auto;font-size:var(--fs-xs);color:var(--text3)">↗</span> </a> <a href="https://www.threads.com/@ozkiz_official" target="_blank" class="nav-item" style="text-decoration:none;margin-bottom:4px"> <span class="nav-icon" style="font-size:var(--fs-base)">⎋</span> <span>내 스레드 바로가기</span> <span style="margin-left:auto;font-size:var(--fs-xs);color:var(--text3)">↗</span> </a> </div>
 </nav>
 
 <!-- MAIN -->
@@ -9862,13 +9860,13 @@ function setConnected(on) {
  const hasApify = !!apifyApiKey;
  const anyConnected = hasGemini || hasClaude || hasApify;
 
- document.getElementById('sidebarDot').classList.toggle('on', anyConnected);
+ const _sd = document.getElementById('sidebarDot'); if (_sd) _sd.classList.toggle('on', anyConnected);
 
  const connected = [];
  if (hasGemini) connected.push('Gemini');
  if (hasClaude) connected.push('Claude');
  if (hasApify) connected.push('Apify');
- document.getElementById('sidebarStatus').textContent = anyConnected ? connected.join(' + ') + ' 연결' : 'API 키 설정';
+ const _ss = document.getElementById('sidebarStatus'); if (_ss) _ss.textContent = anyConnected ? connected.join(' + ') + ' 연결' : 'API 키 설정';
 }
 
 // ── GEMINI API

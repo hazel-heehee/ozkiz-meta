@@ -18,6 +18,26 @@ if (!SUPABASE_URL || !SUPABASE_KEY || !APIFY_TOKEN) {
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ─── 이미지 영구 저장: 스레드 CDN 이미지를 다운로드해 Supabase Storage(insta-media/auto)에 업로드 ───
+// 스레드 CDN URL도 만료될 수 있어 영구 URL로 교체해 썸네일이 안 깨지게 함
+async function persistThumb(cdnUrl, filename) {
+  if (!cdnUrl) return '';
+  try {
+    const img = await axios.get(cdnUrl, { responseType: 'arraybuffer', timeout: 20000 });
+    const contentType = img.headers['content-type'] || 'image/jpeg';
+    const path = `auto/${filename}`;
+    await axios.post(
+      `${SUPABASE_URL}/storage/v1/object/insta-media/${path}`,
+      img.data,
+      { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}`, 'apikey': SUPABASE_KEY, 'Content-Type': contentType, 'x-upsert': 'true' }, maxBodyLength: Infinity }
+    );
+    return `${SUPABASE_URL}/storage/v1/object/public/insta-media/${path}`;
+  } catch (e) {
+    console.warn(`  ⚠️ 이미지 영구저장 실패(${filename}): ${e.message} — 원본 URL 유지`);
+    return '';
+  }
+}
+
 async function waitForApifyRun(runId, label) {
   let status = 'RUNNING';
   let waitSec = 0;
@@ -184,6 +204,16 @@ async function main() {
       .eq('link', link)
       .maybeSingle();
 
+    // 이미지 영구 저장 (기존이 이미 영구본/사용자 업로드면 스킵)
+    const existingImgT = String((existing && existing.image_url) || '').trim();
+    const alreadyPermanentT = existingImgT.includes('insta-media') || existingImgT.includes('supabase');
+    let finalImg = image_url;
+    if (!alreadyPermanentT && image_url) {
+      const code = (link.split('/post/')[1] || '').split(/[/?#]/)[0] || `id${Date.now()}`;
+      const perm = await persistThumb(image_url, `thread_${code}.jpg`);
+      if (perm) finalImg = perm;
+    }
+
     if (existing) {
       // 인사이트 + image_url 갱신 (views는 제외 — 수동 입력값 보존). date는 갱신해서 과거 오류 교정
       const update = { likes, reposts, quotes, date, last_synced: today };
@@ -191,7 +221,7 @@ async function main() {
       if (replies !== undefined) { update.replies = replies; update.comments = replies; }
       if (text && (!existing.text || post._merged)) update.text = text;
       // 이미지 URL이 새로 있고 기존엔 없으면 추가
-      if (image_url && !existing.image_url) update.image_url = image_url;
+      if (finalImg && !alreadyPermanentT) update.image_url = finalImg;
 
       const { error } = await sb.from('posts').update(update).eq('id', existing.id);
       if (error) console.warn(`  ✗ ${link.substring(0, 50)}: ${error.message}`);
@@ -207,7 +237,7 @@ async function main() {
         last_synced: today,
         ...(shares > 0 ? { shares } : {}),
         ...(replies !== undefined ? { replies, comments: replies } : {}),
-        ...(image_url ? { image_url } : {})
+        ...(finalImg ? { image_url: finalImg } : {})
       };
       const { error } = await sb.from('posts').insert(insertData);
       if (error) console.warn(`  ✗ ${link.substring(0, 50)}: ${error.message}`);

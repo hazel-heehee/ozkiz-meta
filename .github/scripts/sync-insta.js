@@ -34,6 +34,27 @@ async function waitForApifyRun(runId, label) {
   return status;
 }
 
+
+// ─── 썸네일 영구 저장: IG CDN 이미지를 다운로드해 Supabase Storage(insta-media/auto)에 업로드 ───
+// IG CDN URL은 며칠 뒤 만료(403)되므로, 영구 URL로 교체해 썸네일이 안 깨지게 함
+async function persistThumb(cdnUrl, filename) {
+  if (!cdnUrl) return '';
+  try {
+    const img = await axios.get(cdnUrl, { responseType: 'arraybuffer', timeout: 20000 });
+    const contentType = img.headers['content-type'] || 'image/jpeg';
+    const path = `auto/${filename}`;
+    await axios.post(
+      `${SUPABASE_URL}/storage/v1/object/insta-media/${path}`,
+      img.data,
+      { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}`, 'apikey': SUPABASE_KEY, 'Content-Type': contentType, 'x-upsert': 'true' }, maxBodyLength: Infinity }
+    );
+    return `${SUPABASE_URL}/storage/v1/object/public/insta-media/${path}`;
+  } catch (e) {
+    console.warn(`  ⚠️ 썸네일 저장 실패(${filename}): ${e.message} — CDN URL 유지`);
+    return '';
+  }
+}
+
 (async () => {
   console.log(`📸 인스타 동기화 시작 — @${TARGET_USERNAME}, 최신 ${MAX_POSTS}개`);
 
@@ -103,12 +124,22 @@ async function waitForApifyRun(runId, label) {
 
       const url = item.url || `https://www.instagram.com/p/${shortCode}/`;
       const caption = item.caption || '';
+
+      // 썸네일 영구 저장 (기존이 이미 영구본/사용자 업로드면 스킵해 비용·시간 절약)
+      const existing0 = existingByShortcode[shortCode];
+      const existingImg0 = String((existing0 && existing0.image_url) || '').trim();
+      const alreadyPermanent = existingImg0.includes('insta-media') || existingImg0.includes('supabase');
+      let permanentImg = '';
+      if (!alreadyPermanent && item.displayUrl) {
+        permanentImg = await persistThumb(item.displayUrl, `insta_${shortCode}.jpg`);
+      }
+
       const postData = {
         date: dateStr,
         post_type,
         link: url,
         text: caption,
-        image_url: item.displayUrl || '',
+        image_url: permanentImg || item.displayUrl || '',
         video_url: item.videoUrl || '',
         views: parseInt(item.videoViewCount || item.videoPlayCount || 0) || 0,
         likes: parseInt(item.likesCount || 0) || 0,

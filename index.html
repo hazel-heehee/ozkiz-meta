@@ -939,6 +939,57 @@ document.addEventListener('blur', (e) => {
 // - size: 픽셀 크기 (기본 36)
 //
 // 인스타 CDN URL은 1~2시간 후 만료됨 → 이미지 로드 실패 시 폴백 박스 표시
+// ── 참고자료 팝업 (유치원 일정 / API 사용 현황을 모달로 열람)
+let __refModalMovedPage = null;
+function openRefModal(defaultTab) {
+ closeRefModal();
+ const overlay = document.createElement('div');
+ overlay.id = 'refModalOverlay';
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px';
+ overlay.innerHTML = `
+  <div style="background:#fff;border-radius:14px;width:min(1100px,96vw);height:min(85vh,900px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+   <div style="display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <span style="font-weight:700;font-size:var(--fs-base)">참고자료</span>
+    <button class="ref-tab-btn" data-tab="kindergarten" onclick="showRefTab('kindergarten')" style="margin-left:10px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:var(--fs-sm);cursor:pointer;font-family:inherit">유치원 일정</button>
+    <button class="ref-tab-btn" data-tab="api-usage" onclick="showRefTab('api-usage')" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:var(--fs-sm);cursor:pointer;font-family:inherit">API 사용 현황</button>
+    <button onclick="closeRefModal();openModal()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:var(--fs-sm);cursor:pointer;font-family:inherit">API 키 설정</button>
+    <button onclick="closeRefModal()" style="margin-left:auto;background:#f1f5f9;border:none;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;line-height:1">✕</button>
+   </div>
+   <div id="refModalBody" style="flex:1;overflow:auto;background:#fafafa"></div>
+  </div>`;
+ overlay.addEventListener('click', (e) => { if (e.target === overlay) closeRefModal(); });
+ document.body.appendChild(overlay);
+ document.addEventListener('keydown', __refEsc);
+ showRefTab(defaultTab || 'kindergarten');
+}
+function __refEsc(e){ if (e.key === 'Escape') closeRefModal(); }
+function showRefTab(name) {
+ const body = document.getElementById('refModalBody');
+ if (!body) return;
+ if (__refModalMovedPage) { __refModalMovedPage.classList.remove('active'); document.querySelector('main.main').appendChild(__refModalMovedPage); __refModalMovedPage = null; }
+ const page = document.getElementById('page-' + name);
+ if (!page) return;
+ body.innerHTML = '';
+ body.appendChild(page);
+ page.classList.add('active');
+ __refModalMovedPage = page;
+ document.querySelectorAll('.ref-tab-btn').forEach(b => {
+  const on = b.dataset.tab === name;
+  b.style.background = on ? '#111' : '#fff';
+  b.style.color = on ? '#fff' : 'var(--text)';
+ });
+ try {
+  if (name === 'kindergarten' && typeof loadKindergartenEvents === 'function') loadKindergartenEvents();
+  if (name === 'api-usage' && typeof loadApiUsage === 'function') loadApiUsage();
+ } catch(e) { console.warn('ref tab load:', e); }
+}
+function closeRefModal() {
+ if (__refModalMovedPage) { __refModalMovedPage.classList.remove('active'); document.querySelector('main.main').appendChild(__refModalMovedPage); __refModalMovedPage = null; }
+ const o = document.getElementById('refModalOverlay');
+ if (o) o.remove();
+ document.removeEventListener('keydown', __refEsc);
+}
+
 function buildMediaThumb(post, size, channel) {
  size = size || 36;
  channel = channel || 'instagram';
@@ -6027,11 +6078,29 @@ async function loadInstaAnalysisTargets() {
   if (error) throw error;
   const list = (data || []).filter(h => !h.ended);
   if (!list.length) { box.innerHTML = '<span style="color:var(--text3);font-size:var(--fs-sm)">해시태그 노출 탭에서 먼저 해시태그를 추가하세요</span>'; return; }
-  box.innerHTML = list.map(h => `
+
+  // 최신 검색량(규모) — 해시태그별 가장 최근 양수 값
+  const countById = {};
+  try {
+   const { data: hist } = await sb.from('insta_hashtag_history')
+    .select('hashtag_id, date, search_count')
+    .gt('search_count', 0)
+    .order('date', { ascending: false });
+   (hist || []).forEach(r => { if (countById[r.hashtag_id] == null) countById[r.hashtag_id] = r.search_count; });
+  } catch (_) {}
+
+  // 검색량 큰 순 정렬 (없는 건 뒤로)
+  list.sort((a, b) => (countById[b.id] || 0) - (countById[a.id] || 0));
+
+  box.innerHTML = list.map(h => {
+   const cnt = countById[h.id];
+   const cntHtml = cnt ? `<span style="color:var(--text3);font-size:var(--fs-2xs);font-weight:600">${cnt.toLocaleString()}</span>` : '';
+   return `
    <label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid ${h.analyze_sentiment ? '#3b82f6' : 'var(--border)'};border-radius:16px;background:${h.analyze_sentiment ? '#eff6ff' : '#fff'};cursor:pointer;font-size:var(--fs-sm)">
     <input type="checkbox" ${h.analyze_sentiment ? 'checked' : ''} onchange="toggleInstaAnalysisTarget(${h.id}, this.checked)" style="cursor:pointer;margin:0"/>
-    #${h.keyword}
-   </label>`).join('');
+    #${h.keyword} ${cntHtml}
+   </label>`;
+  }).join('');
  } catch (e) {
   box.innerHTML = `<span style="color:var(--red);font-size:var(--fs-sm)">로드 실패: ${e.message} <span style="color:var(--text3)">(analyze_sentiment 컬럼이 없다면 SQL을 먼저 실행하세요)</span></span>`;
  }
@@ -6360,7 +6429,7 @@ function renderInstaHashtags() {
  return `${dt.getMonth()+1}/${dt.getDate()}`;
  });
 
- let headHtml = `<tr style="border-bottom:2px solid var(--border)"> <th rowspan="2" onclick="sortHashtags('season')" style="padding:6px 8px;background:#fef3c7;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:80px;cursor:pointer;user-select:none" title="클릭하면 정렬">계절 ${hashtagSortKey==='season'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" onclick="sortHashtags('size')" style="padding:6px 8px;background:#fce7f3;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:55px;cursor:pointer;user-select:none" title="클릭하면 정렬">규모 ${hashtagSortKey==='size'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" onclick="sortHashtags('keyword')" style="padding:6px 8px;background:#fff;text-align:left;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:100px;position:sticky;left:0;z-index:5;cursor:pointer;user-select:none" title="클릭하면 정렬">키워드 ${hashtagSortKey==='keyword'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" onclick="sortHashtags('type')" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:90px;cursor:pointer;user-select:none" title="클릭하면 정렬">구분 ${hashtagSortKey==='type'?(hashtagSortAsc?'▲':'▼'):''}</th> <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:50px">종료</th>`;
+ let headHtml = `<tr style="border-bottom:2px solid var(--border)"> <th rowspan="2" onclick="sortHashtags('season')" style="padding:6px 8px;background:#fef3c7;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:80px;cursor:pointer;user-select:none" title="클릭하면 정렬">계절 ${hashtagSortKey==='season'?(hashtagSortAsc?'▲':'▼'):'⇅'}</th> <th rowspan="2" onclick="sortHashtags('size')" style="padding:6px 8px;background:#fce7f3;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:55px;cursor:pointer;user-select:none" title="클릭하면 정렬">규모 ${hashtagSortKey==='size'?(hashtagSortAsc?'▲':'▼'):'⇅'}</th> <th rowspan="2" onclick="sortHashtags('keyword')" style="padding:6px 8px;background:#fff;text-align:left;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:100px;position:sticky;left:0;z-index:5;cursor:pointer;user-select:none" title="클릭하면 정렬">키워드 ${hashtagSortKey==='keyword'?(hashtagSortAsc?'▲':'▼'):'⇅'}</th> <th rowspan="2" onclick="sortHashtags('type')" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:1px solid var(--border);min-width:90px;cursor:pointer;user-select:none" title="클릭하면 정렬">구분 ${hashtagSortKey==='type'?(hashtagSortAsc?'▲':'▼'):'⇅'}</th> <th rowspan="2" style="padding:6px 8px;background:#fff;text-align:center;font-size:var(--fs-xs);border-right:2px solid var(--border);min-width:50px">종료</th>`;
 
  hashtagDates.forEach(d => {
  const dt = new Date(d);
@@ -6471,71 +6540,132 @@ function renderInstaHashtags() {
  setTimeout(applyResizersToAllTables, 50);
 }
 
-// 금주 노출 TOP 5 (키워드규모 큰 것 중 노출 있는 상위 5개)
+// 금주 노출 TOP 5 (키워드규모 큰 것 중 노출 있는 상위 5개) + 노출률/유형/개선기회 요약
 function renderHashtagWeeklyTop() {
  const container = document.getElementById('hashtagWeeklyTopList');
  const dateEl = document.getElementById('hashtagWeeklyDate');
  if (!container) return;
 
  if (!hashtagDates.length) {
- container.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:var(--fs-sm);grid-column:1/-1;padding:14px">아직 측정 데이터가 없어요</div>';
- if (dateEl) dateEl.textContent = '';
- return;
+  container.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:var(--fs-sm);grid-column:1/-1;padding:14px">아직 측정 데이터가 없어요</div>';
+  if (dateEl) dateEl.textContent = '';
+  return;
  }
 
- // 가장 최신 측정 날짜
  const latestDate = hashtagDates[0];
  const dt = new Date(latestDate);
  if (dateEl) dateEl.textContent = `${dt.getMonth()+1}/${dt.getDate()} 측정 기준`;
 
- // 키워드규모 순위 (큰 → 작은)
  const sizeOrder = { '천만': 1, '백만': 2, '십만': 3, '5만': 4, '만': 5, '천': 6 };
+ const active = hashtagsList.filter(h => !h.ended);
+ const enriched = active.map(h => {
+  const cell = hashtagHistory[h.id]?.[latestDate] || {};
+  return {
+   ...h,
+   searchCount: cell.search_count || 0,
+   exposureCount: cell.exposure_count || 0,
+   breakdown: cell.exposure_breakdown || null,
+   sizeRank: sizeOrder[(typeof autoSizeCategory==='function' ? autoSizeCategory(cell.search_count||0) : null) || h.size_category] || 99
+  };
+ });
+ const withExposure = enriched.filter(h => h.exposureCount > 0);
 
- // 노출 >0 인 해시태그 필터링
- const withExposure = hashtagsList
- .filter(h => !h.ended)
- .map(h => {
- const cell = hashtagHistory[h.id]?.[latestDate] || {};
- return {
- ...h,
- searchCount: cell.search_count || 0,
- exposureCount: cell.exposure_count || 0,
- sizeRank: sizeOrder[h.size_category] || 99
+ // ── 전체 노출 유형 분포 (금주)
+ const typeTotals = { account: 0, hashtag: 0, caption: 0, mention: 0 };
+ withExposure.forEach(h => {
+  const b = h.breakdown || {};
+  typeTotals.account += b.by_account || 0;
+  typeTotals.hashtag += b.by_hashtag || 0;
+  typeTotals.caption += b.by_caption || 0;
+  typeTotals.mention += b.by_mention || 0;
+ });
+ const typeSum = typeTotals.account + typeTotals.hashtag + typeTotals.caption + typeTotals.mention;
+ const typeLabels = { account: '@계정 직접', hashtag: '오즈키즈 태그', caption: '캡션 언급', mention: '@멘션' };
+ const typeMethods = {
+  account: '게시물 반응(저장·좋아요)을 높여 계정 게시물이 상위에 뜨게',
+  hashtag: '게시물 해시태그에 이 키워드를 추가해',
+  caption: '캡션에 이 키워드를 자연스럽게 언급해',
+  mention: '고객 후기에서 @멘션을 유도해'
  };
- })
- .filter(h =>h.exposureCount >0);
+ let domType = 'caption', domCnt = -1;
+ Object.keys(typeTotals).forEach(k => { if (typeTotals[k] > domCnt) { domCnt = typeTotals[k]; domType = k; } });
 
- if (withExposure.length === 0) {
- container.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:var(--fs-sm);grid-column:1/-1;padding:14px">금주 노출된 해시태그가 없어요</div>';
- return;
+ // ── 노출률
+ const exposedCnt = withExposure.length;
+ const exposureRate = active.length ? Math.round(exposedCnt / active.length * 100) : 0;
+
+ // ── 개선 기회: 검색량 가장 큰데 노출 0인 키워드 + 한 줄 제안
+ const zeroExposure = enriched.filter(h => h.exposureCount === 0 && h.searchCount > 0).sort((a,b) => b.searchCount - a.searchCount);
+ const opp = zeroExposure[0] || null;
+ const oppLine = opp
+  ? `#${opp.keyword} — 검색량 ${opp.searchCount.toLocaleString()}인데 노출 0. 현재 노출의 ${typeSum?Math.round(domCnt/typeSum*100):0}%가 '${typeLabels[domType]}' 방식이니, ${typeMethods[domType]} 노출을 노려보세요.`
+  : '노출 0인 대형 키워드가 없어요. 지금 페이스 유지!';
+
+ // ── TOP5 카드
+ let cardsHtml = '';
+ if (!withExposure.length) {
+  cardsHtml = '<div style="text-align:center;color:var(--text3);font-size:var(--fs-sm);grid-column:1/-1;padding:14px">금주 노출된 해시태그가 없어요</div>';
+ } else {
+  withExposure.sort((a, b) => {
+   if (a.sizeRank !== b.sizeRank) return a.sizeRank - b.sizeRank;
+   return b.searchCount - a.searchCount;
+  });
+  const top5 = withExposure.slice(0, 5);
+  const sizeColors = {
+   '천만': { bg: 'linear-gradient(135deg,#fecdd3,#fda4af)', text: '#881337' },
+   '백만': { bg: 'linear-gradient(135deg,#fed7aa,#fdba74)', text: '#9a3412' },
+   '십만': { bg: 'linear-gradient(135deg,#fef08a,#fde047)', text: '#854d0e' },
+   '5만': { bg: 'linear-gradient(135deg,#bbf7d0,#86efac)', text: '#166534' },
+   '만': { bg: 'linear-gradient(135deg,#bfdbfe,#93c5fd)', text: '#1e40af' },
+   '천': { bg: 'linear-gradient(135deg,#e9d5ff,#d8b4fe)', text: '#6b21a8' }
+  };
+  cardsHtml = top5.map((h, idx) => {
+   const sizeCat = (typeof autoSizeCategory==='function' ? autoSizeCategory(h.searchCount) : null) || h.size_category || '-';
+   const colors = sizeColors[sizeCat] || { bg: '#fff', text: 'var(--text)' };
+   const b = h.breakdown || {};
+   // 노출 유형 뱃지 (있는 것만)
+   const badges = [];
+   if (b.by_account) badges.push(`@계정 ${b.by_account}`);
+   if (b.by_hashtag) badges.push(`태그 ${b.by_hashtag}`);
+   if (b.by_caption) badges.push(`캡션 ${b.by_caption}`);
+   if (b.by_mention) badges.push(`멘션 ${b.by_mention}`);
+   const badgeHtml = badges.length ? `<div style="font-size:var(--fs-2xs);opacity:0.75;margin-top:3px">${badges.join(' · ')}</div>` : '';
+   // 노출된 게시물 링크 (최대 2개)
+   const posts = Array.isArray(b.posts) ? b.posts.slice(0, 2) : [];
+   const postLinks = posts.filter(p => p.url).map(p =>
+    `<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="color:${colors.text};font-size:var(--fs-2xs);font-weight:700;text-decoration:underline;opacity:0.9" title="@${p.owner||''} · ${(p.caption_preview||'').replace(/"/g,'')}">${p.rank}위 게시물 ↗</a>`
+   ).join(' ');
+   const postHtml = postLinks ? `<div style="margin-top:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${postLinks}</div>` : '';
+   return `
+   <a href="https://www.instagram.com/explore/tags/${encodeURIComponent(h.keyword)}/" target="_blank"
+    style="background:${colors.bg};border-radius:8px;padding:10px 8px;text-align:center;text-decoration:none;color:${colors.text};display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:104px;border:1px solid rgba(255,255,255,0.5);transition:transform 0.15s"
+    onmouseover="this.style.transform='translateY(-2px)'"
+    onmouseout="this.style.transform='translateY(0)'"> <div style="font-size:var(--fs-xs);font-weight:600;opacity:0.7;margin-bottom:3px">#${idx + 1} · ${sizeCat}</div> <div style="font-size:var(--fs-base);font-weight:800;margin-bottom:2px;word-break:break-all">#${h.keyword}</div> <div style="font-size:var(--fs-xs);opacity:0.85">노출 <b>${h.exposureCount}</b>회 · ${h.searchCount.toLocaleString()}</div> ${badgeHtml} ${postHtml} </a> `;
+  }).join('');
  }
 
- // 정렬: 규모 큰 순 → 같은 규모면 검색량 큰 순
- withExposure.sort((a, b) => {
- if (a.sizeRank !== b.sizeRank) return a.sizeRank - b.sizeRank;
- return b.searchCount - a.searchCount;
- });
+ // ── 하단 요약 줄 (노출률 · 유형 분포 · 개선 기회 한 줄)
+ const typeDistHtml = typeSum
+  ? Object.keys(typeTotals).filter(k => typeTotals[k] > 0).map(k => `${typeLabels[k]} <b>${typeTotals[k]}</b> (${Math.round(typeTotals[k]/typeSum*100)}%)`).join(' · ')
+  : '데이터 없음';
+ const summaryHtml = `
+  <div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;margin-top:2px">
+   <div style="flex:0 0 auto;background:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.9);border-radius:8px;padding:8px 14px">
+    <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:600">노출률</span>
+    <span style="font-size:var(--fs-lg);font-weight:800;margin-left:6px">${exposureRate}%</span>
+    <span style="font-size:var(--fs-2xs);color:var(--text3);margin-left:4px">${active.length}개 중 ${exposedCnt}개</span>
+   </div>
+   <div style="flex:1 1 220px;background:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.9);border-radius:8px;padding:8px 14px">
+    <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:600">노출 유형 (총 ${typeSum})</span>
+    <span style="font-size:var(--fs-xs);margin-left:8px">${typeDistHtml}</span>
+   </div>
+   <div style="flex:1 1 280px;background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:8px 14px">
+    <span style="font-size:var(--fs-xs);color:#991b1b;font-weight:700">개선 기회</span>
+    <span style="font-size:var(--fs-xs);color:#7f1d1d;margin-left:8px;line-height:1.5">${oppLine}</span>
+   </div>
+  </div>`;
 
- const top5 = withExposure.slice(0, 5);
-
- // 카드 렌더
- const sizeColors = {
- '천만': { bg: 'linear-gradient(135deg,#fecdd3,#fda4af)', text: '#881337' },
- '백만': { bg: 'linear-gradient(135deg,#fed7aa,#fdba74)', text: '#9a3412' },
- '십만': { bg: 'linear-gradient(135deg,#fef08a,#fde047)', text: '#854d0e' },
- '5만': { bg: 'linear-gradient(135deg,#bbf7d0,#86efac)', text: '#166534' },
- '만': { bg: 'linear-gradient(135deg,#bfdbfe,#93c5fd)', text: '#1e40af' },
- '천': { bg: 'linear-gradient(135deg,#e9d5ff,#d8b4fe)', text: '#6b21a8' }
- };
-
- container.innerHTML = top5.map((h, idx) => {
- const colors = sizeColors[h.size_category] || { bg: '#fff', text: 'var(--text)' };
- return `
- <a href="https://www.instagram.com/explore/tags/${encodeURIComponent(h.keyword)}/" target="_blank"
- style="background:${colors.bg};border-radius:8px;padding:10px 8px;text-align:center;text-decoration:none;color:${colors.text};display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90px;border:1px solid rgba(255,255,255,0.5);transition:transform 0.15s"
- onmouseover="this.style.transform='translateY(-2px)'"
- onmouseout="this.style.transform='translateY(0)'"> <div style="font-size:var(--fs-xs);font-weight:600;opacity:0.7;margin-bottom:3px">#${idx + 1} · ${h.size_category}</div> <div style="font-size:var(--fs-base);font-weight:800;margin-bottom:4px;word-break:break-all">#${h.keyword}</div> <div style="font-size:var(--fs-xs);opacity:0.85">노출 <b>${h.exposureCount}</b>회</div> <div style="font-size:var(--fs-2xs);opacity:0.6;margin-top:2px">${h.searchCount.toLocaleString()}</div> </a> `;
- }).join('');
+ container.innerHTML = cardsHtml + summaryHtml;
 }
 
 function renderHashtagSummary() {

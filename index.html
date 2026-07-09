@@ -1034,6 +1034,33 @@ function buildMeetingSnapshotHtml(kind) {
   const withExposure = enriched.filter(h => h.exposureCount > 0).sort((a,b) => a.sizeRank!==b.sizeRank ? a.sizeRank-b.sizeRank : b.searchCount-a.searchCount);
   const top5 = withExposure.slice(0,5);
   const exposureRate = active.length ? Math.round(withExposure.length/active.length*100) : 0;
+
+  // 노출 유형 분포 + 개선 기회 (대시보드 배너와 동일 로직)
+  const typeTotals = { account: 0, hashtag: 0, caption: 0, mention: 0 };
+  withExposure.forEach(h => {
+   const b = h.breakdown || {};
+   typeTotals.account += b.by_account || 0;
+   typeTotals.hashtag += b.by_hashtag || 0;
+   typeTotals.caption += b.by_caption || 0;
+   typeTotals.mention += b.by_mention || 0;
+  });
+  const typeSum = typeTotals.account + typeTotals.hashtag + typeTotals.caption + typeTotals.mention;
+  const typeLabels = { account: '@계정 직접', hashtag: '오즈키즈 태그', caption: '캡션 언급', mention: '@멘션' };
+  const typeMethods = {
+   account: '게시물 반응(저장·좋아요)을 높여 계정 게시물이 상위에 뜨게',
+   hashtag: '게시물 해시태그에 이 키워드를 추가해',
+   caption: '캡션에 이 키워드를 자연스럽게 언급해',
+   mention: '고객 후기에서 @멘션을 유도해'
+  };
+  let domType = 'caption', domCnt = -1;
+  Object.keys(typeTotals).forEach(k => { if (typeTotals[k] > domCnt) { domCnt = typeTotals[k]; domType = k; } });
+  const typeDist = typeSum ? Object.keys(typeTotals).filter(k => typeTotals[k] > 0).map(k => `${typeLabels[k]} <b>${typeTotals[k]}</b> (${Math.round(typeTotals[k]/typeSum*100)}%)`).join(' · ') : '데이터 없음';
+  const zeroExposure = enriched.filter(h => h.exposureCount === 0 && h.searchCount > 0).sort((a,b) => b.searchCount - a.searchCount);
+  const opp = zeroExposure[0] || null;
+  const oppLine = opp
+   ? `#${opp.keyword} — 검색량 ${opp.searchCount.toLocaleString()}인데 노출 0. 현재 노출의 ${typeSum?Math.round(domCnt/typeSum*100):0}%가 '${typeLabels[domType]}' 방식이니, ${typeMethods[domType]} 노출을 노려보세요.`
+   : '노출 0인 대형 키워드가 없어요. 지금 페이스 유지!';
+
   const rows = top5.map((h,i) => {
    const sizeCat = (typeof autoSizeCategory==='function'?autoSizeCategory(h.searchCount):null) || h.size_category || '-';
    const b = h.breakdown || {};
@@ -1042,13 +1069,18 @@ function buildMeetingSnapshotHtml(kind) {
    if (b.by_hashtag) types.push(`태그 ${b.by_hashtag}`);
    if (b.by_caption) types.push(`캡션 ${b.by_caption}`);
    if (b.by_mention) types.push(`멘션 ${b.by_mention}`);
+   const posts = Array.isArray(b.posts) ? b.posts.slice(0, 2) : [];
+   const postLinks = posts.filter(p => p.url).map(p =>
+    `<a href="${p.url}" target="_blank" style="color:#1d4ed8;font-size:12px;font-weight:600;text-decoration:underline">${p.rank}위 게시물</a>`
+   ).join(' · ') || '<span style="color:#94a3b8;font-size:11px">-</span>';
    return `<tr>
     <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:12px;text-align:center">${i+1}</td>
-    <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:12px;font-weight:700">#${h.keyword}</td>
+    <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:12px;font-weight:700"><a href="https://www.instagram.com/explore/tags/${encodeURIComponent(h.keyword)}/" target="_blank" style="color:#1a1a1a;text-decoration:none">#${h.keyword}</a></td>
     <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:12px;text-align:center">${sizeCat}</td>
     <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:12px;text-align:right">${h.exposureCount}회</td>
     <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:12px;text-align:right">${h.searchCount.toLocaleString()}</td>
     <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:11px;color:#64748b">${types.join(' · ')||'-'}</td>
+    <td style="padding:6px 10px;border:1px solid #e5e7eb;text-align:center">${postLinks}</td>
    </tr>`;
   }).join('');
   const dt = new Date(latestDate);
@@ -1062,8 +1094,11 @@ function buildMeetingSnapshotHtml(kind) {
      <th style="padding:6px 10px;border:1px solid #e5e7eb;font-size:11px;color:#64748b">노출</th>
      <th style="padding:6px 10px;border:1px solid #e5e7eb;font-size:11px;color:#64748b">검색량</th>
      <th style="padding:6px 10px;border:1px solid #e5e7eb;font-size:11px;color:#64748b">노출 유형</th>
-    </tr>${rows || '<tr><td colspan="6" style="padding:10px;border:1px solid #e5e7eb;font-size:12px;text-align:center;color:#94a3b8">노출된 해시태그 없음</td></tr>'}
-   </table>`;
+     <th style="padding:6px 10px;border:1px solid #e5e7eb;font-size:11px;color:#64748b">노출 게시물</th>
+    </tr>${rows || '<tr><td colspan="7" style="padding:10px;border:1px solid #e5e7eb;font-size:12px;text-align:center;color:#94a3b8">노출된 해시태그 없음</td></tr>'}
+   </table>
+   <div style="margin-top:8px;font-size:12px;color:#64748b">노출 유형 (총 ${typeSum}): ${typeDist}</div>
+   <div style="margin-top:6px;padding:8px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;line-height:1.6"><b>개선 기회</b> · ${oppLine}</div>`;
   return { title: `인스타 해시태그 노출상황 (${dt.getMonth()+1}/${dt.getDate()} 측정)`, html: wrap(`인스타 해시태그 노출상황 <span style="font-weight:400;color:#64748b">(${dt.getMonth()+1}/${dt.getDate()} 측정 기준)</span>`, inner) };
  }
  return null;

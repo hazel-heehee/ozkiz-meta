@@ -90,10 +90,12 @@ ${combined}
     );
     const text = res.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const m = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
-    return m ? JSON.parse(m[0]) : { raw_response: text };
+    if (!m) return null;
+    const parsed = JSON.parse(m[0]);
+    return (parsed && parsed.overall_sentiment) ? parsed : null; // 파싱 실패 시 저장 안 함 (기존 성공본 보존)
   } catch (err) {
     console.warn(`  ⚠️ Gemini 분석 실패(#${keyword}): ${err.message}`);
-    return { error: err.message };
+    return null; // 실패는 저장하지 않음
   }
 }
 

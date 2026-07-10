@@ -994,36 +994,39 @@ function closeRefModal() {
 function _snapTxt(id) { const el = document.getElementById(id); return el ? (el.value !== undefined && el.tagName === 'TEXTAREA' ? el.value : el.textContent.trim()) : ''; }
 
 function buildMeetingSnapshotHtml(kind) {
- const wrap = (title, inner) => `<div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:8px 0;background:#fff;font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;color:#1a1a1a;max-width:720px"><div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:10px">${title}</div>${inner}</div>`;
- const stat = (label, value, sub) => `<td style="padding:8px 12px;border:1px solid #e5e7eb;background:#f8fafc;vertical-align:top"><div style="font-size:11px;color:#64748b;font-weight:600">${label}</div><div style="font-size:16px;font-weight:800;margin-top:2px">${value}</div>${sub?`<div style="font-size:11px;color:#94a3b8;margin-top:2px">${sub}</div>`:''}</td>`;
-
- // 숫자 파싱 헬퍼 (콤마·기호 제거)
+ // div 기반 레이아웃(빈 td 셀 없음) — 회의록 에디터에서 빈 박스가 안 생김
+ const wrap = (title, inner) => `<div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:8px 0;background:#fff;font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;color:#1a1a1a;max-width:680px"><div style="font-size:15px;font-weight:700;color:#111;margin-bottom:12px">${title}</div>${inner}</div>`;
+ const box = (inner, flex) => `<div style="flex:${flex||'1'};background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;box-sizing:border-box">${inner}</div>`;
+ const lbl = (t) => `<div style="font-size:12px;color:#111;font-weight:700;margin-bottom:4px">${t}</div>`;
+ const big = (t, color) => `<div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:${color||'#111'}">${t}</div>`;
  const _num = (t) => { const n = parseInt(String(t).replace(/[^0-9-]/g, '')); return isNaN(n) ? 0 : n; };
- // 대시보드와 동일한 "목표 마커 + 달성 막대" 진행률 박스 (인라인 자체완결)
+
+ // 목표 마커 진행률 패널
  const goalPanel = (titleLabel, goal, actual, unit, plusSign) => {
   const realPct = goal > 0 ? Math.round(actual / goal * 100) : 0;
   const achieved = actual >= goal;
-  const color = achieved ? '#10b981' : (realPct >= 60 ? '#f59e0b' : '#ef4444');
+  const barColor = achieved ? '#10b981' : (realPct >= 60 ? '#f59e0b' : '#ef4444');
   const txtColor = achieved ? '#16a34a' : (realPct >= 60 ? '#d97706' : '#dc2626');
   const maxVal = Math.max(goal, Math.max(actual, 0), 1);
   const fillPct = Math.max(0, Math.round(actual / maxVal * 100));
   const goalPct = Math.round(goal / maxVal * 100);
   const diff = actual - goal;
   const noteTxt = achieved ? `목표 초과 +${diff.toLocaleString()}${unit}` : `목표까지 ${diff.toLocaleString()}${unit}`;
-  return `<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px">
-   <div style="font-size:12px;color:#111;font-weight:700;margin-bottom:6px">${titleLabel}</div>
-   <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:5px">
-    <span>목표 <b style="font-size:15px;color:#475569">${goal.toLocaleString()}</b>${unit} · 달성 <b style="font-size:16px;color:${txtColor}">${plusSign && actual >= 0 ? '+' : ''}${actual.toLocaleString()}</b>${unit}</span>
-    <span style="font-size:15px;font-weight:800;color:${txtColor}">${realPct}%</span>
+  return `<div style="flex:1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;box-sizing:border-box">
+   ${lbl(titleLabel)}
+   <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:6px">
+    <span>목표 <b style="font-size:15px;color:#475569">${goal.toLocaleString()}</b>${unit} · 달성 <b style="font-size:17px;color:${txtColor}">${plusSign && actual >= 0 ? '+' : ''}${actual.toLocaleString()}</b>${unit}</span>
+    <span style="font-size:16px;font-weight:800;color:${txtColor}">${realPct}%</span>
    </div>
    <div style="position:relative;height:14px;background:#eceef1;border-radius:7px;border:1px solid #e5e7eb">
-    <div style="height:100%;width:${Math.min(fillPct,100)}%;background:${color};border-radius:7px"></div>
+    <div style="height:100%;width:${Math.min(fillPct,100)}%;background:${barColor};border-radius:7px"></div>
     <div style="position:absolute;top:-4px;left:calc(${Math.min(goalPct,100)}% - 1px);width:3px;height:22px;background:#475569;border-radius:2px"></div>
    </div>
-   <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:3px"><span>진회색 선 = 목표</span><span style="color:${txtColor};font-weight:700">${noteTxt}</span></div>
+   <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px"><span style="color:#94a3b8">진회색 선 = 목표</span><span style="color:${txtColor};font-weight:700">${noteTxt}</span></div>
   </div>`;
  };
- // 잘된 콘텐츠 TOP3 (썸네일·지표·링크)
+
+ // 잘된 콘텐츠 TOP3 (div 3열, 빈칸 없음)
  const topPostsHtml = (channel, wr) => {
   try {
    const top = getWeekTopPosts(channel, wr.start, wr.end, 3).filter(p => p.views > 0);
@@ -1031,67 +1034,60 @@ function buildMeetingSnapshotHtml(kind) {
    const cards = top.map((p, i) => {
     let link = String(p.link||'').trim();
     if (link && !link.startsWith('http')) link = 'https://' + link;
-    const thumb = p.img ? `<img src="${p.img}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid #e5e7eb;flex-shrink:0"/>` : '';
-    const cap = (p.text||'').replace(/</g,'&lt;').substring(0, 34);
-    return `<td style="border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;padding:8px 10px;vertical-align:top">
-     <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-size:15px;font-weight:800;color:#475569">${i+1}</span>${thumb}
-      <div style="min-width:0">
-       <div style="font-size:12px;color:#111;font-weight:600;line-height:1.5">${cap || '(내용 없음)'}</div>
+    const thumb = p.img ? `<img src="${p.img}" style="width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid #e5e7eb;flex-shrink:0"/>` : '';
+    const cap = (p.text||'').replace(/</g,'&lt;').substring(0, 40);
+    return `<div style="flex:1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:9px 10px;box-sizing:border-box;min-width:0">
+     <div style="display:flex;gap:7px;align-items:flex-start">
+      <span style="font-size:15px;font-weight:800;color:#475569;line-height:1.2">${i+1}</span>${thumb}
+      <div style="min-width:0;flex:1">
+       <div style="font-size:12px;color:#111;font-weight:600;line-height:1.5;word-break:break-word">${cap || '(내용 없음)'}</div>
        <div style="font-size:11px;color:#334155;margin-top:3px;line-height:1.5">조회 <b style="color:#111">${p.views.toLocaleString()}</b> · ❤ ${p.likes.toLocaleString()} · 💬 ${p.comments.toLocaleString()}</div>
-       ${link ? `<a href="${link}" target="_blank" style="font-size:10px;color:#1d4ed8;font-weight:700;text-decoration:underline">게시물 열기 ↗</a>` : ''}
+       ${link ? `<a href="${link}" target="_blank" style="font-size:11px;color:#1d4ed8;font-weight:700;text-decoration:underline;display:inline-block;margin-top:2px">게시물 열기 ↗</a>` : ''}
       </div>
      </div>
-    </td>`;
-   }).join('<td style="width:6px"></td>');
-   return `<div style="font-size:13px;color:#111;font-weight:700;margin:10px 0 6px">잘된 콘텐츠 TOP${top.length} <span style="color:#94a3b8;font-weight:400;font-size:11px">(조회수 기준)</span></div><table style="border-collapse:separate;width:100%"><tr>${cards}</tr></table>`;
+    </div>`;
+   }).join('');
+   return `<div style="font-size:13px;color:#111;font-weight:700;margin:12px 0 6px">잘된 콘텐츠 TOP${top.length} <span style="color:#94a3b8;font-weight:400;font-size:11px">(조회수 기준)</span></div><div style="display:flex;gap:8px;align-items:stretch">${cards}</div>`;
   } catch (e) { return ''; }
  };
 
+ const noteBox = (note) => note ? `<div style="margin-top:10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px">${lbl('내용')}<div style="font-size:12px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap">${note.replace(/</g,'&lt;')}</div></div>` : '';
+
  if (kind === 'insta-week') {
   const range = _snapTxt('instaWeekRange');
-  const note = _snapTxt('instaWeekNote');
   const goal = _num(_snapTxt('instaWeekGoal'));
   const actual = _num(_snapTxt('instaWeekActual'));
   const wr = getWeekRange(weekReportOffset.instagram || 0);
-  const noteHtml = note ? `<div style="margin-top:10px;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px"><div style="font-size:12px;color:#111;font-weight:700;margin-bottom:4px">내용</div><div style="font-size:12px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap">${note.replace(/</g,'&lt;')}</div></div>` : '';
   const inner = `
-   <table style="border-collapse:separate;width:100%"><tr>
-    <td style="width:130px;border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;padding:10px 14px;vertical-align:middle">
-     <div style="font-size:12px;color:#111;font-weight:700;margin-bottom:2px">현재 팔로워</div>
-     <div style="font-size:22px;font-weight:800;letter-spacing:-.5px">${_snapTxt('instaWeekCurrentFollower') || '—'}</div>
-    </td><td style="width:8px"></td>
-    <td style="vertical-align:top">${goalPanel('목표 대비 진행률 (팔로워 증가)', goal, actual, '명/일', true)}</td>
-   </tr></table>
-   <table style="border-collapse:separate;width:100%;margin-top:8px"><tr>
-    <td style="border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;padding:8px 12px;vertical-align:top;width:32%"><div style="font-size:12px;color:#111;font-weight:700;margin-bottom:2px">발행 (주간)</div><div style="font-size:16px;font-weight:800">${_snapTxt('instaWeekPublishBox') || '-'}</div></td><td style="width:8px"></td>
-    <td style="border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;padding:8px 12px;vertical-align:top"><div style="font-size:12px;color:#111;font-weight:700;margin-bottom:2px">조회수 (주간)</div><div style="font-size:16px;font-weight:800;color:#3b82f6">${_snapTxt('instaWeekViews') || '-'}<span style="font-size:11px;color:#64748b;font-weight:400"> · 일평균 ${_snapTxt('instaWeekViewsAvg') || '-'}</span></div></td>
-   </tr></table>
-   ${topPostsHtml('instagram', wr)}${noteHtml}`;
-  return { title: `인스타 주간보고 (${range})`, html: wrap(`인스타 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, inner) };
+   <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px">
+    ${box(lbl('현재 팔로워') + big(_snapTxt('instaWeekCurrentFollower') || '—'), '0 0 150px')}
+    ${goalPanel('목표 대비 진행률 (팔로워 증가)', goal, actual, '명/일', true)}
+   </div>
+   <div style="display:flex;gap:8px;align-items:stretch">
+    ${box(lbl('발행 (주간)') + `<div style="font-size:17px;font-weight:800">${_snapTxt('instaWeekPublishBox') || '-'}</div>`)}
+    ${box(lbl('조회수 (주간)') + `<div style="font-size:17px;font-weight:800;color:#3b82f6">${_snapTxt('instaWeekViews') || '-'}<span style="font-size:12px;color:#64748b;font-weight:400"> · 일평균 ${_snapTxt('instaWeekViewsAvg') || '-'}</span></div>`)}
+   </div>
+   ${topPostsHtml('instagram', wr)}${noteBox(_snapTxt('instaWeekNote'))}`;
+  return { title: `인스타 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, html: wrap(`인스타 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, inner) };
  }
 
  if (kind === 'thread-week') {
   const range = _snapTxt('threadWeekRange');
-  const note = _snapTxt('threadWeekNote');
   const goal = _num(_snapTxt('threadGraphGoal'));
   const actual = _num(_snapTxt('threadGraphActual'));
   const wr = getWeekRange(weekReportOffset.threads || 0);
-  const noteHtml = note ? `<div style="margin-top:10px;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px"><div style="font-size:12px;color:#111;font-weight:700;margin-bottom:4px">내용</div><div style="font-size:12px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap">${note.replace(/</g,'&lt;')}</div></div>` : '';
+  const viewsTotal = (_snapTxt('threadWeekPublishSub')||'').replace('주간 조회수 ','') || '-';
   const inner = `
-   <table style="border-collapse:separate;width:100%"><tr>
-    <td style="width:130px;border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;padding:10px 14px;vertical-align:middle">
-     <div style="font-size:12px;color:#111;font-weight:700;margin-bottom:2px">현재 팔로워</div>
-     <div style="font-size:22px;font-weight:800;letter-spacing:-.5px">${_snapTxt('threadWeekCurrentFollower') || '—'}</div>
-    </td><td style="width:8px"></td>
-    <td style="vertical-align:top">${goalPanel('목표 대비 진행률 (조회수)', goal, actual, '회/일', false)}</td>
-   </tr></table>
-   <table style="border-collapse:separate;width:100%;margin-top:8px"><tr>
-    <td style="border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;padding:8px 12px;vertical-align:top;width:32%"><div style="font-size:12px;color:#111;font-weight:700;margin-bottom:2px">발행 (주간)</div><div style="font-size:16px;font-weight:800">${_snapTxt('threadWeekPublishBox') || '-'}</div></td><td style="width:8px"></td>
-    <td style="border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;padding:8px 12px;vertical-align:top"><div style="font-size:12px;color:#111;font-weight:700;margin-bottom:2px">주간 조회수</div><div style="font-size:16px;font-weight:800;color:#3b82f6">${(_snapTxt('threadWeekPublishSub')||'').replace('주간 조회수 ','') || '-'}</div></td>
-   </tr></table>
-   ${topPostsHtml('threads', wr)}${noteHtml}`;
-  return { title: `스레드 주간보고 (${range})`, html: wrap(`스레드 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, inner) };
+   <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px">
+    ${box(lbl('현재 팔로워') + big(_snapTxt('threadWeekCurrentFollower') || '—'), '0 0 150px')}
+    ${goalPanel('목표 대비 진행률 (조회수)', goal, actual, '회/일', false)}
+   </div>
+   <div style="display:flex;gap:8px;align-items:stretch">
+    ${box(lbl('발행 (주간)') + `<div style="font-size:17px;font-weight:800">${_snapTxt('threadWeekPublishBox') || '-'}</div>`)}
+    ${box(lbl('주간 조회수') + `<div style="font-size:17px;font-weight:800;color:#3b82f6">${viewsTotal}</div>`)}
+   </div>
+   ${topPostsHtml('threads', wr)}${noteBox(_snapTxt('threadWeekNote'))}`;
+  return { title: `스레드 인사이트 주간보고 (${range})`, html: wrap(`스레드 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, inner) };
  }
 
  if (kind === 'hashtag-exposure') {

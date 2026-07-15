@@ -377,9 +377,58 @@ table.resizable th .col-resizer:active{
 
 /* sort header */
 .sort-th:hover{color:var(--text) !important;}
+
+/* ══════════ 모바일 반응형 (768px 이하) ══════════ */
+.mobile-menu-btn{display:none}
+@media (max-width: 768px){
+ /* 사이드바: 숨김 + 햄버거로 열기 */
+ .sidebar{position:fixed;left:-280px;top:0;z-index:2000;width:260px;height:100vh;height:100dvh;transition:left .25s ease;box-shadow:none}
+ .sidebar.mobile-open{left:0;box-shadow:0 0 40px rgba(0,0,0,0.25)}
+ .mobile-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1999}
+ .mobile-sidebar-overlay.show{display:block}
+ .mobile-menu-btn{display:flex;align-items:center;justify-content:center;position:fixed;top:10px;left:10px;z-index:1998;width:40px;height:40px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+ /* 메인 전체폭 + 상단 여백(햄버거 자리) */
+ .main{width:100%}
+ .page-top{padding-left:56px !important}
+ .content-area{padding:12px !important;overflow-x:hidden}
+ /* 인라인 그리드 → 1열 (캘린더 7열 그리드는 제외) */
+ .content-area div[style*="display:grid"]:not(.cal-grid):not([id$="CalGrid"]){grid-template-columns:1fr !important}
+ .stat-grid,.dash-grid{grid-template-columns:1fr !important}
+ /* 캘린더: 7열 유지하되 축소 */
+ .cal-grid{font-size:10px}
+ .cal-grid .cal-day,.cal-grid>div{min-height:74px !important;padding:2px !important}
+ /* 표: 가로 스크롤 허용 */
+ table{min-width:640px}
+ [id*="TableView"],[id*="tableView"],.table-wrap{overflow-x:auto !important;-webkit-overflow-scrolling:touch}
+ /* 모달 */
+ .modal{max-width:95vw !important;padding:16px !important}
+ /* 버튼/필터 줄바꿈 여유 */
+ .page-actions{flex-wrap:wrap;gap:6px}
+ .filter-bar{gap:6px !important}
+ /* 주간보고 등 큰 숫자 살짝 축소 */
+ body{font-size:14px}
+}
 </style>
 </head>
 <body>
+<button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="메뉴">☰</button>
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="toggleMobileSidebar(false)"></div>
+<script>
+function toggleMobileSidebar(force){
+ const sb = document.querySelector('.sidebar');
+ const ov = document.getElementById('mobileSidebarOverlay');
+ if (!sb) return;
+ const open = typeof force === 'boolean' ? force : !sb.classList.contains('mobile-open');
+ sb.classList.toggle('mobile-open', open);
+ if (ov) ov.classList.toggle('show', open);
+}
+// 모바일에서 메뉴(페이지 이동) 클릭 시 사이드바 자동 닫기
+document.addEventListener('click', (e) => {
+ if (window.innerWidth > 768) return;
+ const nav = e.target.closest('.sidebar .nav-item, .sidebar a');
+ if (nav) setTimeout(() => toggleMobileSidebar(false), 120);
+});
+</script>
 
 <!-- SIDEBAR -->
 <nav class="sidebar"> <div class="sidebar-logo" style="flex-direction:column;align-items:flex-start;gap:6px"> <div style="display:flex;align-items:center;gap:10px;width:100%"> <div style="flex:1"> <div class="logo-name" style="font-size:var(--fs-sm);letter-spacing:-.2px">META 채널 관리</div> <div class="logo-handle" style="font-size:var(--fs-xs);margin-top:1px">ozkiz · AI 콘텐츠 매니저</div> </div> </div> <!-- 채널 토글 --> <div style="display:flex;gap:4px;width:100%;background:var(--surface3);border-radius:8px;padding:3px"> <button id="channelInstaBtn" onclick="switchChannel('instagram')" style="flex:1;padding:5px 8px;font-size:var(--fs-xs);font-weight:700;border:none;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)">인스타</button> <button id="channelThreadsBtn" onclick="switchChannel('threads')" style="flex:1;padding:5px 8px;font-size:var(--fs-xs);font-weight:500;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--text2)">스레드</button> </div> <div style="padding:0 2px;line-height:1.4"> <div style="font-size:var(--fs-xs);color:var(--text3)" id="updatedDate"></div> </div> </div> <!-- ━━━ 인스타그램 채널 메뉴 ━━━ --> <div class="channel-menu" data-channel="instagram"> <div class="sidebar-section">운영 (인스타)</div> <button class="nav-item active" onclick="goPage('insta-dashboard',this)"> <span class="nav-icon">◎</span>인사이트

@@ -5011,6 +5011,14 @@ function getReportRange(channel) {
 }
 
 // 직접 설정 적용
+// 보고 기간의 일수 (양끝 포함, 최소 1)
+function reportDays(start, end) {
+ try {
+  const d = Math.round((new Date(end + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000) + 1;
+  return Math.max(1, d);
+ } catch (e) { return 7; }
+}
+
 function applyCustomWeekRange(channel) {
  const p = channel === 'instagram' ? 'insta' : 'thread';
  const sv = document.getElementById(p + 'CustomStart')?.value;
@@ -5177,7 +5185,7 @@ function renderInstaWeeklyReport() {
  }
 
  const totalGain = (endFollowers >0 && startFollowers >0) ? endFollowers - startFollowers : 0;
- const dailyAvg = (endFollowers >0 && startFollowers >0) ? Math.round(totalGain / 7) : null;
+ const dailyAvg = (endFollowers >0 && startFollowers >0) ? Math.round(totalGain / reportDays(start, end)) : null;
 
  // 표시
  document.getElementById('instaWeekActual').textContent = dailyAvg === null ? '-' : (dailyAvg >= 0 ? '+' : '') + dailyAvg.toLocaleString();
@@ -5211,7 +5219,7 @@ function renderInstaWeeklyReport() {
  }
  });
 
- const viewsAvg = Math.round(totalViews / 7);
+ const viewsAvg = Math.round(totalViews / reportDays(start, end));
  document.getElementById('instaWeekViews').textContent = totalViews.toLocaleString();
  document.getElementById('instaWeekViewsAvg').textContent = viewsAvg.toLocaleString();
  document.getElementById('instaWeekViewsPosts').textContent =
@@ -5311,7 +5319,7 @@ function renderThreadWeeklyReport() {
  }
  });
 
- const dailyAvg = Math.round(totalViews / 7);
+ const dailyAvg = Math.round(totalViews / reportDays(start, end));
  document.getElementById('threadWeekActual').textContent = dailyAvg.toLocaleString();
 
  const statusEl = document.getElementById('threadWeekStatus');
@@ -5482,9 +5490,9 @@ async function runWeekAIAnalysis(channel, provider) {
  startFollowers: startFol,
  endFollowers: endFol,
  totalGain: endFol - startFol,
- dailyAvg: Math.round((endFol - startFol) / 7),
+ dailyAvg: Math.round((endFol - startFol) / reportDays(start, end)),
  goal: goal,
- achieved: ((endFol - startFol) / 7) >= goal
+ achieved: ((endFol - startFol) / reportDays(start, end)) >= goal
  };
  } else {
  (sheetData || []).forEach(r => {
@@ -5505,7 +5513,7 @@ async function runWeekAIAnalysis(channel, provider) {
  }
 
  // 채널별 달성 여부
- const dailyAvg = Math.round(totalViews / 7);
+ const dailyAvg = Math.round(totalViews / reportDays(start, end));
  let achievement, diff;
  if (channel === 'instagram') {
  // 인스타는 팔로워가 목표

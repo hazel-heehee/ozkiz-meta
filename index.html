@@ -4788,6 +4788,7 @@ function toggleWeeklyReport(channel) {
  const isHidden = content.style.display === 'none';
  content.style.display = isHidden ? 'block' : 'none';
  if (arrow) arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+ if (isHidden && typeof renderWeekTrendChart === 'function') setTimeout(() => renderWeekTrendChart(channel), 30); // 펼친 뒤 차트 재그리기
 
  // 상태 저장
  localStorage.setItem(`oz_${channel}_week_collapsed`, isHidden ? '0' : '1');
@@ -5463,7 +5464,9 @@ async function saveWeekGoal() {
 function drawWeekTrendChart(canvasId, points, goal, color, unit) {
  const canvas = document.getElementById(canvasId);
  if (!canvas) return;
- const cssW = canvas.clientWidth || canvas.parentElement.clientWidth || 600;
+ const cssW = canvas.clientWidth || canvas.parentElement.clientWidth || 0;
+ if (!cssW) { canvas.__needsRedraw = true; return; } // 숨겨진 상태 — 보일 때 다시 그림 (저해상도 깨짐 방지)
+ canvas.__needsRedraw = false;
  const cssH = 150;
  const dpr = window.devicePixelRatio || 1;
  canvas.width = cssW * dpr; canvas.height = cssH * dpr;
@@ -5516,6 +5519,42 @@ function drawWeekTrendChart(canvasId, points, goal, color, unit) {
   ctx.fillStyle = (goal > 0 && p.value >= goal) ? '#16a34a' : color;
   ctx.fill();
  });
+ // 마우스 오버 툴팁 (점 근처에서 날짜·수치 표시)
+ canvas.__trendPts = points.map((p, i) => p.value == null ? null : { px: x(i), py: y(p.value), label: p.label, value: p.value }).filter(Boolean);
+ canvas.__trendUnit = unit;
+ if (!canvas.__tipBound) {
+  canvas.__tipBound = true;
+  canvas.addEventListener('mousemove', (ev) => {
+   const rect = canvas.getBoundingClientRect();
+   const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
+   let best = null, bestD = 18;
+   (canvas.__trendPts || []).forEach(pt => {
+    const d = Math.hypot(pt.px - mx, pt.py - my);
+    if (d < bestD) { bestD = d; best = pt; }
+   });
+   let tip = document.getElementById('weekTrendTooltip');
+   if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'weekTrendTooltip';
+    tip.style.cssText = 'position:fixed;z-index:9999;background:#111827;color:#fff;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;pointer-events:none;display:none;box-shadow:0 2px 8px rgba(0,0,0,0.25);white-space:nowrap';
+    document.body.appendChild(tip);
+   }
+   if (best) {
+    tip.textContent = `${best.label} · ${best.value.toLocaleString()}${canvas.__trendUnit || ''}`;
+    tip.style.left = (ev.clientX + 12) + 'px';
+    tip.style.top = (ev.clientY - 26) + 'px';
+    tip.style.display = 'block';
+    canvas.style.cursor = 'pointer';
+   } else {
+    tip.style.display = 'none';
+    canvas.style.cursor = 'default';
+   }
+  });
+  canvas.addEventListener('mouseleave', () => {
+   const tip = document.getElementById('weekTrendTooltip');
+   if (tip) tip.style.display = 'none';
+  });
+ }
  // X 라벨 (격일)
  ctx.fillStyle = '#94a3b8'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
  points.forEach((p, i) => {
@@ -5525,6 +5564,17 @@ function drawWeekTrendChart(canvasId, points, goal, color, unit) {
 }
 
 // 채널별 최근 14일 데이터 수집 → 차트 (보고 기간 종료일 기준 직전 14일)
+let __trendResizeTimer = null;
+window.addEventListener('resize', () => {
+ clearTimeout(__trendResizeTimer);
+ __trendResizeTimer = setTimeout(() => {
+  try {
+   if (document.getElementById('threadWeekTrendChart')?.clientWidth) renderWeekTrendChart('threads');
+   if (document.getElementById('instaWeekTrendChart')?.clientWidth) renderWeekTrendChart('instagram');
+  } catch(e){}
+ }, 250);
+});
+
 function renderWeekTrendChart(channel) {
  try {
   const { end } = getReportRange(channel);
@@ -8568,6 +8618,13 @@ function goPage(name, btn) {
  else renderInstaFeedbackList();
  }
  if (name === 'insta-content') setupInstaContentPlanPage();
+ if (name === 'dashboard' || name === 'insta-dashboard') {
+ setTimeout(() => { try {
+ const ch = name === 'dashboard' ? 'threads' : 'instagram';
+ const cv = document.getElementById(ch === 'threads' ? 'threadWeekTrendChart' : 'instaWeekTrendChart');
+ if (cv && (cv.__needsRedraw || !cv.width) && typeof renderWeekTrendChart === 'function') renderWeekTrendChart(ch);
+ } catch(e){} }, 60);
+ }
  if (name === 'carousel-studio') {
  const fr = document.getElementById('carouselFrame');
  if (fr && !fr.src) fr.src = 'carousel.html'; // 첫 진입 시에만 로드 (파일이 커서 lazy)

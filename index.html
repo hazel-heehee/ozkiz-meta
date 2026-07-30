@@ -3642,7 +3642,7 @@ async function renderInstaCalListView() {
  // 캡션 텍스트 input
  const textInline = `<input type="text" value="${(r.text||'').replace(/"/g,'&quot;')}" placeholder="캡션..."
  onchange="updateInstaPostCell(${r.id},'text',this.value,this)" onclick="event.stopPropagation()"
- style="${baseInput};font-size:var(--fs-xs)" ${focusHandlers}/>`;
+ style="${baseInput};font-size:var(--fs-xs);width:64px;min-width:64px" ${focusHandlers}/>`;
 
  // 숫자 input 헬퍼
  const numIn = (field, val, color, bg) => `<input type="text" inputmode="numeric" value="${val ? Number(val).toLocaleString() : ''}" placeholder="0"
@@ -3694,7 +3694,7 @@ async function renderInstaCalListView() {
   <td style="padding:2px;text-align:center">${tb}</td>
   <td style="padding:2px;text-align:center" class="col-detail">${cb}</td>
   <td style="padding:2px;text-align:center">${sd}</td>
-  <td style="padding:4px;max-width:40px"><span style="color:#475569;font-size:var(--fs-xs);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${title}</span></td>
+  <td style="padding:4px;max-width:40px"><span style="color:#475569;font-size:var(--fs-xs);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;width:64px">${title}</span></td>
   <td style="padding:4px;text-align:right;background:#e8eaee">${sd}</td><td style="padding:4px;text-align:right;background:#e8eaee">${sd}</td>
   <td style="padding:4px;text-align:right;background:#e8eaee">${sd}</td><td style="padding:4px;text-align:right;background:#e8eaee" class="col-detail">${sd}</td>
   <td style="padding:4px;text-align:right;background:#e8eaee">${sd}</td><td style="padding:4px;text-align:right;background:#e8eaee">${sd}</td>

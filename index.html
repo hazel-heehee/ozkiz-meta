@@ -2271,7 +2271,8 @@ function renderInstaRecentCal() {
  post_type: r.post_type || '',
  category: r.category || '',
  image_url: String(r.image_url || '').trim(),
- video_url: String(r.video_url || '').trim()
+ video_url: String(r.video_url || '').trim(),
+ views: r.views, likes: r.likes, comments: r.comments, saves: r.saves, shares: r.shares
  });
  }
  });
@@ -3113,7 +3114,8 @@ function renderInstaCalendar() {
  post_type: r.post_type || '',
  category: r.category || '',
  image_url: String(r.image_url || '').trim(),
- video_url: String(r.video_url || '').trim()
+ video_url: String(r.video_url || '').trim(),
+ views: r.views, likes: r.likes, comments: r.comments, saves: r.saves, shares: r.shares
  });
  }
  });

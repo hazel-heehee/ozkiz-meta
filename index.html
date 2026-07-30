@@ -1107,6 +1107,61 @@ function buildMeetingSnapshotHtml(kind) {
    <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px"><span style="color:#94a3b8">진회색 선 = 목표</span><span style="color:${txtColor};font-weight:700">${noteTxt}</span></div>
   </div>`;
  };
+ // 주간 활동 + 차주 계획 미니 캘린더 (보고 기간 ~ 기간 끝+7일)
+ const miniCalHtml = (channel, wr) => {
+  try {
+   const sd = new Date(wr.start + 'T00:00:00');
+   const ed = new Date(wr.end + 'T00:00:00');
+   const ed7 = new Date(ed); ed7.setDate(ed.getDate() + 7);
+   const days = [];
+   for (let d = new Date(sd); d <= ed7; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+   const k = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+   const fmShort = v => { v = parseInt(v) || 0; return v >= 10000 ? (v/10000).toFixed(1).replace(/\.0$/,'') + '만' : v >= 1000 ? (v/1000).toFixed(1).replace(/\.0$/,'') + '천' : String(v); };
+   // 발행 글 (날짜별)
+   const pubBy = {};
+   const src = channel === 'instagram' ? (instaPosts || []) : (sheetData || []);
+   src.forEach(r => {
+    const dk = String(r.date || '').slice(0, 10);
+    if (!dk) return;
+    (pubBy[dk] = pubBy[dk] || []).push(r);
+   });
+   // 예약 글 (날짜별)
+   const schBy = {};
+   const ssrc = channel === 'instagram' ? (instaScheduledPosts || []) : ((typeof scheduledPosts !== 'undefined' ? scheduledPosts : []) || []);
+   ssrc.forEach(p => {
+    const dk = `${p.year}-${String((p.month||0)+1).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`;
+    (schBy[dk] = schBy[dk] || []).push(p);
+   });
+   const endKey = k(ed);
+   const cell = (d) => {
+    const dk = k(d);
+    const dow = d.getDay();
+    const dowN = ['일','월','화','수','목','금','토'][dow];
+    const dc = dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : '#64748b';
+    const isPlan = dk > endKey;
+    const pubs = (pubBy[dk] || []).slice(0, 2).map(r => {
+     const t = String(r.text || r.title || '').trim().slice(0, 12) || '게시물';
+     const v = parseInt(r.views) ? ` <span style="color:#2563eb">${fmShort(r.views)}</span>` : '';
+     return `<div style="font-size:10px;color:#111;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">· ${t}${v}</div>`;
+    }).join('');
+    const schs = (schBy[dk] || []).slice(0, 2).map(p => {
+     const t = String(p.title || p.content || '').trim().slice(0, 12) || '(예약)';
+     const cat = p.category ? `<span style="background:#ede9fe;color:#6d28d9;padding:0 3px;border-radius:2px;font-size:9px;font-weight:700">${String(p.category).slice(0,4)}</span> ` : '';
+     return `<div style="font-size:10px;color:#64748b;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cat}${t}</div>`;
+    }).join('');
+    return `<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:4px;padding:4px 5px;min-height:58px;background:${isPlan ? '#f8fafc' : '#fff'}">
+     <div style="font-size:10px;font-weight:800;color:${dc};margin-bottom:2px">${d.getMonth()+1}/${d.getDate()}(${dowN})${isPlan ? ' <span style="color:#94a3b8;font-weight:600">계획</span>' : ''}</div>
+     ${pubs}${schs}</div>`;
+   };
+   let weeksHtml = '';
+   for (let i = 0; i < days.length; i += 7) {
+    weeksHtml += `<div style="display:flex;gap:4px;margin-bottom:4px">${days.slice(i, i + 7).map(cell).join('')}</div>`;
+   }
+   return `<div style="margin-top:10px">
+    <div style="font-size:13px;color:#111;font-weight:700;margin-bottom:4px">콘텐츠 캘린더 <span style="color:#94a3b8;font-weight:400">(보고 기간 활동 + 차주 계획 7일 · 회색 글씨 = 예약)</span></div>
+    ${weeksHtml}</div>`;
+  } catch (e) { return ''; }
+ };
  // 추이 차트 → 이미지 (회의록에 그대로 붙도록)
  const trendImg = (id, title) => {
   try {
@@ -1160,7 +1215,7 @@ function buildMeetingSnapshotHtml(kind) {
     ${box(lbl('발행 (주간)') + `<div style="font-size:17px;font-weight:800">${_snapTxt('instaWeekPublishBox') || '-'}</div>`)}
     ${box(lbl('조회수 (주간)') + `<div style="font-size:17px;font-weight:800;color:#3b82f6">${_snapTxt('instaWeekViews') || '-'}<span style="font-size:12px;color:#64748b;font-weight:400"> · 일평균 ${_snapTxt('instaWeekViewsAvg') || '-'}</span></div>`)}
    </div>
-   ${topPostsHtml('instagram', wr)}${noteBox(_snapTxt('instaWeekNote'))}`;
+   ${topPostsHtml('instagram', wr)}${miniCalHtml('instagram', wr)}${noteBox(_snapTxt('instaWeekNote'))}`;
   return { title: `인스타 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, html: wrap(`인스타 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, inner) };
  }
 
@@ -1180,7 +1235,7 @@ function buildMeetingSnapshotHtml(kind) {
     ${box(lbl('발행 (주간)') + `<div style="font-size:17px;font-weight:800">${_snapTxt('threadWeekPublishBox') || '-'}</div>`)}
     ${box(lbl('주간 조회수') + `<div style="font-size:17px;font-weight:800;color:#3b82f6">${viewsTotal}</div>`)}
    </div>
-   ${topPostsHtml('threads', wr)}${noteBox(_snapTxt('threadWeekNote'))}`;
+   ${topPostsHtml('threads', wr)}${miniCalHtml('threads', wr)}${noteBox(_snapTxt('threadWeekNote'))}`;
   return { title: `스레드 인사이트 주간보고 (${range})`, html: wrap(`스레드 인사이트 주간보고 <span style="font-weight:400;color:#64748b">(${range})</span>`, inner) };
  }
 
@@ -3491,7 +3546,8 @@ async function renderInstaCalListView() {
  'UGC': { bg:'#e0e7ff', text:'#3730a3' },
  '이벤트, 공지': { bg:'#fef3c7', text:'#92400e' },
  '모델컷': { bg:'#e0e7ff', text:'#3730a3' },
- '제품컷': { bg:'#fef3c7', text:'#92400e' }
+ '제품컷': { bg:'#fef3c7', text:'#92400e' },
+ '브랜딩': { bg:'#dcfce7', text:'#166534' }
  };
  const typeColors = {
  '릴스': { bg:'#fce7f3', text:'#9f1239' },
@@ -5553,16 +5609,24 @@ function drawWeekTrendChart(canvasId, points, goal, color, unit) {
   return;
  }
  const maxV = Math.max(goal * 1.15, Math.max(...vals) * 1.1, 1);
+ const minV = Math.min(0, Math.min(...vals) * 1.15); // 음수(팔로워 감소 등)도 잘리지 않게
+ const range = (maxV - minV) || 1;
  const x = i => padL + (points.length <= 1 ? W / 2 : (W * i) / (points.length - 1));
- const y = v => padT + H - (H * Math.min(v, maxV)) / maxV;
- // 그리드 (3줄)
+ const y = v => padT + H - (H * (Math.max(minV, Math.min(v, maxV)) - minV)) / range;
+ // 그리드: 최소·0·최대
  ctx.strokeStyle = '#eef2f7'; ctx.lineWidth = 1;
  ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
- [0, 0.5, 1].forEach(f => {
-  const v = maxV * f, yy = y(v);
+ const gridVals = minV < 0 ? [minV, 0, maxV] : [0, maxV * 0.5, maxV];
+ gridVals.forEach(v => {
+  const yy = y(v);
   ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(padL + W, yy); ctx.stroke();
   ctx.fillText(Math.round(v).toLocaleString(), padL - 6, yy + 3);
  });
+ // 0 기준선 (음수 구간이 있을 때 진하게)
+ if (minV < 0) {
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(padL, y(0)); ctx.lineTo(padL + W, y(0)); ctx.stroke();
+ }
  // 목표 점선
  if (goal > 0 && goal <= maxV) {
   const gy = y(goal);
@@ -5587,7 +5651,7 @@ function drawWeekTrendChart(canvasId, points, goal, color, unit) {
  points.forEach((p, i) => {
   if (p.value == null) return;
   ctx.beginPath(); ctx.arc(x(i), y(p.value), 3, 0, Math.PI * 2);
-  ctx.fillStyle = (goal > 0 && p.value >= goal) ? '#16a34a' : color;
+  ctx.fillStyle = p.value < 0 ? '#dc2626' : (goal > 0 && p.value >= goal) ? '#16a34a' : color;
   ctx.fill();
  });
  // 점 위 값 상시 표시 (호버 없이도 숫자가 보이도록)
@@ -5596,11 +5660,12 @@ function drawWeekTrendChart(canvasId, points, goal, color, unit) {
   if (p.value == null) return;
   const vx = x(i), vy = y(p.value);
   const txt = p.value.toLocaleString();
+  const ly = p.value < 0 ? vy + 13 : vy - 7; // 음수는 점 아래에
   // 흰 테두리로 가독성 확보
   ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-  ctx.strokeText(txt, vx, vy - 7);
-  ctx.fillStyle = (goal > 0 && p.value >= goal) ? '#15803d' : '#334155';
-  ctx.fillText(txt, vx, vy - 7);
+  ctx.strokeText(txt, vx, ly);
+  ctx.fillStyle = p.value < 0 ? '#dc2626' : (goal > 0 && p.value >= goal) ? '#15803d' : '#334155';
+  ctx.fillText(txt, vx, ly);
  });
  // 마우스 오버 툴팁 (점 근처에서 날짜·수치 표시)
  canvas.__trendPts = points.map((p, i) => p.value == null ? null : { px: x(i), py: y(p.value), label: p.label, value: p.value }).filter(Boolean);

@@ -1159,8 +1159,8 @@ function buildMeetingSnapshotHtml(kind) {
    <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px">
     ${box(lbl('현재 팔로워') + big(_snapTxt('instaWeekCurrentFollower') || '—'), '0 0 150px')}
     ${goalPanel('목표 대비 진행률 (팔로워 증가)', goal, actual, '명/일', true)}
-    ${trendImg('instaWeekTrendChart', '최근 2주 일별 팔로워 증가 추이')}
    </div>
+   ${trendImg('instaWeekTrendChart', '최근 2주 일별 팔로워 증가 추이')}
    <div style="display:flex;gap:8px;align-items:stretch">
     ${box(lbl('발행 (주간)') + `<div style="font-size:17px;font-weight:800">${_snapTxt('instaWeekPublishBox') || '-'}</div>`)}
     ${box(lbl('조회수 (주간)') + `<div style="font-size:17px;font-weight:800;color:#3b82f6">${_snapTxt('instaWeekViews') || '-'}<span style="font-size:12px;color:#64748b;font-weight:400"> · 일평균 ${_snapTxt('instaWeekViewsAvg') || '-'}</span></div>`)}
@@ -1179,8 +1179,8 @@ function buildMeetingSnapshotHtml(kind) {
    <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px">
     ${box(lbl('현재 팔로워') + big(_snapTxt('threadWeekCurrentFollower') || '—'), '0 0 150px')}
     ${goalPanel('목표 대비 진행률 (조회수)', goal, actual, '회/일', false)}
-    ${trendImg('threadWeekTrendChart', '최근 2주 일별 조회수 추이')}
    </div>
+    ${trendImg('threadWeekTrendChart', '최근 2주 일별 조회수 추이')}
    <div style="display:flex;gap:8px;align-items:stretch">
     ${box(lbl('발행 (주간)') + `<div style="font-size:17px;font-weight:800">${_snapTxt('threadWeekPublishBox') || '-'}</div>`)}
     ${box(lbl('주간 조회수') + `<div style="font-size:17px;font-weight:800;color:#3b82f6">${viewsTotal}</div>`)}

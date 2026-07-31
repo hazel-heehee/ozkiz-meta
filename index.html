@@ -5704,13 +5704,17 @@ function buildWeekMiniCalHtml(channel, wr) {
      return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:1px">${im}<span style="font-size:10px;color:#111;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${im ? '' : '· '}${t}${v}</span></div>`;
     }).join('');
     const schs = (schBy[dk] || []).slice(0, 2).map(p => {
-     const t = String(p.title || p.content || '').trim().slice(0, 12) || '(예약)';
+     const title = String(p.title || '').trim();
+     const cap = String(p.content || '').trim();
+     const t = (title || cap).slice(0, 12) || '(예약)';
      const cat = p.category ? `<span style="background:#ede9fe;color:#6d28d9;padding:0 3px;border-radius:2px;font-size:9px;font-weight:700">${String(p.category).slice(0,4)}</span> ` : '';
      const im = (p.image_url || '').trim() ? `<img src="${String(p.image_url).trim()}" style="width:22px;height:22px;object-fit:cover;border-radius:3px;flex:0 0 22px;border:1px solid #e2e8f0;opacity:0.75" onerror="this.style.display='none'"/>` : '';
-     return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:1px">${im}<span style="font-size:10px;color:#64748b;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${cat}${t}</span></div>`;
+     // 제목과 별개로 캡션이 있으면 아랫줄에 표시
+     const capHtml = (title && cap) ? `<div style="font-size:9px;color:#94a3b8;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cap.slice(0, 20)}</div>` : '';
+     return `<div style="margin-bottom:2px"><div style="display:flex;align-items:center;gap:3px">${im}<span style="font-size:10px;color:#64748b;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${cat}${t}</span></div>${capHtml}</div>`;
     }).join('');
     return `<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:4px;padding:4px 5px;min-height:66px;background:${isPlan ? '#f8fafc' : '#fff'}">
-     <div style="font-size:10px;font-weight:800;color:${dc};margin-bottom:2px">${d.getMonth()+1}/${d.getDate()}(${dowN})${isPlan ? ' <span style="color:#94a3b8;font-weight:600">계획</span>' : ''}</div>
+     <div style="font-size:10px;font-weight:800;color:${dc};margin-bottom:2px">${d.getMonth()+1}/${d.getDate()}(${dowN})</div>
      ${pubs}${schs}</div>`;
    };
    let weeksHtml = '';

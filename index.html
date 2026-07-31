@@ -5714,7 +5714,7 @@ function buildWeekMiniCalHtml(channel, wr) {
      const capHtml = (title && cap) ? `<div style="font-size:9px;color:#94a3b8;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cap.slice(0, 20)}</div>` : '';
      return `<div style="margin-bottom:2px"><div style="display:flex;align-items:center;gap:3px">${im}<span style="font-size:10px;color:#64748b;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${cat}${t}</span></div>${capHtml}</div>`;
     }).join('');
-    return `<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:4px;padding:4px 5px;min-height:66px;background:${isPlan ? '#f8fafc' : '#fff'}">
+    return `<div style="flex:0 0 calc(20% - 4px);box-sizing:border-box;min-width:0;border:1px solid #e2e8f0;border-radius:4px;padding:4px 5px;min-height:66px;background:${isPlan ? '#f8fafc' : '#fff'}">
      <div style="font-size:10px;font-weight:800;color:${dc};margin-bottom:2px">${d.getMonth()+1}/${d.getDate()}(${dowN})</div>
      ${pubs}${schs}</div>`;
    };
@@ -5725,17 +5725,8 @@ function buildWeekMiniCalHtml(channel, wr) {
     const dk = k(d);
     return (pubBy[dk] && pubBy[dk].length) || (schBy[dk] && schBy[dk].length);
    });
-   // 월요일 기준 주 단위로 줄바꿈
-   let weeksHtml = '';
-   let row = [];
-   visibleDays.forEach(d => {
-    if (d.getDay() === 1 && row.length) { // 월요일 시작 → 새 줄
-     weeksHtml += `<div style="display:flex;gap:4px;margin-bottom:4px">${row.join('')}</div>`;
-     row = [];
-    }
-    row.push(cell(d));
-   });
-   if (row.length) weeksHtml += `<div style="display:flex;gap:4px;margin-bottom:4px">${row.join('')}</div>`;
+   // 고정 폭 칸을 순서대로 배치 (한 줄 5칸, 자동 줄바꿈 — 칸 크기 항상 동일)
+   const weeksHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px">${visibleDays.map(cell).join('')}</div>`;
    return `<div style="margin-top:10px">
     <div style="font-size:13px;color:#111;font-weight:700;margin-bottom:4px">콘텐츠 캘린더 <span style="color:#94a3b8;font-weight:400">(보고 기간 활동 + 차주 계획 7일 · 회색 글씨 = 예약)</span></div>
     ${weeksHtml}</div>`;

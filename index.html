@@ -2039,6 +2039,7 @@ window.addEventListener('load', async () => {
  // 예약 글: 먼저 마이그레이션 시도 → 그 후 로드
  await migrateScheduledPostsToSupabase();
  loadScheduledPosts();
+ loadInstaScheduledPosts(); // 인스타 예약 글도 초기 로드 (주간보고 차주 계획에 필요 — 탭 이동 없이도)
  document.getElementById('updatedDate').textContent = '업데이트 ' + new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
 
  // 최근 게시물 뷰 모드 복원 (기본: 표)
@@ -2951,6 +2952,7 @@ async function loadInstaScheduledPosts() {
  post_type: p.post_type || '',
  category: p.category || '',
  cta: p.cta || '',
+ image_url: p.image_url || '',
  _aiGenerated: !!p.ai_generated
  }));
  console.log(` insta_scheduled_posts 로드: ${instaScheduledPosts.length}개`);
@@ -4868,7 +4870,7 @@ function toggleWeeklyReport(channel) {
  const isHidden = content.style.display === 'none';
  content.style.display = isHidden ? 'block' : 'none';
  if (arrow) arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
- if (isHidden && typeof renderWeekTrendChart === 'function') setTimeout(() => renderWeekTrendChart(channel), 30); // 펼친 뒤 차트 재그리기
+ if (isHidden && typeof renderWeekTrendChart === 'function') setTimeout(() => { renderWeekTrendChart(channel); if (typeof renderWeekPlanCal === 'function') renderWeekPlanCal(channel); }, 30); // 펼친 뒤 차트·캘린더 재그리기
 
  // 상태 저장
  localStorage.setItem(`oz_${channel}_week_collapsed`, isHidden ? '0' : '1');
@@ -8802,6 +8804,7 @@ function goPage(name, btn) {
  const ch = name === 'dashboard' ? 'threads' : 'instagram';
  const cv = document.getElementById(ch === 'threads' ? 'threadWeekTrendChart' : 'instaWeekTrendChart');
  if (cv && (cv.__needsRedraw || !cv.width) && typeof renderWeekTrendChart === 'function') renderWeekTrendChart(ch);
+ if (typeof renderWeekPlanCal === 'function') renderWeekPlanCal(ch); // 예약글 늦게 로드된 경우 회복
  } catch(e){} }, 60);
  }
  if (name === 'carousel-studio') {

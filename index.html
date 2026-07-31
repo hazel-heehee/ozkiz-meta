@@ -2955,6 +2955,7 @@ async function loadInstaScheduledPosts() {
  }));
  console.log(` insta_scheduled_posts 로드: ${instaScheduledPosts.length}개`);
  if (currentChannel === 'instagram') renderInstaCalendar();
+ if (typeof renderWeekPlanCal === 'function') { try { renderWeekPlanCal('instagram'); } catch(e){} } // 주간보고 차주 계획 갱신
  } catch (e) {
  console.error('loadInstaScheduledPosts:', e);
  }
@@ -5717,10 +5718,24 @@ function buildWeekMiniCalHtml(channel, wr) {
      <div style="font-size:10px;font-weight:800;color:${dc};margin-bottom:2px">${d.getMonth()+1}/${d.getDate()}(${dowN})</div>
      ${pubs}${schs}</div>`;
    };
+   // 토·일은 발행/예약 글이 있을 때만 표시
+   const visibleDays = days.filter(d => {
+    const dow = d.getDay();
+    if (dow >= 1 && dow <= 5) return true;
+    const dk = k(d);
+    return (pubBy[dk] && pubBy[dk].length) || (schBy[dk] && schBy[dk].length);
+   });
+   // 월요일 기준 주 단위로 줄바꿈
    let weeksHtml = '';
-   for (let i = 0; i < days.length; i += 7) {
-    weeksHtml += `<div style="display:flex;gap:4px;margin-bottom:4px">${days.slice(i, i + 7).map(cell).join('')}</div>`;
-   }
+   let row = [];
+   visibleDays.forEach(d => {
+    if (d.getDay() === 1 && row.length) { // 월요일 시작 → 새 줄
+     weeksHtml += `<div style="display:flex;gap:4px;margin-bottom:4px">${row.join('')}</div>`;
+     row = [];
+    }
+    row.push(cell(d));
+   });
+   if (row.length) weeksHtml += `<div style="display:flex;gap:4px;margin-bottom:4px">${row.join('')}</div>`;
    return `<div style="margin-top:10px">
     <div style="font-size:13px;color:#111;font-weight:700;margin-bottom:4px">콘텐츠 캘린더 <span style="color:#94a3b8;font-weight:400">(보고 기간 활동 + 차주 계획 7일 · 회색 글씨 = 예약)</span></div>
     ${weeksHtml}</div>`;
@@ -8875,6 +8890,7 @@ async function loadScheduledPosts() {
  _aiGenerated: !!p.ai_generated
  }));
  console.log(` scheduled_posts 로드: ${scheduledPosts.length}개`);
+ if (typeof renderWeekPlanCal === 'function') { try { renderWeekPlanCal('threads'); } catch(e){} } // 주간보고 차주 계획 갱신
  if (typeof renderCalendar === 'function') renderCalendar();
  } catch (e) {
  console.error('loadScheduledPosts:', e);

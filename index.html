@@ -5700,14 +5700,16 @@ function buildWeekMiniCalHtml(channel, wr) {
     const pubs = (pubBy[dk] || []).slice(0, 2).map(r => {
      const t = String(r.text || r.title || '').trim().slice(0, 12) || '게시물';
      const v = parseInt(r.views) ? ` <span style="color:#2563eb">${fmShort(r.views)}</span>` : '';
-     return `<div style="font-size:10px;color:#111;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">· ${t}${v}</div>`;
+     const im = (r.image_url || '').trim() ? `<img src="${String(r.image_url).trim()}" style="width:22px;height:22px;object-fit:cover;border-radius:3px;flex:0 0 22px;border:1px solid #e2e8f0" onerror="this.style.display='none'"/>` : '';
+     return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:1px">${im}<span style="font-size:10px;color:#111;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${im ? '' : '· '}${t}${v}</span></div>`;
     }).join('');
     const schs = (schBy[dk] || []).slice(0, 2).map(p => {
      const t = String(p.title || p.content || '').trim().slice(0, 12) || '(예약)';
      const cat = p.category ? `<span style="background:#ede9fe;color:#6d28d9;padding:0 3px;border-radius:2px;font-size:9px;font-weight:700">${String(p.category).slice(0,4)}</span> ` : '';
-     return `<div style="font-size:10px;color:#64748b;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cat}${t}</div>`;
+     const im = (p.image_url || '').trim() ? `<img src="${String(p.image_url).trim()}" style="width:22px;height:22px;object-fit:cover;border-radius:3px;flex:0 0 22px;border:1px solid #e2e8f0;opacity:0.75" onerror="this.style.display='none'"/>` : '';
+     return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:1px">${im}<span style="font-size:10px;color:#64748b;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${cat}${t}</span></div>`;
     }).join('');
-    return `<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:4px;padding:4px 5px;min-height:58px;background:${isPlan ? '#f8fafc' : '#fff'}">
+    return `<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:4px;padding:4px 5px;min-height:66px;background:${isPlan ? '#f8fafc' : '#fff'}">
      <div style="font-size:10px;font-weight:800;color:${dc};margin-bottom:2px">${d.getMonth()+1}/${d.getDate()}(${dowN})${isPlan ? ' <span style="color:#94a3b8;font-weight:600">계획</span>' : ''}</div>
      ${pubs}${schs}</div>`;
    };
